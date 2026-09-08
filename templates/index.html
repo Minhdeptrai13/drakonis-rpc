@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord RPC Master | Bảng Điều Khiển</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="https://cdn.discordapp.com/emojis/1054366629930778644.webp" type="image/webp">
+</head>
+<body>
+
+  
+  <header class="main-header">
+    <div class="header-container">
+      
+      
+      <div class="header-brand-block">
+        <div class="brand-badge-square">RPC</div>
+        <div class="brand-text-col">
+          <div class="brand-name">Discord RPC Master</div>
+          <div class="brand-sub">Hệ Thống Trạng Thái Đa Năng</div>
+        </div>
+        <div class="header-status-pill" id="status-pill">
+          <span class="status-led" id="led-indicator"></span>
+          <span class="status-label" id="status-text">Đã dừng</span>
+        </div>
+      </div>
+
+      
+      <nav class="horizontal-nav-bar" id="horizontal-nav-bar">
+        <button type="button" class="nav-tab-link active" data-tab="tab-home" onclick="switchMainTab('tab-home')">
+          Trang Chủ
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-content" onclick="switchMainTab('tab-content')">
+          Nội Dung
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-images" onclick="switchMainTab('tab-images')">
+          Hình Ảnh
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-buttons" onclick="switchMainTab('tab-buttons')">
+          Nút Bấm
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-account" onclick="switchMainTab('tab-account')">
+          Tài Khoản
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-logs" onclick="switchMainTab('tab-logs')">
+          Nhật Ký
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-guide" onclick="switchMainTab('tab-guide')">
+          Cách Sử Dụng
+        </button>
+        <button type="button" class="nav-tab-link" data-tab="tab-about" onclick="switchMainTab('tab-about')">
+          Giới Thiệu
+        </button>
+      </nav>
+
+      
+      <div class="header-actions-right">
+        <button id="btn-start" class="action-btn action-start" onclick="handleStartRPC()">
+          Khởi Chạy
+        </button>
+        <button id="btn-update" class="action-btn action-update" onclick="handleUpdateRPC()">
+          Cập Nhật Ngay
+        </button>
+        <button id="btn-stop" class="action-btn action-stop" onclick="handleStopRPC()" disabled>
+          Dừng Lại
+        </button>
+        <div class="user-chip">
+          <span class="user-chip-name">{{ username }}</span>
+          <a href="{{ url_for('logout') }}" class="user-chip-logout">Thoát</a>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  
+  <div class="app-viewport">
+
+    
+    <div class="notice-rounded-banner">
+      <div class="notice-tag">Lưu Ý Quan Trọng</div>
+      <div class="notice-body">
+        Để hoạt động hiển thị được trên trang cá nhân của bạn, hãy mở ứng dụng Discord &gt; <strong>Cài đặt người dùng (⚙️)</strong> &gt; <strong>Quyền riêng tư hoạt động (Activity Privacy)</strong> &gt; Bật <strong>"Hiển thị hoạt động hiện tại dưới dạng thông điệp trạng thái"</strong>.
+      </div>
+    </div>
+
+    
+    
+    
+    <div class="dashboard-split-grid" id="main-split-grid">
+      
+      
+      <div class="config-flow-column">
+
+        
+        <section class="main-tab-content active" id="tab-home">
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Trung Tâm Điều Khiển Discord RPC</div>
+                <div class="card-subtitle-text">Tùy chỉnh trạng thái hoạt động Discord tự do, 100% cục bộ và bảo mật</div>
+              </div>
+              <span class="card-badge">Bảng Điều Khiển</span>
+            </div>
+
+            <p class="field-hint-text mb-3">
+              Mỗi tính năng đã được chia thành từng tab độc lập trên thanh điều hướng bên trên. Bạn có thể chọn nhanh một mẫu cấu hình bên dưới hoặc bấm các tab để chỉnh sửa từng phần theo ý muốn.
+            </p>
+
+            <div class="action-btn-row">
+              <button type="button" class="action-btn action-start" onclick="handleStartRPC()">
+                Khởi Chạy Ngay
+              </button>
+              <button type="button" class="action-btn action-update" onclick="handleUpdateRPC()">
+                Cập Nhật
+              </button>
+              <button type="button" class="action-btn action-stop" onclick="handleStopRPC()">
+                Dừng
+              </button>
+            </div>
+          </div>
+
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Mẫu Cấu Hình Nhanh (Presets)</div>
+                <div class="card-subtitle-text">Bấm vào bất kỳ mẫu nào để áp dụng trực tiếp vào Live Preview</div>
+              </div>
+              <button type="button" class="btn-text-subtle" onclick="saveCurrentAsPreset()">
+                Lưu Cấu Hình Hiện Tại
+              </button>
+            </div>
+
+            <div class="preset-pill-bar" id="preset-list">
+              
+            </div>
+          </div>
+
+          
+          <div class="card-rounded">
+            <div class="card-header-clean">
+              <div class="card-title-text">Hướng Dẫn Nhanh</div>
+            </div>
+            <p class="field-hint-text">
+              1. Vào tab <strong>Tài Khoản</strong> để dán Token (chỉ cần nhập một lần duy nhất).<br>
+              2. Vào tab <strong>Hình Ảnh</strong> để xem danh sách Bot &amp; Avatar Anime và bấm chọn trực tiếp.<br>
+              3. Vào tab <strong>Nội Dung</strong> để đổi tên game hoặc chi tiết muốn hiển thị.<br>
+              4. Bấm <strong>Khởi Chạy</strong> ở góc trên bên phải để bắt đầu phát trạng thái lên Discord!
+            </p>
+          </div>
+
+        </section>
+
+        
+        <section class="main-tab-content" id="tab-content">
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Nội Dung Hoạt Động (Game &amp; App)</div>
+                <div class="card-subtitle-text">Tùy chỉnh tên ứng dụng, mô tả dòng chữ và trạng thái hoạt động</div>
+              </div>
+              <span class="card-badge">Nội Dung</span>
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="select-activity-type" class="form-label-clean">Thể loại hoạt động</label>
+                <select id="select-activity-type" class="select-rounded" onchange="onActivityTypeChange()">
+                  <option value="playing" selected>Playing (Đang chơi game)</option>
+                  <option value="streaming">Streaming (Đang phát trực tiếp)</option>
+                  <option value="listening">Listening (Đang nghe nhạc)</option>
+                  <option value="watching">Watching (Đang xem)</option>
+                  <option value="competing">Competing (Đang thi đấu)</option>
+                </select>
+              </div>
+
+              <div class="form-col">
+                <label for="input-activity-name" class="form-label-clean">Tên game / Ứng dụng <span class="text-danger">*</span></label>
+                <input type="text" id="input-activity-name" class="input-rounded" placeholder="Ví dụ: Visual Studio Code" value="Visual Studio Code">
+              </div>
+            </div>
+
+            <div class="form-row d-none mb-3" id="stream-url-group">
+              <label for="input-stream-url" class="form-label-clean">Link Twitch / YouTube Stream</label>
+              <input type="url" id="input-stream-url" class="input-rounded" placeholder="https://twitch.tv/discord" value="https://twitch.tv/discord">
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="input-details" class="form-label-clean">Dòng Details (Chi tiết chính)</label>
+                <input type="text" id="input-details" class="input-rounded" placeholder="Ví dụ: Developing Discord RPC Master" value="Developing Discord RPC Master">
+              </div>
+
+              <div class="form-col">
+                <label for="input-state" class="form-label-clean">Dòng State (Trạng thái phụ)</label>
+                <input type="text" id="input-state" class="input-rounded" placeholder="Ví dụ: Workspace: DiscordRPG" value="Workspace: DiscordRPG">
+              </div>
+            </div>
+
+            <div class="toggle-control-box mb-3">
+              <div class="toggle-text-block">
+                <div class="toggle-title">Bộ đếm thời gian (Elapsed Timer)</div>
+                <div class="toggle-desc">Tự động đếm thời gian đã trôi qua kể từ lúc bắt đầu (ví dụ: 00:27 elapsed).</div>
+              </div>
+              <label class="switch-pill" for="check-timestamp">
+                <input type="checkbox" id="check-timestamp" checked onchange="updateLivePreview()" title="Bộ đếm thời gian" aria-label="Bộ đếm thời gian">
+                <span class="switch-pill-slider"></span>
+              </label>
+            </div>
+          </div>
+
+        </section>
+
+        
+        <section class="main-tab-content" id="tab-images">
+          
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Hình Ảnh Đang Chọn (Xem Trước Trực Quan)</div>
+                <div class="card-subtitle-text">Xem trực tiếp hình ảnh thực tế sẽ hiển thị trên Discord Rich Presence của bạn</div>
+              </div>
+              <span class="card-badge">Xem Trước</span>
+            </div>
+
+            <div class="visual-current-images-row mb-3">
+              
+              <div class="visual-img-card">
+                <div class="visual-img-box-wrap">
+                  <img id="box-large-preview" src="/static/uploads/b6892ebe383640c596013c353ec3dabd.jpeg" alt="Ảnh Lớn" class="visual-large-thumb" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+                </div>
+                <div class="visual-img-meta">
+                  <div class="visual-img-label-top">Ảnh Lớn Hiện Tại (Large Image)</div>
+                  <div class="visual-img-title-current" id="lbl-large-source">Avatar Anime Girl (Bot Portal)</div>
+                  
+                  <div class="action-btn-row mb-2">
+                    <button type="button" class="btn-highlight-solid" onclick="useDevPortalAvatar()">
+                      Dùng Avatar Anime Bot
+                    </button>
+                    <div class="file-upload-wrapper">
+                      <button type="button" class="btn-outline-solid" onclick="triggerUpload('large')">
+                        Tải Ảnh Lên
+                      </button>
+                      <input type="file" id="file-upload-large" class="file-input-hidden" accept="image/*" onchange="uploadImageFile(this, 'large')" title="Tải ảnh lớn từ máy" aria-label="Tải ảnh lớn từ máy">
+                    </div>
+                  </div>
+
+                  <div class="form-row mb-1">
+                    <label for="input-large-text" class="form-label-clean">Tooltip hiển thị khi di chuột vào ảnh lớn</label>
+                    <input type="text" id="input-large-text" class="input-rounded" placeholder="Tooltip ảnh lớn..." value="Visual Studio Code" oninput="updateLivePreview()">
+                  </div>
+
+                  <div class="manual-link-toggle">
+                    <button type="button" class="btn-text-subtle" onclick="toggleManualInput('large')">
+                      Tùy chỉnh link thủ công
+                    </button>
+                    <div id="manual-large-wrap" class="d-none mt-2">
+                      <input type="text" id="input-large-image" class="input-rounded" placeholder="Nhập 'bot_avatar' hoặc link ảnh Discord..." value="bot_avatar" oninput="onManualImageChange('large')" title="Đường dẫn hoặc mã ảnh lớn" aria-label="Đường dẫn hoặc mã ảnh lớn">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              
+              <div class="visual-img-card">
+                <div class="visual-img-box-wrap small">
+                  <img id="box-small-preview" src="https://cdn.discordapp.com/app-assets/383226320970055681/1359299282380918886.png" alt="Ảnh Nhỏ" class="visual-small-thumb" onerror="this.style.display='none'">
+                </div>
+                <div class="visual-img-meta">
+                  <div class="visual-img-label-top">Ảnh Nhỏ / Huy Hiệu (Small Badge)</div>
+                  <div class="visual-img-title-current" id="lbl-small-source">Python 3.12</div>
+
+                  <div class="action-btn-row mb-2">
+                    <div class="file-upload-wrapper">
+                      <button type="button" class="btn-outline-solid" onclick="triggerUpload('small')">
+                        Tải Ảnh Lên
+                      </button>
+                      <input type="file" id="file-upload-small" class="file-input-hidden" accept="image/*" onchange="uploadImageFile(this, 'small')" title="Tải ảnh nhỏ từ máy" aria-label="Tải ảnh nhỏ từ máy">
+                    </div>
+                    <button type="button" class="btn-text-danger" onclick="clearSmallImage()">
+                      Gỡ Ảnh Nhỏ
+                    </button>
+                  </div>
+
+                  <div class="form-row mb-1">
+                    <label for="input-small-text" class="form-label-clean">Tooltip hiển thị khi di chuột vào ảnh nhỏ</label>
+                    <input type="text" id="input-small-text" class="input-rounded" placeholder="Tooltip ảnh nhỏ..." value="Python 3.12" oninput="updateLivePreview()">
+                  </div>
+
+                  <div class="manual-link-toggle">
+                    <button type="button" class="btn-text-subtle" onclick="toggleManualInput('small')">
+                      Tùy chỉnh link thủ công
+                    </button>
+                    <div id="manual-small-wrap" class="d-none mt-2">
+                      <input type="text" id="input-small-image" class="input-rounded" placeholder="Nhập 'python' hoặc link ảnh..." value="python" oninput="onManualImageChange('small')" title="Đường dẫn hoặc mã ảnh nhỏ" aria-label="Đường dẫn hoặc mã ảnh nhỏ">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Danh Sách Bot &amp; Avatar Anime (Bấm Chọn Đổi Ngay)</div>
+                <div class="card-subtitle-text">Bấm trực tiếp vào Bot để tự động nạp Avatar Anime, Tên Bot và Application ID vào Live Preview</div>
+              </div>
+              <button type="button" class="btn-outline-solid" onclick="scanPortalApps(false)">
+                Quét Lại Bot Portal
+              </button>
+            </div>
+
+            <div id="portal-bots-container" class="portal-bots-grid">
+              
+            </div>
+          </div>
+
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Kho Logo &amp; Biểu Tượng Có Sẵn (Bấm Để Chọn)</div>
+                <div class="card-subtitle-text">Xem trước logo thực tế và bấm 'Ảnh Lớn' hoặc 'Ảnh Nhỏ' để nạp trực tiếp</div>
+              </div>
+            </div>
+
+            <div class="visual-gallery-grid" id="visual-gallery-grid">
+              
+            </div>
+          </div>
+
+          <div class="clean-tip-box">
+            <div class="clean-tip-title">Bảo Đảm Hiển Thị Sắc Nét 100%:</div>
+            <div class="clean-tip-desc">
+              Hệ thống tự động sử dụng <strong>Discord Media Proxy</strong>. Khi bạn chọn Bot có avatar anime, hệ thống trích xuất ảnh chuẩn từ Developer Portal và hiển thị hoàn hảo, không bao giờ bị lỗi xúc xắc chấm hỏi!
+            </div>
+          </div>
+
+        </section>
+
+        
+        <section class="main-tab-content" id="tab-buttons">
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Nút Bấm Tương Tác (Profile Buttons)</div>
+                <div class="card-subtitle-text">Tối đa 2 nút bấm hiển thị trên trang cá nhân Discord của bạn</div>
+              </div>
+              <span class="card-badge">Nút Bấm</span>
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="input-btn1-label" class="form-label-clean">Tên Nút 1</label>
+                <input type="text" id="input-btn1-label" class="input-rounded" placeholder="Ví dụ: GitHub Repository" value="GitHub Repository" oninput="updateLivePreview()">
+              </div>
+
+              <div class="form-col">
+                <label for="input-btn1-url" class="form-label-clean">Đường dẫn URL Nút 1 (Phải có https://)</label>
+                <input type="url" id="input-btn1-url" class="input-rounded" placeholder="https://github.com" value="https://github.com" oninput="updateLivePreview()">
+              </div>
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="input-btn2-label" class="form-label-clean">Tên Nút 2</label>
+                <input type="text" id="input-btn2-label" class="input-rounded" placeholder="Ví dụ: Tham Gia Discord" value="Tham Gia Discord" oninput="updateLivePreview()">
+              </div>
+
+              <div class="form-col">
+                <label for="input-btn2-url" class="form-label-clean">Đường dẫn URL Nút 2 (Phải có https://)</label>
+                <input type="url" id="input-btn2-url" class="input-rounded" placeholder="https://discord.gg" value="https://discord.gg" oninput="updateLivePreview()">
+              </div>
+            </div>
+
+            <div class="clean-tip-box">
+              <div class="clean-tip-desc">
+                Quy tắc của Discord: Bạn sẽ không tự thấy nút bấm trên profile của chính mình. Bạn bè và người khác bấm vào trang cá nhân bạn sẽ thấy và nhấn được cả 2 nút này!
+              </div>
+            </div>
+          </div>
+
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Tự Động Xoay Vòng Trạng Thái (Status Rotator)</div>
+                <div class="card-subtitle-text">Tự động luân chuyển giữa các Preset đã lưu theo chu kỳ thời gian</div>
+              </div>
+              <span class="card-badge">Xoay Vòng</span>
+            </div>
+
+            <div class="toggle-control-box mb-3">
+              <div class="toggle-text-block">
+                <div class="toggle-title">Bật tự động đổi trạng thái</div>
+                <div class="toggle-desc">Tự động luân chuyển giữa các cấu hình đã lưu.</div>
+              </div>
+              <label class="switch-pill" for="check-rotator">
+                <input type="checkbox" id="check-rotator" onchange="toggleRotator()" title="Tự động đổi trạng thái" aria-label="Tự động đổi trạng thái">
+                <span class="switch-pill-slider"></span>
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label for="input-rotator-interval" class="form-label-clean">Chu kỳ xoay vòng (giây)</label>
+              <input type="number" id="input-rotator-interval" class="input-rounded" value="30" min="10" max="600">
+            </div>
+          </div>
+
+        </section>
+
+        
+        <section class="main-tab-content" id="tab-account">
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Tài Khoản &amp; Developer Portal</div>
+                <div class="card-subtitle-text">Cấu hình Discord User Token và Application ID kết nối</div>
+              </div>
+              <span class="card-badge">Xác Thực</span>
+            </div>
+
+            <div class="form-row mb-3">
+              <div class="form-label-row">
+                <label for="input-token" class="form-label-clean">Discord User Token</label>
+                <button type="button" class="link-action-text" id="token-toggle-label" onclick="toggleTokenVisibility()">
+                  Hiện Token
+                </button>
+              </div>
+              <div class="field-button-group">
+                <input type="password" id="input-token" class="input-rounded" placeholder="Dán User Token Discord vào đây..." autocomplete="off">
+                <button type="button" class="btn-input-addon" onclick="copyTokenScript()" title="Copy script lấy token nhanh từ Console F12">
+                  Copy Lệnh Token
+                </button>
+              </div>
+              <p class="field-hint-text">
+                Mẹo: Mở Discord Web/App &gt; F12 (Console) &gt; Dán câu lệnh copy &gt; Enter để nhận token an toàn.
+              </p>
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="select-user-status" class="form-label-clean">Trạng thái tài khoản</label>
+                <select id="select-user-status" class="select-rounded" onchange="updateLivePreview()">
+                  <option value="online" selected>Trực tuyến (Online - Bắt buộc để hiện RPC)</option>
+                  <option value="idle">Chờ (Idle)</option>
+                  <option value="dnd">Không làm phiền (Do Not Disturb)</option>
+                </select>
+              </div>
+
+              <div class="form-col">
+                <div class="form-label-row">
+                  <label for="input-app-id" class="form-label-clean">Application ID</label>
+                  <button type="button" class="link-action-text" onclick="scanPortalApps(false)">
+                    Quét App Portal
+                  </button>
+                </div>
+                <input type="text" id="input-app-id" class="input-rounded" placeholder="Ví dụ: 1546849576986607657" value="1546849576986607657">
+              </div>
+            </div>
+
+            
+            <div id="detected-app-banner" class="detected-portal-card d-none mb-3">
+              <img id="detected-app-icon" src="" alt="Avatar" class="detected-portal-avatar">
+              <div class="detected-portal-meta">
+                <div class="detected-portal-name" id="detected-app-title">Visual Studio Code</div>
+                <div class="detected-portal-status" id="detected-app-desc">Đã tìm thấy Avatar Anime từ Developer Portal!</div>
+              </div>
+              <button type="button" class="btn-text-accent" onclick="applyDetectedAvatar()">
+                Áp Dụng Ngay
+              </button>
+            </div>
+
+            <div class="toggle-control-box">
+              <div class="toggle-text-block">
+                <div class="toggle-title">Tự động nhận diện Application &amp; Avatar Portal</div>
+                <div class="toggle-desc">Tự động dùng Application bạn sở hữu và trích xuất đúng ảnh avatar anime đã cài đặt trên Developer Portal.</div>
+              </div>
+              <label class="switch-pill" for="check-auto-app">
+                <input type="checkbox" id="check-auto-app" checked title="Tự động nhận diện Application & Avatar Portal" aria-label="Tự động nhận diện Application & Avatar Portal">
+                <span class="switch-pill-slider"></span>
+              </label>
+            </div>
+          </div>
+
+        </section>
+
+        
+        <section class="main-tab-content" id="tab-logs">
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Nhật Ký Hệ Thống &amp; Điều Khiển Trực Tiếp</div>
+                <div class="card-subtitle-text">Bấm Khởi Chạy ngay tại đây để theo dõi từng bước kết nối Gateway và chẩn đoán API thời gian thực</div>
+              </div>
+              <span class="card-badge">Bảng Điều Khiển</span>
+            </div>
+
+            
+            <div class="action-btn-row mb-3">
+              <button type="button" class="action-btn action-start" onclick="handleStartRPC()">
+                Khởi Chạy (Bắt Đầu)
+              </button>
+              <button type="button" class="action-btn action-update" onclick="handleUpdateRPC()">
+                Cập Nhật
+              </button>
+              <button type="button" class="action-btn action-stop" onclick="handleStopRPC()">
+                Dừng Lại
+              </button>
+              <button type="button" class="btn-outline-solid" onclick="fetchLogs(true)">
+                Làm Mới
+              </button>
+              <button type="button" class="btn-text-danger" onclick="clearLogs()">
+                Xóa Log
+              </button>
+            </div>
+
+            <div class="full-terminal-viewport" id="full-terminal-viewport">
+              
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      
+      <div class="preview-log-column" id="preview-log-column">
+        <div class="sticky-preview-wrapper">
+          
+          
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div class="card-title-text">Xem Trước Trực Tiếp (1:1 Discord)</div>
+              <span class="live-pill-badge">REALTIME</span>
+            </div>
+
+            
+            <div class="discord-profile-rounded">
+              <div class="discord-profile-banner" id="pv-banner"></div>
+              <div class="discord-profile-avatar-row">
+                <div class="avatar-relative-box">
+                  <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" class="avatar-circle-img" id="pv-avatar">
+                  <div class="status-badge-dot" id="pv-status-dot"></div>
+                </div>
+              </div>
+
+              <div class="discord-profile-content">
+                <div class="profile-names-box">
+                  <div class="profile-name-main" id="pv-display-name">{{ username }}</div>
+                  <div class="profile-name-handle" id="pv-username">@{{ username.lower() }}</div>
+                </div>
+
+                <div class="profile-sep-line"></div>
+
+                <div class="profile-activity-header" id="pv-activity-type-header">PLAYING A GAME</div>
+                
+                <div class="profile-activity-card">
+                  <div class="activity-top-row">
+                    <div class="activity-icons-box">
+                      <img src="https://cdn.discordapp.com/app-assets/383226320970055681/1359299466493956258.png" alt="Large" class="act-large-asset" id="pv-large-img">
+                      <img src="https://cdn.discordapp.com/app-assets/383226320970055681/1359299282380918886.png" alt="Small" class="act-small-asset" id="pv-small-img">
+                    </div>
+
+                    <div class="activity-details-col">
+                      <div class="act-name-text" id="pv-activity-name">Visual Studio Code</div>
+                      <div class="act-detail-text" id="pv-details">Developing Discord RPC Master</div>
+                      <div class="act-state-text" id="pv-state">Workspace: DiscordRPG</div>
+                      <div class="act-timer-text" id="pv-time">
+                        <span id="pv-timer-text">00:00:00 elapsed</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="activity-btn-list" id="pv-buttons-list">
+                    <a href="https://github.com" target="_blank" rel="noopener" class="profile-action-link" id="pv-btn1">GitHub Repository</a>
+                    <a href="https://discord.gg" target="_blank" rel="noopener" class="profile-action-link" id="pv-btn2">Tham Gia Discord</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          
+          <div class="card-rounded terminal-log-card">
+            <div class="terminal-header-bar">
+              <div class="terminal-left-meta">
+                <span class="terminal-dot red"></span>
+                <span class="terminal-dot yellow"></span>
+                <span class="terminal-dot green"></span>
+                <span class="terminal-title-text">Nhật Ký Khởi Động Thời Gian Thực</span>
+              </div>
+              <div class="terminal-actions">
+                <button type="button" class="btn-clear-terminal" onclick="clearLogs()">
+                  Xóa Log
+                </button>
+              </div>
+            </div>
+
+            <div class="terminal-screen" id="terminal-screen">
+              <div class="log-line info">
+                <span class="log-time">[00:00:00]</span>
+                <span class="log-tag">[SYSTEM]</span>
+                <span class="log-msg">Hệ thống sẵn sàng. Bấm "Khởi Chạy" để bắt đầu kết nối...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    
+    
+    
+
+    
+    <section class="main-tab-content" id="tab-guide">
+      <div class="info-content-container">
+
+        <div class="card-rounded mb-4">
+          <h2 class="guide-main-heading">Hướng Dẫn Sử Dụng Từng Bước</h2>
+          <p class="guide-main-sub">Chỉ mất chưa đến 1 phút để hiển thị trạng thái chơi game tùy chỉnh cực ngầu lên Discord!</p>
+        </div>
+
+        <div class="guide-steps-flow">
+          
+          
+          <div class="guide-step-card">
+            <div class="step-badge-circle">1</div>
+            <div class="step-body-content">
+              <h3 class="step-title">Lấy Discord User Token</h3>
+              <p class="step-desc">
+                Mở ứng dụng Discord trên trình duyệt web hoặc phần mềm Desktop:
+              </p>
+              <ol class="step-instructions">
+                <li>Bấm phím <strong>F12</strong> (hoặc tổ hợp phím <code>Ctrl + Shift + I</code>) để mở Công cụ nhà phát triển.</li>
+                <li>Chuyển qua tab <strong>Console</strong>.</li>
+                <li>Bấm nút <strong>"Copy Lệnh Token"</strong> ở Panel Tài Khoản, dán vào Console và nhấn <strong>Enter</strong>.</li>
+                <li>Token sẽ hiển thị giữa hai dấu ngoặc kép. Hãy copy và dán vào ô <strong>Discord User Token</strong>.</li>
+              </ol>
+            </div>
+          </div>
+
+          
+          <div class="guide-step-card">
+            <div class="step-badge-circle">2</div>
+            <div class="step-body-content">
+              <h3 class="step-title">Bật Quyền Riêng Tư Hoạt Động (Activity Privacy)</h3>
+              <p class="step-desc">
+                Đây là yêu cầu bắt buộc của Discord để cho phép hiển thị game lên profile:
+              </p>
+              <ol class="step-instructions">
+                <li>Vào Discord &gt; Bấm biểu tượng <strong>Cài đặt người dùng (⚙️)</strong> ở góc dưới bên trái.</li>
+                <li>Chọn mục <strong>Quyền riêng tư hoạt động (Activity Privacy)</strong>.</li>
+                <li>Gạt bật công tắc <strong>"Hiển thị hoạt động hiện tại dưới dạng thông điệp trạng thái"</strong>.</li>
+              </ol>
+            </div>
+          </div>
+
+          
+          <div class="guide-step-card">
+            <div class="step-badge-circle">3</div>
+            <div class="step-body-content">
+              <h3 class="step-title">Sử Dụng Avatar Anime từ Developer Portal</h3>
+              <p class="step-desc">
+                Nếu bạn đã tạo Bot và tải ảnh anime girl lên Developer Portal (mục Bot &gt; Icon):
+              </p>
+              <ol class="step-instructions">
+                <li>Tại mục <strong>Hình Ảnh</strong>, bạn sẽ thấy danh sách Bot hiển thị sẵn ảnh Avatar Anime thật.</li>
+                <li>Chỉ cần bấm trực tiếp vào thẻ Bot, toàn bộ Avatar và Tên Bot sẽ được tự động chọn ngay!</li>
+                <li>Màn hình Live Preview sẽ đổi ngay sang ảnh Anime của bạn.</li>
+              </ol>
+            </div>
+          </div>
+
+          
+          <div class="guide-step-card">
+            <div class="step-badge-circle">4</div>
+            <div class="step-body-content">
+              <h3 class="step-title">Bấm Khởi Chạy &amp; Cập Nhật</h3>
+              <p class="step-desc">
+                Bấm nút <strong>"Khởi Chạy"</strong> ở góc trên bên phải thanh điều hướng hoặc ở tab <strong>Nhật Ký</strong>. Quan sát cửa sổ Terminal Log để xem từng bước kết nối thời gian thực!
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    
+    <section class="main-tab-content" id="tab-about">
+      <div class="info-content-container">
+        
+        <div class="card-rounded mb-4">
+          <div class="hero-intro-box">
+            <h1 class="hero-heading">Discord RPC Master v2.2</h1>
+            <p class="hero-subtext">
+              Công cụ quản lý Discord Rich Presence hiện đại, bảo mật và hoàn toàn tự động, được xây dựng trên nền tảng Python, Flask và kết nối Gateway thời gian thực.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-grid-3 mb-4">
+          <div class="feature-card-rounded">
+            <div class="feature-card-num">01</div>
+            <div class="feature-card-title">Tự Động Quản Lý Application</div>
+            <div class="feature-card-desc">
+              Tự động tận dụng hoặc tạo Application qua chính User Token của bạn, không cần copy-paste thủ công ID và không lo trùng lặp app rác.
+            </div>
+          </div>
+
+          <div class="feature-card-num-card">
+            <div class="feature-card-num">02</div>
+            <div class="feature-card-title">Chống Rate Limit Tuyệt Đối</div>
+            <div class="feature-card-desc">
+              Cơ chế cooldown 30 giây khi đổi tên app, bảo vệ tài khoản khỏi lỗi HTTP 429 Too Many Requests từ Discord Developer Portal.
+            </div>
+          </div>
+
+          <div class="feature-card-num-card">
+            <div class="feature-card-num">03</div>
+            <div class="feature-card-title">Không Bao Giờ Lỗi Xúc Xắc `?`</div>
+            <div class="feature-card-desc">
+              Tự động chuyển đổi hình ảnh thành URL Discord Media Proxy (`mp:...`). Hiển thị Avatar Anime từ Bot Icon Developer Portal và logo chuẩn ngay lập tức.
+            </div>
+          </div>
+
+          <div class="feature-card-num-card">
+            <div class="feature-card-num">04</div>
+            <div class="feature-card-title">Cập Nhật Trạng Thái Tức Thì</div>
+            <div class="feature-card-desc">
+              Bấm "Cập Nhật Ngay" để đổi tên game, chi tiết, ảnh hoặc nút bấm ngay trên Discord Gateway mà không cần ngắt kết nối hay bật lại bot.
+            </div>
+          </div>
+
+          <div class="feature-card-num-card">
+            <div class="feature-card-num">05</div>
+            <div class="feature-card-title">Console Dashboard Thời Gian Thực</div>
+            <div class="feature-card-desc">
+              Theo dõi từng bước kết nối, xác thực token, tìm kiếm application và đẩy trạng thái lên Discord một cách minh bạch ngay trên màn hình.
+            </div>
+          </div>
+
+          <div class="feature-card-num-card">
+            <div class="feature-card-num">06</div>
+            <div class="feature-card-title">Bảo Mật &amp; Cục Bộ</div>
+            <div class="feature-card-desc">
+              Chạy 100% trên máy tính cá nhân qua Localhost. Không gửi token qua bất kỳ server trung gian của bên thứ ba nào.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="toast-container" id="toast-container"></div>
+
+  
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

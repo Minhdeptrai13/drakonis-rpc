@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập | Discord RPC Master</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="https://cdn.discordapp.com/emojis/1054366629930778644.webp" type="image/webp">
+</head>
+<body class="auth-page-body">
+
+  <div class="auth-center-container">
+    <div class="auth-card-rounded">
+      
+      <div class="auth-brand-header">
+        <div class="auth-badge-square">RPC</div>
+        <h1 class="auth-heading">Discord RPC Master</h1>
+        <p class="auth-subtext">Hệ thống tùy chỉnh trạng thái Discord chuyên nghiệp</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="auth-flash-box mb-3">
+            {% for category, message in messages %}
+              <div class="toast-item {{ category }} w-100">
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="auth-pill-tabs mb-3">
+        <button type="button" class="auth-tab-btn active" id="btn-tab-login" onclick="switchAuthMode('login')">
+          Đăng Nhập
+        </button>
+        <button type="button" class="auth-tab-btn" id="btn-tab-register" onclick="switchAuthMode('register')">
+          Đăng Ký Mới
+        </button>
+      </div>
+
+      <form id="form-login" method="POST" action="{{ url_for('login') }}">
+        <div class="form-row mb-3">
+          <label class="form-label-clean" for="login-username">Tên tài khoản</label>
+          <input type="text" id="login-username" name="username" class="input-rounded" placeholder="Nhập tên đăng nhập..." required autofocus autocomplete="username">
+        </div>
+        
+        <div class="form-row mb-4">
+          <label class="form-label-clean" for="login-password">Mật khẩu</label>
+          <input type="password" id="login-password" name="password" class="input-rounded" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="action-btn action-start w-100 py-3 mb-3">
+          Đăng Nhập Ngay
+        </button>
+      </form>
+
+      <form id="form-register" method="POST" action="{{ url_for('register') }}" class="d-none">
+        <div class="form-row mb-3">
+          <label class="form-label-clean" for="register-username">Tên tài khoản mới</label>
+          <input type="text" id="register-username" name="username" class="input-rounded" placeholder="Tạo tên đăng nhập (từ 3 ký tự)..." required minlength="3" autocomplete="username">
+        </div>
+
+        <div class="form-row mb-3">
+          <label class="form-label-clean" for="register-password">Mật khẩu</label>
+          <input type="password" id="register-password" name="password" class="input-rounded" placeholder="Tạo mật khẩu (từ 4 ký tự)..." required minlength="4" autocomplete="new-password">
+        </div>
+
+        <div class="form-row mb-4">
+          <label class="form-label-clean" for="register-confirm-password">Xác nhận mật khẩu</label>
+          <input type="password" id="register-confirm-password" name="confirm_password" class="input-rounded" placeholder="Nhập lại mật khẩu..." required minlength="4" autocomplete="new-password">
+        </div>
+
+        <button type="submit" class="action-btn action-start w-100 py-3 mb-3">
+          Tạo Tài Khoản
+        </button>
+      </form>
+
+      <div class="auth-security-note">
+        Cơ sở dữ liệu cục bộ SQLite an toàn &amp; mã hóa mật khẩu chuẩn công nghiệp.
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function switchAuthMode(mode) {
+      const btnLogin = document.getElementById('btn-tab-login');
+      const btnRegister = document.getElementById('btn-tab-register');
+      const formLogin = document.getElementById('form-login');
+      const formRegister = document.getElementById('form-register');
+
+      if (mode === 'login') {
+        btnLogin.classList.add('active');
+        btnRegister.classList.remove('active');
+        formLogin.classList.remove('d-none');
+        formRegister.classList.add('d-none');
+      } else {
+        btnRegister.classList.add('active');
+        btnLogin.classList.remove('active');
+        formRegister.classList.remove('d-none');
+        formLogin.classList.add('d-none');
+      }
+    }
+
+    {% if mode == 'register' %}
+      switchAuthMode('register');
+    {% endif %}
+  </script>
+</body>
+</html>
