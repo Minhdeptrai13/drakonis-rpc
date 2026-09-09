@@ -106,21 +106,30 @@ const KNOWN_ASSET_ICONS = {
 let detectedAppAvatarUrl = null;
 let userPresets = [];
 let isRpcRunning = false;
+let rpcStatusCurrent = 'stopped';
 let statusPollingInterval = null;
 let logPollingInterval = null;
 let liveTimerInterval = null;
 let elapsedSeconds = 0;
 let rotatorTimer = null;
 let currentRotatorIndex = 0;
+const CONFIG_STORAGE_KEY = 'drakonis_rpc_saved_config';
+let faviconCanvas = null;
+let faviconCtx = null;
+let faviconAnimAngle = 0;
+let tabAnimInterval = null;
+let titleTickerStep = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupLivePreviewListeners();
   loadSavedToken();
   loadPresets();
+  loadFormDraft();
   renderVisualGallery();
   renderPortalBotsGrid();
   updateLivePreview();
   startLivePreviewTimer();
+  initTabAnimation();
   pollStatus();
   fetchLogs(false);
 
@@ -295,6 +304,124 @@ function setAsset(target, key) {
   }
 }
 
+function saveFormDraft(notify = false) {
+  try {
+    const cfg = getCurrentFormConfig();
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(cfg));
+    if (notify) {
+      showToast('Đã lưu cấu hình thành công! Toàn bộ nội dung sẽ được giữ nguyên.', 'success');
+    }
+  } catch (e) {
+    if (notify) {
+      showToast('Lỗi khi lưu cấu hình trình duyệt: ' + e.message, 'error');
+    }
+  }
+}
+
+function handleSaveConfig() {
+  saveFormDraft(true);
+}
+
+function loadFormDraft() {
+  try {
+    const raw = localStorage.getItem(CONFIG_STORAGE_KEY);
+    if (!raw) return;
+    const cfg = JSON.parse(raw);
+    if (cfg && typeof cfg === 'object') {
+      applyConfigToForm(cfg);
+    }
+  } catch (e) {
+  }
+}
+
+function initTabAnimation() {
+  faviconCanvas = document.createElement('canvas');
+  faviconCanvas.width = 32;
+  faviconCanvas.height = 32;
+  faviconCtx = faviconCanvas.getContext('2d');
+  if (tabAnimInterval) clearInterval(tabAnimInterval);
+  tabAnimInterval = setInterval(renderTabTick, 90);
+}
+
+function renderTabTick() {
+  faviconAnimAngle = (faviconAnimAngle + 0.14) % (Math.PI * 2);
+  titleTickerStep++;
+
+  if (faviconCtx) {
+    faviconCtx.clearRect(0, 0, 32, 32);
+
+    faviconCtx.beginPath();
+    faviconCtx.arc(16, 16, 15, 0, Math.PI * 2);
+    faviconCtx.fillStyle = '#0a0d14';
+    faviconCtx.fill();
+    faviconCtx.lineWidth = 1.5;
+    faviconCtx.strokeStyle = 'rgba(255,255,255,0.12)';
+    faviconCtx.stroke();
+
+    if (rpcStatusCurrent === 'running') {
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, 11, faviconAnimAngle, faviconAnimAngle + 1.6);
+      faviconCtx.strokeStyle = '#10b981';
+      faviconCtx.lineWidth = 2.5;
+      faviconCtx.lineCap = 'round';
+      faviconCtx.stroke();
+
+      const pulse = 4 + Math.sin(faviconAnimAngle * 2) * 1.5;
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, pulse, 0, Math.PI * 2);
+      faviconCtx.fillStyle = '#34d399';
+      faviconCtx.fill();
+    } else if (rpcStatusCurrent === 'connecting' || rpcStatusCurrent === 'stopping') {
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, 11, faviconAnimAngle, faviconAnimAngle + 2.4);
+      faviconCtx.strokeStyle = '#f59e0b';
+      faviconCtx.lineWidth = 2.5;
+      faviconCtx.lineCap = 'round';
+      faviconCtx.stroke();
+
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, 4, 0, Math.PI * 2);
+      faviconCtx.fillStyle = '#fbbf24';
+      faviconCtx.fill();
+    } else {
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, 11, faviconAnimAngle, faviconAnimAngle + 1.2);
+      faviconCtx.strokeStyle = '#6366f1';
+      faviconCtx.lineWidth = 2;
+      faviconCtx.lineCap = 'round';
+      faviconCtx.stroke();
+
+      const pulse = 3.5 + Math.sin(faviconAnimAngle) * 1.2;
+      faviconCtx.beginPath();
+      faviconCtx.arc(16, 16, pulse, 0, Math.PI * 2);
+      faviconCtx.fillStyle = '#a855f7';
+      faviconCtx.fill();
+    }
+
+    const favEl = document.getElementById('app-favicon');
+    if (favEl) {
+      favEl.href = faviconCanvas.toDataURL('image/png');
+    }
+  }
+
+  if (titleTickerStep % 15 === 0) {
+    const actName = (document.getElementById('input-activity-name') ? document.getElementById('input-activity-name').value.trim() : '') || 'Drakonis';
+    if (rpcStatusCurrent === 'running') {
+      const liveIndicators = ['● LIVE', '✦ RUNNING', '▶ ACTIVE'];
+      const ind = liveIndicators[Math.floor(titleTickerStep / 15) % liveIndicators.length];
+      document.title = `${ind} | ${actName} - Drakonis RPC`;
+    } else if (rpcStatusCurrent === 'connecting') {
+      const waitDots = ['·', '··', '···'];
+      const dot = waitDots[Math.floor(titleTickerStep / 15) % waitDots.length];
+      document.title = `Connecting${dot} | Drakonis RPC`;
+    } else {
+      const idleHeaders = ['Drakonis RPC v2.5', 'Drakonis Rich Presence', 'Drakonis Master'];
+      const header = idleHeaders[Math.floor(titleTickerStep / 25) % idleHeaders.length];
+      document.title = `${header}`;
+    }
+  }
+}
+
 function setupLivePreviewListeners() {
   const inputsToWatch = [
     'select-activity-type',
@@ -310,14 +437,23 @@ function setupLivePreviewListeners() {
     'input-btn1-label',
     'input-btn1-url',
     'input-btn2-label',
-    'input-btn2-url'
+    'input-btn2-url',
+    'input-app-id',
+    'check-auto-app',
+    'check-timestamp'
   ];
 
   inputsToWatch.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      el.addEventListener('input', updateLivePreview);
-      el.addEventListener('change', updateLivePreview);
+      el.addEventListener('input', () => {
+        updateLivePreview();
+        saveFormDraft(false);
+      });
+      el.addEventListener('change', () => {
+        updateLivePreview();
+        saveFormDraft(false);
+      });
     }
   });
 
@@ -325,8 +461,13 @@ function setupLivePreviewListeners() {
   if (tokenInput) {
     tokenInput.addEventListener('input', () => {
       localStorage.setItem('discord_rpc_user_token', tokenInput.value.trim());
+      saveFormDraft(false);
     });
   }
+
+  document.querySelectorAll('.action-save').forEach(btn => {
+    btn.addEventListener('click', handleSaveConfig);
+  });
 }
 
 function loadSavedToken() {
@@ -679,9 +820,9 @@ function applyConfigToForm(cfg) {
   if (cfg.btn1Url !== undefined) document.getElementById('input-btn1-url').value = cfg.btn1Url;
   if (cfg.btn2Label !== undefined) document.getElementById('input-btn2-label').value = cfg.btn2Label;
   if (cfg.btn2Url !== undefined) document.getElementById('input-btn2-url').value = cfg.btn2Url;
-
   onActivityTypeChange();
   updateLivePreview();
+  saveFormDraft(false);
 }
 
 async function handleStartRPC() {
@@ -806,6 +947,7 @@ async function pollStatus() {
 
 function setRunningState(userTag) {
   isRpcRunning = true;
+  rpcStatusCurrent = 'running';
   const led = document.getElementById('led-indicator');
   const text = document.getElementById('status-text');
 
@@ -826,6 +968,7 @@ function setRunningState(userTag) {
 }
 
 function setConnectingState() {
+  rpcStatusCurrent = 'connecting';
   const led = document.getElementById('led-indicator');
   const text = document.getElementById('status-text');
 
@@ -847,6 +990,7 @@ function setConnectingState() {
 
 function setStoppingState() {
   isRpcRunning = false;
+  rpcStatusCurrent = 'stopping';
   const led = document.getElementById('led-indicator');
   const text = document.getElementById('status-text');
 
@@ -868,6 +1012,7 @@ function setStoppingState() {
 
 function setStoppedState(errorMsg = null) {
   isRpcRunning = false;
+  rpcStatusCurrent = 'stopped';
   const led = document.getElementById('led-indicator');
   const text = document.getElementById('status-text');
 
