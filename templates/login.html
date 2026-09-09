@@ -63,9 +63,22 @@
           <input type="text" id="login-username" name="username" class="input-rounded" placeholder="Nhập tên đăng nhập..." required autofocus autocomplete="username">
         </div>
         
-        <div class="form-row mb-4">
+        <div class="form-row mb-3">
           <label class="form-label-clean" for="login-password">Mật khẩu</label>
           <input type="password" id="login-password" name="password" class="input-rounded" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+        </div>
+
+        <div class="form-row mb-4">
+          <label class="form-label-clean" for="login-captcha">Xác thực chống Bot (Captcha)</label>
+          <div class="captcha-flex-box">
+            <div class="captcha-img-wrap">
+              <img src="{{ url_for('api_captcha') }}" class="captcha-svg-img" id="login-captcha-img" alt="Captcha">
+            </div>
+            <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('login')">
+              Đổi Mã
+            </button>
+          </div>
+          <input type="text" id="login-captcha" name="captcha" class="input-rounded mt-2" placeholder="Nhập kết quả phép tính vào đây..." required autocomplete="off">
         </div>
 
         <button type="submit" class="action-btn action-start w-100 py-3 mb-3">
@@ -84,9 +97,22 @@
           <input type="password" id="register-password" name="password" class="input-rounded" placeholder="Tạo mật khẩu (từ 4 ký tự)..." required minlength="4" autocomplete="new-password">
         </div>
 
-        <div class="form-row mb-4">
+        <div class="form-row mb-3">
           <label class="form-label-clean" for="register-confirm-password">Xác nhận mật khẩu</label>
           <input type="password" id="register-confirm-password" name="confirm_password" class="input-rounded" placeholder="Nhập lại mật khẩu..." required minlength="4" autocomplete="new-password">
+        </div>
+
+        <div class="form-row mb-4">
+          <label class="form-label-clean" for="register-captcha">Xác thực chống Bot (Captcha)</label>
+          <div class="captcha-flex-box">
+            <div class="captcha-img-wrap">
+              <img src="{{ url_for('api_captcha') }}" class="captcha-svg-img" id="register-captcha-img" alt="Captcha">
+            </div>
+            <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('register')">
+              Đổi Mã
+            </button>
+          </div>
+          <input type="text" id="register-captcha" name="captcha" class="input-rounded mt-2" placeholder="Nhập kết quả phép tính vào đây..." required autocomplete="off">
         </div>
 
         <button type="submit" class="action-btn action-start w-100 py-3 mb-3">
@@ -102,6 +128,13 @@
   </div>
 
   <script>
+    function reloadCaptcha(type) {
+      const img = document.getElementById(`${type}-captcha-img`);
+      if (img) {
+        img.src = '/api/captcha?r=' + Math.random();
+      }
+    }
+
     function switchAuthMode(mode) {
       const btnLogin = document.getElementById('btn-tab-login');
       const btnRegister = document.getElementById('btn-tab-register');
@@ -113,11 +146,13 @@
         btnRegister.classList.remove('active');
         formLogin.classList.remove('d-none');
         formRegister.classList.add('d-none');
+        reloadCaptcha('login');
       } else {
         btnRegister.classList.add('active');
         btnLogin.classList.remove('active');
         formRegister.classList.remove('d-none');
         formLogin.classList.add('d-none');
+        reloadCaptcha('register');
       }
     }
 

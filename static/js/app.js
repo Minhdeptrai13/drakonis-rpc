@@ -119,14 +119,18 @@ let faviconCtx = null;
 let faviconAnimAngle = 0;
 let tabAnimInterval = null;
 let titleTickerStep = 0;
+let questPollingInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   setupLivePreviewListeners();
+  checkAccountLinkStatus();
   loadSavedToken();
   loadPresets();
   loadFormDraft();
   renderVisualGallery();
   renderPortalBotsGrid();
+  loadAvailableQuests();
+  initLyricModule();
   updateLivePreview();
   startLivePreviewTimer();
   initTabAnimation();
@@ -134,9 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchLogs(false);
 
   statusPollingInterval = setInterval(pollStatus, 3000);
+  questPollingInterval = setInterval(pollQuestStatus, 2500);
 });
 
-const SPLIT_TABS = ['tab-home', 'tab-content', 'tab-images', 'tab-buttons', 'tab-account', 'tab-logs'];
+const SPLIT_TABS = ['tab-home', 'tab-content', 'tab-images', 'tab-buttons', 'tab-quest', 'tab-lyric', 'tab-account', 'tab-logs'];
 const FULL_TABS = ['tab-guide', 'tab-about'];
 
 function switchMainTab(tabId) {
@@ -1458,4 +1463,565 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.innerText = text;
   return div.innerHTML;
+}
+
+let isAccountLinked = false;
+let currentQuestIdRunning = null;
+let lyricAudioContext = null;
+let lyricOscillator = null;
+let lyricGainNode = null;
+let lyricAudioTimer = null;
+let lyricCurrentSeconds = 0;
+let lyricIsPlaying = false;
+let lyricActiveIndex = -1;
+
+const BUILTIN_LYRICS = {
+  sunset: [
+    { time: 0, text: "Lofi Beats - Sunset Boulevard 🌅" },
+    { time: 5, text: "Giai điệu hoàng hôn dịu êm buông xuống" },
+    { time: 12, text: "Ánh đèn phố thị lung linh rực sáng" },
+    { time: 18, text: "Thả trôi ưu phiền cùng khúc nhạc đêm" },
+    { time: 25, text: "Drakonis RPC phát nhạc trực tiếp" },
+    { time: 32, text: "Giai điệu lofi ngân vang trong tĩnh lặng" },
+    { time: 40, text: "Chill cùng bạn bè trên Discord đêm nay" },
+    { time: 48, text: "Hoàng hôn dần tắt, màn đêm buông lơi" }
+  ],
+  cyber: [
+    { time: 0, text: "Cyber City 2077 - Synthwave Night ⚡" },
+    { time: 4, text: "Tia sáng neon quét qua con phố dài" },
+    { time: 10, text: "Tốc độ ánh sáng trong màn đêm tương lai" },
+    { time: 17, text: "Bass dồn dập đánh thức thế giới số hóa" },
+    { time: 24, text: "Công nghệ và âm nhạc hòa làm một" },
+    { time: 31, text: "Đỉnh cao phong cách Drakonis Master" },
+    { time: 38, text: "Chinh phục thế giới ảo không giới hạn" }
+  ],
+  midnight: [
+    { time: 0, text: "Tokyo Midnight Rain - Piano Solo 🌧️" },
+    { time: 6, text: "Tiếng mưa rơi nhẹ bên khung cửa sổ" },
+    { time: 13, text: "Từng nốt dương cầm lắng đọng tâm hồn" },
+    { time: 20, text: "Không gian bình yên giữa phố phường" },
+    { time: 28, text: "Trạng thái cảm xúc hòa cùng thanh âm" },
+    { time: 36, text: "Cảm nhận sự tĩnh tại trong từng khoảnh khắc" }
+  ]
+};
+
+async function checkAccountLinkStatus() {
+  try {
+    const res = await fetch('/api/account/info');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.has_token) {
+      isAccountLinked = true;
+      applyUnlockedAccountState(data);
+    } else {
+      isAccountLinked = false;
+      applyLockedAccountState();
+    }
+  } catch (err) {
+  }
+}
+
+function applyUnlockedAccountState(info) {
+  const topWarn = document.getElementById('top-unlinked-banner');
+  if (topWarn) topWarn.classList.add('d-none');
+  const botBar = document.getElementById('bottom-token-bar');
+  if (botBar) botBar.classList.add('d-none');
+
+  document.querySelectorAll('.locked-feature-overlay').forEach(el => {
+    el.classList.add('d-none');
+  });
+
+  const headerName = document.getElementById('header-user-name');
+  if (headerName && info.discord_username) {
+    headerName.innerText = info.discord_username;
+  }
+  const headerAvatar = document.getElementById('header-user-avatar');
+  const headerPlaceholder = document.getElementById('header-user-avatar-placeholder');
+  if (info.discord_avatar) {
+    if (headerAvatar) {
+      headerAvatar.src = info.discord_avatar;
+      headerAvatar.classList.remove('d-none');
+    }
+    if (headerPlaceholder) headerPlaceholder.classList.add('d-none');
+  }
+
+  const badge = document.getElementById('header-user-badge');
+  if (badge) {
+    badge.className = 'user-chip-badge linked';
+    badge.innerText = 'Đã Xác Minh';
+  }
+
+  const accName = document.getElementById('account-view-name');
+  if (accName && info.discord_username) {
+    accName.innerText = info.discord_username;
+  }
+  const accAvatar = document.getElementById('account-view-avatar');
+  if (accAvatar && info.discord_avatar) {
+    accAvatar.src = info.discord_avatar;
+  }
+  const accStatus = document.getElementById('account-view-status');
+  if (accStatus) {
+    accStatus.innerText = `ID: ${info.discord_id} • Đã liên kết token (${info.masked_token})`;
+  }
+}
+
+function applyLockedAccountState() {
+  const topWarn = document.getElementById('top-unlinked-banner');
+  if (topWarn) topWarn.classList.remove('d-none');
+  const botBar = document.getElementById('bottom-token-bar');
+  if (botBar) botBar.classList.remove('d-none');
+
+  document.querySelectorAll('.locked-feature-overlay').forEach(el => {
+    el.classList.remove('d-none');
+  });
+
+  const badge = document.getElementById('header-user-badge');
+  if (badge) {
+    badge.className = 'user-chip-badge unlinked';
+    badge.innerText = 'Chưa Liên Kết';
+  }
+}
+
+async function handleBindToken() {
+  const tokenInput = document.getElementById('input-token');
+  const token = tokenInput ? tokenInput.value.trim() : '';
+  if (!token) {
+    showToast('Vui lòng dán Discord User Token vào ô nhập trước!', 'error');
+    return;
+  }
+
+  showToast('Đang kết nối xác thực với Discord API...', 'info');
+
+  try {
+    const res = await fetch('/api/account/bind_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(data.message || 'Liên kết Discord Token thành công!', 'success');
+      localStorage.setItem('discord_rpc_user_token', token);
+      saveFormDraft(false);
+      checkAccountLinkStatus();
+      loadAvailableQuests();
+    } else {
+      showToast(data.message || 'Không thể liên kết token!', 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi kết nối máy chủ: ' + err.message, 'error');
+  }
+}
+
+async function handleUnbindToken() {
+  if (!confirm('Bạn có chắc muốn hủy liên kết Discord Token khỏi tài khoản này?')) return;
+  try {
+    const res = await fetch('/api/account/unbind_token', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Đã hủy liên kết token thành công!', 'info');
+      localStorage.removeItem('discord_rpc_user_token');
+      const tokenInput = document.getElementById('input-token');
+      if (tokenInput) tokenInput.value = '';
+      checkAccountLinkStatus();
+    } else {
+      showToast(data.message || 'Lỗi khi hủy liên kết', 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi: ' + err.message, 'error');
+  }
+}
+
+async function loadAvailableQuests() {
+  const container = document.getElementById('quests-list-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/quests');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && Array.isArray(data.quests)) {
+      renderQuestsList(data.quests);
+      if (data.worker_status) {
+        updateQuestUIStatus(data.worker_status);
+      }
+    }
+  } catch (err) {
+  }
+}
+
+function renderQuestsList(quests) {
+  const container = document.getElementById('quests-list-container');
+  if (!container) return;
+
+  if (quests.length === 0) {
+    container.innerHTML = '<div class="empty-hint-box">Không có nhiệm vụ Discord nào khả dụng lúc này.</div>';
+    return;
+  }
+
+  let html = '';
+  quests.forEach(q => {
+    const qid = escapeHtml(q.id);
+    const title = escapeHtml(q.title);
+    const game = escapeHtml(q.game_name);
+    const reward = escapeHtml(q.reward);
+    const badge = escapeHtml(q.badge || 'Nhiệm Vụ');
+    const sec = q.target_seconds || 45;
+
+    html += `
+      <div class="quest-card">
+        <div class="quest-card-top">
+          <span class="quest-card-badge">${badge}</span>
+          <div class="quest-card-title">${title}</div>
+          <div class="quest-card-reward">${reward}</div>
+        </div>
+        <button type="button" class="action-btn action-start w-100 py-2 mt-2" onclick="handleStartQuest('${qid}', '${escapeHtml(title)}', 'PLAY_ON_DESKTOP', ${sec})">
+          Bắt Đầu Auto Cày
+        </button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+async function handleStartQuest(questId, questName, taskType = 'PLAY_ON_DESKTOP', targetSeconds = 45) {
+  if (!isAccountLinked) {
+    showToast('Vui lòng liên kết Discord Token trước khi cày Quest!', 'error');
+    switchMainTab('tab-account');
+    return;
+  }
+
+  currentQuestIdRunning = questId;
+  showToast(`Bắt đầu cày nhiệm vụ: ${questName}...`, 'info');
+
+  try {
+    const res = await fetch('/api/quests/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quest_id: questId, quest_name: questName, task_type: taskType, target_seconds: targetSeconds })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(data.message, 'success');
+      pollQuestStatus();
+    } else {
+      showToast(data.message || 'Lỗi khi khởi chạy Quest', 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi kết nối: ' + err.message, 'error');
+  }
+}
+
+async function handleStopQuest() {
+  try {
+    const res = await fetch('/api/quests/stop', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Đã gửi lệnh dừng nhiệm vụ', 'info');
+      pollQuestStatus();
+    }
+  } catch (err) {
+    showToast('Lỗi: ' + err.message, 'error');
+  }
+}
+
+async function pollQuestStatus() {
+  try {
+    const res = await fetch('/api/quests/status');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && data.status) {
+      updateQuestUIStatus(data.status);
+    }
+  } catch (err) {
+  }
+}
+
+function updateQuestUIStatus(st) {
+  const titleEl = document.getElementById('quest-active-title');
+  const subEl = document.getElementById('quest-active-sub');
+  const chipEl = document.getElementById('quest-status-chip');
+  const fillEl = document.getElementById('quest-progress-fill');
+  const pctEl = document.getElementById('quest-progress-pct');
+  const timeEl = document.getElementById('quest-progress-time');
+  const stopBtn = document.getElementById('btn-quest-stop');
+
+  if (!titleEl) return;
+
+  if (st.status === 'running') {
+    titleEl.innerText = st.quest_name || 'Đang cày nhiệm vụ...';
+    subEl.innerText = `Đang gửi gói stream heartbeat giả lập qua Discord Gateway (${st.task_type})`;
+    chipEl.className = 'quest-status-chip running';
+    chipEl.innerText = 'Đang Cày';
+    if (stopBtn) stopBtn.disabled = false;
+  } else if (st.status === 'completed') {
+    titleEl.innerText = st.quest_name || 'Nhiệm vụ hoàn thành!';
+    subEl.innerText = 'Đã mở khóa phần thưởng thành công! Kiểm tra hộp quà trên Discord.';
+    chipEl.className = 'quest-status-chip completed';
+    chipEl.innerText = 'Hoàn Thành';
+    if (stopBtn) stopBtn.disabled = true;
+  } else {
+    titleEl.innerText = 'Chưa chạy nhiệm vụ nào';
+    subEl.innerText = 'Chọn một nhiệm vụ bên dưới và bấm "Bắt Đầu Auto Cày"';
+    chipEl.className = 'quest-status-chip';
+    chipEl.innerText = 'Chờ Lệnh';
+    if (stopBtn) stopBtn.disabled = true;
+  }
+
+  const pct = st.progress_pct || 0;
+  if (fillEl) fillEl.style.width = `${pct}%`;
+  if (pctEl) pctEl.innerText = `${pct}%`;
+  if (timeEl) timeEl.innerText = `${st.elapsed_seconds || 0}s / ${st.target_seconds || 0}s`;
+}
+
+async function handleClaimHypeSquad(houseId) {
+  if (!isAccountLinked) {
+    showToast('Vui lòng liên kết Discord Token trước khi nhận huy hiệu!', 'error');
+    switchMainTab('tab-account');
+    return;
+  }
+
+  showToast('Đang gửi yêu cầu nhận huy hiệu HypeSquad tới Discord...', 'info');
+
+  try {
+    const res = await fetch('/api/hypesquad/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ house_id: houseId })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(data.message, 'success');
+      fetchLogs(true);
+    } else {
+      showToast(data.message || 'Không thể nhận huy hiệu', 'error');
+    }
+  } catch (err) {
+    showToast('Lỗi kết nối: ' + err.message, 'error');
+  }
+}
+
+function initLyricModule() {
+  handleSelectLyricTrack();
+}
+
+function handleSelectLyricTrack() {
+  const sel = document.getElementById('select-lyric-track');
+  if (!sel) return;
+  const val = sel.value;
+  const customBox = document.getElementById('custom-lrc-group');
+
+  if (val === 'custom') {
+    if (customBox) customBox.classList.remove('d-none');
+    renderLyricsView([]);
+  } else {
+    if (customBox) customBox.classList.add('d-none');
+    const trackLines = BUILTIN_LYRICS[val] || [];
+    renderLyricsView(trackLines);
+  }
+}
+
+function renderLyricsView(lines) {
+  const wrap = document.getElementById('lyric-lines-wrapper');
+  if (!wrap) return;
+
+  if (!lines || lines.length === 0) {
+    wrap.innerHTML = '<div class="lyric-line">Chưa có câu hát nào hoặc đang dùng chế độ dán lời thủ công.</div>';
+    return;
+  }
+
+  let html = '';
+  lines.forEach((l, idx) => {
+    html += `<div class="lyric-line" id="lyric-line-${idx}">${escapeHtml(l.text)}</div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function handleToggleLyricAudio() {
+  if (lyricIsPlaying) {
+    handleStopLyricAudio();
+  } else {
+    startLyricPlayback();
+  }
+}
+
+function startLyricPlayback() {
+  if (!isAccountLinked) {
+    showToast('Cần liên kết Discord Token để đồng bộ câu hát lên Custom Status!', 'error');
+    switchMainTab('tab-account');
+    return;
+  }
+
+  lyricIsPlaying = true;
+  lyricCurrentSeconds = 0;
+  lyricActiveIndex = -1;
+
+  const playBtn = document.getElementById('btn-lyric-play');
+  const stopBtn = document.getElementById('btn-lyric-stop');
+  const syncInd = document.getElementById('lyric-sync-indicator');
+
+  if (playBtn) playBtn.innerText = 'Đang Phát & Đồng Bộ';
+  if (stopBtn) stopBtn.disabled = false;
+  if (syncInd) syncInd.innerText = 'Đang đồng bộ Discord Status...';
+
+  try {
+    if (!lyricAudioContext) {
+      lyricAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (lyricAudioContext.state === 'suspended') {
+      lyricAudioContext.resume();
+    }
+
+    playLofiSynthChord();
+  } catch (e) {
+  }
+
+  if (lyricAudioTimer) clearInterval(lyricAudioTimer);
+  lyricAudioTimer = setInterval(tickLyricPlayback, 1000);
+  tickLyricPlayback();
+  showToast('Đã bắt đầu phát nhạc và đồng bộ trạng thái Discord!', 'success');
+}
+
+function playLofiSynthChord() {
+  try {
+    if (!lyricAudioContext) return;
+    const osc = lyricAudioContext.createOscillator();
+    const gain = lyricAudioContext.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(261.63, lyricAudioContext.currentTime);
+    gain.gain.setValueAtTime(0.08, lyricAudioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, lyricAudioContext.currentTime + 3.5);
+    osc.connect(gain);
+    gain.connect(lyricAudioContext.destination);
+    osc.start();
+    osc.stop(lyricAudioContext.currentTime + 3.5);
+  } catch (e) {
+  }
+}
+
+function tickLyricPlayback() {
+  lyricCurrentSeconds++;
+
+  const curTimeEl = document.getElementById('audio-time-current');
+  if (curTimeEl) {
+    const m = String(Math.floor(lyricCurrentSeconds / 60)).padStart(2, '0');
+    const s = String(lyricCurrentSeconds % 60).padStart(2, '0');
+    curTimeEl.innerText = `${m}:${s}`;
+  }
+
+  const sel = document.getElementById('select-lyric-track');
+  const trackKey = sel ? sel.value : 'sunset';
+  let lines = BUILTIN_LYRICS[trackKey] || [];
+
+  if (trackKey === 'custom') {
+    const area = document.getElementById('input-custom-lrc');
+    const raw = area ? area.value.trim() : '';
+    lines = parseCustomLrc(raw);
+  }
+
+  let matchedIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lyricCurrentSeconds >= lines[i].time) {
+      matchedIdx = i;
+      break;
+    }
+  }
+
+  if (matchedIdx !== -1 && matchedIdx !== lyricActiveIndex) {
+    lyricActiveIndex = matchedIdx;
+    highlightLyricLine(matchedIdx);
+    const activeLineText = lines[matchedIdx].text;
+    syncLyricToDiscord(activeLineText);
+    playLofiSynthChord();
+  }
+
+  const maxTime = lines.length > 0 ? lines[lines.length - 1].time + 15 : 60;
+  const totEl = document.getElementById('audio-time-total');
+  if (totEl) {
+    const tm = String(Math.floor(maxTime / 60)).padStart(2, '0');
+    const ts = String(maxTime % 60).padStart(2, '0');
+    totEl.innerText = `${tm}:${ts}`;
+  }
+
+  if (lyricCurrentSeconds >= maxTime) {
+    handleStopLyricAudio();
+    showToast('Bài hát đã kết thúc!', 'info');
+  }
+}
+
+function highlightLyricLine(idx) {
+  document.querySelectorAll('.lyric-line').forEach((el, i) => {
+    if (i === idx) {
+      el.classList.add('active');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      el.classList.remove('active');
+    }
+  });
+}
+
+function parseCustomLrc(text) {
+  if (!text) return [];
+  const lines = text.split('\n');
+  const result = [];
+  let secCounter = 0;
+  lines.forEach(l => {
+    const clean = l.trim();
+    if (!clean) return;
+    const match = clean.match(/\[(\d{1,2}):(\d{2})\](.*)/);
+    if (match) {
+      const min = parseInt(match[1]);
+      const sec = parseInt(match[2]);
+      result.push({ time: min * 60 + sec, text: match[3].trim() });
+    } else {
+      result.push({ time: secCounter, text: clean });
+      secCounter += 6;
+    }
+  });
+  return result;
+}
+
+async function syncLyricToDiscord(lineText) {
+  const emojiSel = document.getElementById('select-lyric-emoji');
+  const emoji = emojiSel ? emojiSel.value : '🎵';
+
+  try {
+    await fetch('/api/lyrics/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: lineText, emoji })
+    });
+  } catch (e) {
+  }
+}
+
+async function handleStopLyricAudio() {
+  lyricIsPlaying = false;
+  if (lyricAudioTimer) {
+    clearInterval(lyricAudioTimer);
+    lyricAudioTimer = null;
+  }
+
+  const playBtn = document.getElementById('btn-lyric-play');
+  const stopBtn = document.getElementById('btn-lyric-stop');
+  const syncInd = document.getElementById('lyric-sync-indicator');
+
+  if (playBtn) playBtn.innerText = 'Bắt Đầu Phát & Đồng Bộ';
+  if (stopBtn) stopBtn.disabled = true;
+  if (syncInd) syncInd.innerText = 'Đã dừng';
+}
+
+async function handleClearDiscordStatus() {
+  showToast('Đang xóa câu hát trên Discord Status...', 'info');
+  try {
+    const res = await fetch('/api/lyrics/clear', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast('Đã xóa Custom Status trên Discord thành công!', 'success');
+    } else {
+      showToast(data.message || 'Lỗi khi xóa status', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi: ' + e.message, 'error');
+  }
 }

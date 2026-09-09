@@ -41,9 +41,9 @@
         <div class="brand-text-col">
           <div class="brand-name">
             <span>Drakonis</span> <span class="brand-name-highlight">RPC</span>
-            <span class="brand-version-badge">v2.5</span>
+            <span class="brand-version-badge">v3.0 Ultimate</span>
           </div>
-          <div class="brand-sub">Discord Rich Presence Studio</div>
+          <div class="brand-sub">Discord Rich Presence &amp; Quest Studio</div>
         </div>
         <div class="header-status-pill" id="status-pill">
           <span class="status-led" id="led-indicator"></span>
@@ -51,7 +51,6 @@
         </div>
       </div>
 
-      
       <nav class="horizontal-nav-bar" id="horizontal-nav-bar">
         <button type="button" class="nav-tab-link active" data-tab="tab-home" onclick="switchMainTab('tab-home')">
           Trang Chủ
@@ -65,6 +64,12 @@
         <button type="button" class="nav-tab-link" data-tab="tab-buttons" onclick="switchMainTab('tab-buttons')">
           Nút Bấm
         </button>
+        <button type="button" class="nav-tab-link highlight-pill" data-tab="tab-quest" onclick="switchMainTab('tab-quest')">
+          Auto Quest
+        </button>
+        <button type="button" class="nav-tab-link highlight-pill" data-tab="tab-lyric" onclick="switchMainTab('tab-lyric')">
+          Lời Nhạc Realtime
+        </button>
         <button type="button" class="nav-tab-link" data-tab="tab-account" onclick="switchMainTab('tab-account')">
           Tài Khoản
         </button>
@@ -72,14 +77,13 @@
           Nhật Ký
         </button>
         <button type="button" class="nav-tab-link" data-tab="tab-guide" onclick="switchMainTab('tab-guide')">
-          Cách Sử Dụng
+          Cách Dùng
         </button>
         <button type="button" class="nav-tab-link" data-tab="tab-about" onclick="switchMainTab('tab-about')">
           Giới Thiệu
         </button>
       </nav>
 
-      
       <div class="header-actions-right">
         <button id="btn-save" class="action-btn action-save" onclick="handleSaveConfig()" title="Lưu lại cấu hình vào máy">
           Lưu Cấu Hình
@@ -93,8 +97,24 @@
         <button id="btn-stop" class="action-btn action-stop" onclick="handleStopRPC()" disabled>
           Dừng Lại
         </button>
-        <div class="user-chip">
-          <span class="user-chip-name">{{ username }}</span>
+        <div class="user-chip" id="header-user-chip">
+          {% if has_token and discord_avatar %}
+            <img src="{{ discord_avatar }}" class="user-chip-avatar" id="header-user-avatar" alt="Avatar">
+          {% else %}
+            <div class="user-chip-placeholder-avatar" id="header-user-avatar-placeholder">D</div>
+          {% endif %}
+          <div class="user-chip-meta">
+            <span class="user-chip-name" id="header-user-name">
+              {% if has_token and discord_username %}
+                {{ discord_username }}
+              {% else %}
+                {{ username }}
+              {% endif %}
+            </span>
+            <span class="user-chip-badge {% if has_token %}linked{% else %}unlinked{% endif %}" id="header-user-badge">
+              {% if has_token %}Đã Liên Kết{% else %}Chưa Liên Kết{% endif %}
+            </span>
+          </div>
           <a href="{{ url_for('logout') }}" class="user-chip-logout">Thoát</a>
         </div>
       </div>
@@ -102,10 +122,20 @@
     </div>
   </header>
 
-  
   <div class="app-viewport">
 
-    
+    {% if not has_token %}
+    <div class="unlinked-warning-strip" id="top-unlinked-banner">
+      <div class="warning-strip-left">
+        <span class="warning-strip-badge">Cảnh Báo Tài Khoản</span>
+        <span class="warning-strip-text">Tài khoản chưa được liên kết Discord Token! Các tính năng RPC, Auto Quest và Lời Nhạc đang bị tạm khóa.</span>
+      </div>
+      <button type="button" class="btn-warning-action" onclick="switchMainTab('tab-account')">
+        Liên Kết Ngay
+      </button>
+    </div>
+    {% endif %}
+
     <div class="notice-rounded-banner">
       <div class="notice-tag">Lưu Ý Quan Trọng</div>
       <div class="notice-body">
@@ -113,17 +143,40 @@
       </div>
     </div>
 
-    
-    
-    
     <div class="dashboard-split-grid" id="main-split-grid">
-      
       
       <div class="config-flow-column">
 
-        
         <section class="main-tab-content active" id="tab-home">
           
+          <div class="onboarding-infographic-row mb-3">
+            <div class="infographic-card">
+              <div class="infographic-badge">Hệ Thống 1</div>
+              <div class="infographic-title">Cơ Chế Discord RPC Gateway</div>
+              <p class="infographic-desc">Drakonis kết nối Discord Gateway qua User Token, phát trạng thái Rich Presence chân thực với thời gian, ảnh lớn/nhỏ và nút tùy chỉnh.</p>
+              <div class="infographic-steps">
+                <div class="step-badge">1. Nhập Token &amp; App</div>
+                <div class="step-arrow">&rarr;</div>
+                <div class="step-badge">2. Tùy biến nội dung &amp; ảnh</div>
+                <div class="step-arrow">&rarr;</div>
+                <div class="step-badge active">3. Phát trực tiếp 24/7</div>
+              </div>
+            </div>
+
+            <div class="infographic-card">
+              <div class="infographic-badge alt">Hệ Thống 2 &amp; 3</div>
+              <div class="infographic-title">Auto Quest &amp; Lời Nhạc Realtime</div>
+              <p class="infographic-desc">Tự động giả lập stream Discord để hoàn thành nhiệm vụ nhận quà + Tự động đồng bộ câu hát theo mili-giây lên Custom Status.</p>
+              <div class="infographic-steps">
+                <div class="step-badge">Auto Quest Heartbeat</div>
+                <div class="step-arrow">&bull;</div>
+                <div class="step-badge">Nhạc phát đến đâu</div>
+                <div class="step-arrow">&rarr;</div>
+                <div class="step-badge active alt">Status đổi đến đó</div>
+              </div>
+            </div>
+          </div>
+
           <div class="card-rounded mb-3">
             <div class="card-header-clean">
               <div>
@@ -448,16 +501,240 @@
 
         </section>
 
-        
+        <section class="main-tab-content" id="tab-quest">
+          {% if not has_token %}
+          <div class="locked-feature-overlay">
+            <div class="locked-card">
+              <div class="locked-icon-wrap">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="locked-title">Chức Năng Bị Khóa</div>
+              <p class="locked-desc">Bạn cần liên kết Discord Token để hệ thống có thể quét và tự động cày nhiệm vụ Discord Quests.</p>
+              <button type="button" class="action-btn action-start px-4 py-2" onclick="switchMainTab('tab-account')">
+                Đi Tới Liên Kết Tài Khoản
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Trung Tâm Điều Khiển Discord Auto Quest</div>
+                <div class="card-subtitle-text">Tự động giả lập tiến trình stream/gameplay để nhận quà và Nitro mà không cần tải game</div>
+              </div>
+              <span class="card-badge">Auto Quest</span>
+            </div>
+
+            <div class="quest-active-box mb-3" id="quest-active-box">
+              <div class="quest-active-header">
+                <div>
+                  <div class="quest-active-title" id="quest-active-title">Chưa chạy nhiệm vụ nào</div>
+                  <div class="quest-active-sub" id="quest-active-sub">Chọn một nhiệm vụ bên dưới và bấm "Bắt Đầu Cày"</div>
+                </div>
+                <div class="quest-status-chip" id="quest-status-chip">Chờ Lệnh</div>
+              </div>
+
+              <div class="quest-progress-wrap mt-3">
+                <div class="quest-progress-bar-bg">
+                  <div class="quest-progress-bar-fill" id="quest-progress-fill" style="width: 0%;"></div>
+                </div>
+                <div class="quest-progress-meta mt-2">
+                  <span id="quest-progress-pct">0%</span>
+                  <span id="quest-progress-time">0s / 0s</span>
+                </div>
+              </div>
+
+              <div class="action-btn-row mt-3">
+                <button type="button" class="action-btn action-stop" id="btn-quest-stop" onclick="handleStopQuest()" disabled>
+                  Dừng Nhiệm Vụ
+                </button>
+                <button type="button" class="action-btn action-update" onclick="loadAvailableQuests()">
+                  Làm Mới Danh Sách
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Danh Sách Nhiệm Vụ Discord Khả Dụng</div>
+                <div class="card-subtitle-text">Tự động lấy từ Discord Quest API hoặc danh sách đối tác Discord mới nhất</div>
+              </div>
+              <span class="card-badge">Nhiệm Vụ</span>
+            </div>
+
+            <div class="quests-grid" id="quests-list-container">
+              <div class="empty-hint-box">Đang tải danh sách nhiệm vụ Discord...</div>
+            </div>
+          </div>
+
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Nhận Huy Hiệu HypeSquad (HypeSquad Badge Claimer)</div>
+                <div class="card-subtitle-text">Tự động gắn huy hiệu HypeSquad chính thức lên hồ sơ Discord của bạn chỉ với 1 cú click</div>
+              </div>
+              <span class="card-badge">Huy Hiệu</span>
+            </div>
+
+            <div class="hypesquad-grid">
+              <div class="hypesquad-card">
+                <div class="hypesquad-icon bravery">🟣</div>
+                <div class="hypesquad-name">HypeSquad Bravery</div>
+                <div class="hypesquad-color-desc">Màu Tím Quý Tộc</div>
+                <button type="button" class="action-btn action-start w-100 mt-2 py-2" onclick="handleClaimHypeSquad(1)">
+                  Nhận Huy Hiệu Này
+                </button>
+              </div>
+
+              <div class="hypesquad-card">
+                <div class="hypesquad-icon brilliance">🟠</div>
+                <div class="hypesquad-name">HypeSquad Brilliance</div>
+                <div class="hypesquad-color-desc">Màu Cam Năng Động</div>
+                <button type="button" class="action-btn action-start w-100 mt-2 py-2" onclick="handleClaimHypeSquad(2)">
+                  Nhận Huy Hiệu Này
+                </button>
+              </div>
+
+              <div class="hypesquad-card">
+                <div class="hypesquad-icon balance">🟢</div>
+                <div class="hypesquad-name">HypeSquad Balance</div>
+                <div class="hypesquad-color-desc">Màu Xanh Cân Bằng</div>
+                <button type="button" class="action-btn action-start w-100 mt-2 py-2" onclick="handleClaimHypeSquad(3)">
+                  Nhận Huy Hiệu Này
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="main-tab-content" id="tab-lyric">
+          {% if not has_token %}
+          <div class="locked-feature-overlay">
+            <div class="locked-card">
+              <div class="locked-icon-wrap">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="locked-title">Chức Năng Bị Khóa</div>
+              <p class="locked-desc">Cần liên kết Discord Token để hệ thống có thể đẩy câu hát đồng bộ trực tiếp lên Custom Status tài khoản của bạn.</p>
+              <button type="button" class="action-btn action-start px-4 py-2" onclick="switchMainTab('tab-account')">
+                Đi Tới Liên Kết Tài Khoản
+              </button>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="card-rounded mb-3">
+            <div class="card-header-clean">
+              <div>
+                <div class="card-title-text">Trạng Thái Lời Nhạc Theo Thời Gian Thực (Lyric Status Sync)</div>
+                <div class="card-subtitle-text">Phát nhạc trên web, câu hát nhảy đến đâu thì Custom Status Discord đổi ngay đến đó theo từng giây</div>
+              </div>
+              <span class="card-badge">Real-Time Lyric</span>
+            </div>
+
+            <div class="form-grid-2 mb-3">
+              <div class="form-col">
+                <label for="select-lyric-track" class="form-label-clean">Chọn Bài Hát Có Sẵn</label>
+                <select id="select-lyric-track" class="select-rounded" onchange="handleSelectLyricTrack()">
+                  <option value="sunset">Sunset Boulevard (Lofi Chill Beat)</option>
+                  <option value="cyber">Cyber City 2077 (Synthwave Night)</option>
+                  <option value="midnight">Tokyo Midnight Rain (Anime Piano)</option>
+                  <option value="custom">Tự Dán Lời Bài Hát (Custom LRC)</option>
+                </select>
+              </div>
+
+              <div class="form-col">
+                <label for="select-lyric-emoji" class="form-label-clean">Biểu Tượng Cảm Xúc (Status Emoji)</label>
+                <select id="select-lyric-emoji" class="select-rounded">
+                  <option value="🎵">🎵 Nốt Nhạc (Mặc định)</option>
+                  <option value="🎧">🎧 Tai Nghe</option>
+                  <option value="⚡">⚡ Tia Sét Neon</option>
+                  <option value="✦">✦ Ngôi Sao Bạc</option>
+                  <option value="✨">✨ Lấp Lánh</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="audio-player-box mb-3">
+              <audio id="lyric-audio-element" preload="auto"></audio>
+              <div class="audio-controls-row">
+                <button type="button" class="action-btn action-start" id="btn-lyric-play" onclick="handleToggleLyricAudio()">
+                  Bắt Đầu Phát &amp; Đồng Bộ
+                </button>
+                <button type="button" class="action-btn action-stop" id="btn-lyric-stop" onclick="handleStopLyricAudio()" disabled>
+                  Dừng Phát
+                </button>
+                <button type="button" class="action-btn action-save" onclick="handleClearDiscordStatus()">
+                  Xóa Trạng Thái Discord
+                </button>
+              </div>
+              <div class="audio-meta-row mt-2">
+                <span id="audio-time-current">00:00</span>
+                <span class="audio-sync-indicator" id="lyric-sync-indicator">Chưa kích hoạt</span>
+                <span id="audio-time-total">00:00</span>
+              </div>
+            </div>
+
+            <div class="custom-lrc-box mb-3 d-none" id="custom-lrc-group">
+              <label for="input-custom-lrc" class="form-label-clean">Dán nội dung lời bài hát kèm mốc giây (Định dạng [mm:ss] hoặc từng dòng)</label>
+              <textarea id="input-custom-lrc" class="textarea-rounded" rows="4" placeholder="[00:05] Bước trên con đường dài&#10;[00:12] Ánh đèn neon rực sáng&#10;[00:20] Đêm nay ta cùng phiêu lãng..."></textarea>
+            </div>
+
+            <div class="lyric-viewport-container">
+              <div class="lyric-viewport-header">
+                <span>Màn Hình Chạy Lời Bài Hát (Karaoke Live View)</span>
+                <span class="live-pulse-dot"></span>
+              </div>
+              <div class="lyric-lines-wrapper" id="lyric-lines-wrapper">
+                <div class="lyric-line">Bấm "Bắt Đầu Phát &amp; Đồng Bộ" để xem câu hát chạy thời gian thực...</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="main-tab-content" id="tab-account">
           
           <div class="card-rounded mb-3">
             <div class="card-header-clean">
               <div>
-                <div class="card-title-text">Tài Khoản &amp; Developer Portal</div>
-                <div class="card-subtitle-text">Cấu hình Discord User Token và Application ID kết nối</div>
+                <div class="card-title-text">Xác Minh &amp; Liên Kết Discord Account</div>
+                <div class="card-subtitle-text">Ràng buộc Discord Token trực tiếp vào tài khoản web để kích hoạt toàn bộ tính năng</div>
               </div>
-              <span class="card-badge">Xác Thực</span>
+              <span class="card-badge">Tài Khoản Discord</span>
+            </div>
+
+            <div class="discord-account-card mb-3" id="account-status-card">
+              <div class="discord-account-flex">
+                <img src="{{ discord_avatar or 'https://cdn.discordapp.com/embed/avatars/0.png' }}" class="discord-account-avatar" id="account-view-avatar" alt="Avatar">
+                <div class="discord-account-info">
+                  <div class="discord-account-name" id="account-view-name">
+                    {{ discord_username or 'Chưa Liên Kết Discord' }}
+                  </div>
+                  <div class="discord-account-tag" id="account-view-status">
+                    {% if has_token %}
+                      Tài khoản đã xác minh &amp; sẵn sàng hoạt động
+                    {% else %}
+                      Chưa liên kết Discord Token - Vui lòng nhập token bên dưới
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="discord-account-action">
+                  {% if has_token %}
+                    <button type="button" class="action-btn action-stop py-2 px-3" onclick="handleUnbindToken()">
+                      Hủy Liên Kết
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
             </div>
 
             <div class="form-row mb-3">
@@ -476,6 +753,15 @@
               <p class="field-hint-text">
                 Mẹo: Mở Discord Web/App &gt; F12 (Console) &gt; Dán câu lệnh copy &gt; Enter để nhận token an toàn.
               </p>
+            </div>
+
+            <div class="action-btn-row mb-3">
+              <button type="button" class="action-btn action-start" onclick="handleBindToken()">
+                Xác Minh &amp; Liên Kết Token
+              </button>
+              <button type="button" class="action-btn action-save" onclick="handleSaveConfig()">
+                Lưu Cấu Hình
+              </button>
             </div>
 
             <div class="form-grid-2 mb-3">
@@ -798,6 +1084,18 @@
   </div>
 
   
+  <div class="bottom-token-bar {% if has_token %}d-none{% endif %}" id="bottom-token-bar">
+    <div class="bottom-token-content">
+      <div class="bottom-token-left">
+        <span class="bottom-token-tag">Khóa Tính Năng</span>
+        <span class="bottom-token-text">Các chức năng RPC, Auto Quest và Lời Nhạc cần liên kết Discord Account để kích hoạt.</span>
+      </div>
+      <button type="button" class="btn-warning-action" onclick="switchMainTab('tab-account')">
+        Liên Kết Tài Khoản Ngay
+      </button>
+    </div>
+  </div>
+
   <div class="toast-container" id="toast-container"></div>
 
   

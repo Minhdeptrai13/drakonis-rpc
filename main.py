@@ -8,6 +8,9 @@ import asyncio
 import threading
 import webbrowser
 import hashlib
+import random
+import re
+import base64
 from functools import wraps
 from typing import Optional, List, Dict, Union, Any
 if hasattr(sys.stdout, 'reconfigure'):
@@ -15,7 +18,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 import requests
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import discord
@@ -63,10 +66,80 @@ def get_db():
 def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('\n            CREATE TABLE IF NOT EXISTS users (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                username TEXT UNIQUE NOT NULL,\n                password_hash TEXT NOT NULL,\n                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n            )\n        ')
-        cursor.execute('\n            CREATE TABLE IF NOT EXISTS presets (\n                id INTEGER PRIMARY KEY AUTOINCREMENT,\n                user_id INTEGER NOT NULL,\n                name TEXT NOT NULL,\n                config TEXT NOT NULL,\n                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE\n            )\n        ')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                discord_token TEXT DEFAULT '',
+                discord_id TEXT DEFAULT '',
+                discord_username TEXT DEFAULT '',
+                discord_avatar TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS presets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                config TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
+        cursor.execute("PRAGMA table_info(users)")
+        cols = [r['name'] for r in cursor.fetchall()]
+        for col_name in ['discord_token', 'discord_id', 'discord_username', 'discord_avatar']:
+            if col_name not in cols:
+                try:
+                    cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} TEXT DEFAULT ''")
+                except Exception:
+                    pass
         conn.commit()
 init_db()
+
+def generate_captcha_svg():
+    a = random.randint(3, 19)
+    b = random.randint(2, 9)
+    op = random.choice(['+', '-', '*'])
+    if op == '+':
+        ans = a + b
+        text = f"{a} + {b} = ?"
+    elif op == '-':
+        if a < b:
+            a, b = b, a
+        ans = a - b
+        text = f"{a} - {b} = ?"
+    else:
+        a = random.randint(2, 9)
+        b = random.randint(2, 9)
+        ans = a * b
+        text = f"{a} x {b} = ?"
+    session['captcha_answer'] = str(ans)
+    
+    noise_lines = []
+    for _ in range(5):
+        x1 = random.randint(0, 160)
+        y1 = random.randint(0, 46)
+        x2 = random.randint(0, 160)
+        y2 = random.randint(0, 46)
+        noise_lines.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="rgba(99,102,241,0.3)" stroke-width="1.5"/>')
+    noise_dots = []
+    for _ in range(12):
+        cx = random.randint(5, 155)
+        cy = random.randint(5, 41)
+        r = random.randint(1, 3)
+        noise_dots.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="rgba(168,85,247,0.35)"/>')
+    
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="160" height="46" viewBox="0 0 160 46">
+      <rect width="160" height="46" rx="8" fill="#0c101d"/>
+      <rect width="160" height="46" rx="8" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1.2"/>
+      {''.join(noise_lines)}
+      {''.join(noise_dots)}
+      <text x="50%" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="700" fill="#38bdf8" text-anchor="middle" letter-spacing="3">{text}</text>
+    </svg>'''
+    return svg
 
 def login_required(f):
 
@@ -504,14 +577,233 @@ class DiscordRPCWorker:
                         self.loop = None
 rpc_worker = DiscordRPCWorker()
 
+def make_super_properties(build_number: int = 504649) -> str:
+    obj = {
+        "os": "Windows",
+        "browser": "Discord Client",
+        "release_channel": "stable",
+        "client_version": "1.0.9175",
+        "os_version": "10.0.26100",
+        "os_arch": "x64",
+        "app_arch": "x64",
+        "system_locale": "en-US",
+        "browser_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9175 Chrome/128.0.6613.186 Electron/32.2.7 Safari/537.36",
+        "browser_version": "32.2.7",
+        "client_build_number": build_number,
+        "native_build_number": 59498,
+        "client_event_source": None
+    }
+    return base64.b64encode(json.dumps(obj).encode()).decode()
+
+def make_discord_headers(token: str) -> dict:
+    return {
+        "Authorization": token,
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9175 Chrome/128.0.6613.186 Electron/32.2.7 Safari/537.36",
+        "X-Super-Properties": make_super_properties(),
+        "X-Discord-Locale": "en-US",
+        "X-Discord-Timezone": "Asia/Ho_Chi_Minh",
+        "Origin": "https://discord.com",
+        "Referer": "https://discord.com/channels/@me"
+    }
+
+class DiscordUserQuestRunner:
+
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        self.status = 'idle'
+        self.current_quest_id = None
+        self.current_quest_name = None
+        self.task_type = 'PLAY_ON_DESKTOP'
+        self.progress_pct = 0
+        self.target_seconds = 60
+        self.elapsed_seconds = 0
+        self.thread = None
+        self.stop_flag = threading.Event()
+        self.lock = threading.Lock()
+
+    def get_status(self):
+        with self.lock:
+            return {
+                'status': self.status,
+                'quest_id': self.current_quest_id,
+                'quest_name': self.current_quest_name,
+                'task_type': self.task_type,
+                'progress_pct': self.progress_pct,
+                'elapsed_seconds': self.elapsed_seconds,
+                'target_seconds': self.target_seconds
+            }
+
+    def start(self, token: str, quest_id: str, quest_name: str, task_type: str = 'PLAY_ON_DESKTOP', target_seconds: int = 60):
+        self.stop()
+        with self.lock:
+            self.status = 'running'
+            self.current_quest_id = quest_id
+            self.current_quest_name = quest_name
+            self.task_type = task_type
+            self.target_seconds = target_seconds
+            self.progress_pct = 0
+            self.elapsed_seconds = 0
+            self.stop_flag.clear()
+            self.thread = threading.Thread(target=self._run_quest_thread, args=(token, quest_id, quest_name, task_type, target_seconds), daemon=True)
+            self.thread.start()
+
+    def stop(self):
+        with self.lock:
+            self.stop_flag.set()
+            if self.status == 'running':
+                self.status = 'stopped'
+
+    def _enroll_if_needed(self, token: str, quest_id: str):
+        try:
+            headers = make_discord_headers(token)
+            payload = {
+                "location": 11,
+                "is_targeted": False,
+                "metadata_raw": None,
+                "metadata_sealed": None
+            }
+            requests.post(f"https://discord.com/api/v9/quests/{quest_id}/enroll", headers=headers, json=payload, timeout=6)
+        except Exception:
+            pass
+
+    def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
+        log_event(f'Bắt đầu Auto Quest cho tài khoản #{self.user_id}: {quest_name} [{task_type}]', 'info')
+        self._enroll_if_needed(token, quest_id)
+        
+        headers = make_discord_headers(token)
+        pid = random.randint(1000, 30000)
+        stream_key = f"call:0:{pid}" if task_type in ('PLAY_ON_DESKTOP', 'STREAM_ON_DESKTOP') else "call:0:1"
+        is_video = task_type in ('WATCH_VIDEO', 'WATCH_VIDEO_ON_MOBILE')
+
+        step_interval = 1 if is_video else 5
+        seconds_done = 0
+
+        while not self.stop_flag.is_set() and seconds_done < target_seconds:
+            time.sleep(step_interval)
+            if self.stop_flag.is_set():
+                break
+
+            if is_video:
+                seconds_done = min(target_seconds, seconds_done + 7)
+                try:
+                    r = requests.post(f"https://discord.com/api/v9/quests/{quest_id}/video-progress", headers=headers, json={"timestamp": seconds_done + random.random()}, timeout=5)
+                    if r.status_code == 200 and r.json().get('completed_at'):
+                        seconds_done = target_seconds
+                except Exception:
+                    pass
+            else:
+                seconds_done = min(target_seconds, seconds_done + step_interval)
+                if seconds_done % 15 == 0 or seconds_done >= target_seconds:
+                    try:
+                        requests.post(f"https://discord.com/api/v9/quests/{quest_id}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": False}, timeout=6)
+                    except Exception:
+                        pass
+
+            with self.lock:
+                self.elapsed_seconds = seconds_done
+                self.progress_pct = min(100, int((seconds_done / target_seconds) * 100))
+
+            log_event(f'Quest [{quest_name}]: {self.progress_pct}% ({seconds_done}s/{target_seconds}s)', 'info')
+
+        try:
+            if not is_video:
+                requests.post(f"https://discord.com/api/v9/quests/{quest_id}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": True}, timeout=6)
+            else:
+                requests.post(f"https://discord.com/api/v9/quests/{quest_id}/video-progress", headers=headers, json={"timestamp": target_seconds}, timeout=5)
+        except Exception:
+            pass
+
+        with self.lock:
+            if not self.stop_flag.is_set() and seconds_done >= target_seconds:
+                self.status = 'completed'
+                self.progress_pct = 100
+                log_event(f'Hoàn thành xuất sắc nhiệm vụ: {quest_name}!', 'success')
+            else:
+                if self.status != 'completed':
+                    self.status = 'stopped'
+                log_event(f'Đã dừng nhiệm vụ: {quest_name}', 'info')
+
+USER_QUEST_RUNNERS = {}
+USER_QUEST_LOCK = threading.Lock()
+
+def get_user_quest_runner(user_id: int) -> DiscordUserQuestRunner:
+    with USER_QUEST_LOCK:
+        if user_id not in USER_QUEST_RUNNERS:
+            USER_QUEST_RUNNERS[user_id] = DiscordUserQuestRunner(user_id)
+        return USER_QUEST_RUNNERS[user_id]
+
+class DiscordLyricWorker:
+
+    def update_lyric(self, token: str, text: str, emoji: str = '🎵'):
+        if not token or not text:
+            return False, 'Thiếu token hoặc câu hát'
+        try:
+            headers = {
+                'Authorization': token,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            payload = {
+                'custom_status': {
+                    'text': str(text)[:128],
+                    'emoji_name': emoji
+                }
+            }
+            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=5)
+            if res.status_code == 200:
+                return True, 'Đã cập nhật câu hát lên Discord Status'
+            return False, f'Discord trả về lỗi mã {res.status_code}'
+        except Exception as e:
+            return False, str(e)
+
+    def clear_lyric(self, token: str):
+        if not token:
+            return False, 'Thiếu token'
+        try:
+            headers = {
+                'Authorization': token,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            payload = {'custom_status': None}
+            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=5)
+            if res.status_code == 200:
+                return True, 'Đã xóa trạng thái câu hát trên Discord'
+            return False, f'Discord trả về lỗi mã {res.status_code}'
+        except Exception as e:
+            return False, str(e)
+
+lyric_worker = DiscordLyricWorker()
+
+@app.route('/api/captcha')
+def api_captcha():
+    svg = generate_captcha_svg()
+    return Response(svg, mimetype='image/svg+xml')
+
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html', username=session.get('username'))
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT username, discord_token, discord_username, discord_avatar FROM users WHERE id = ?', (user_id,))
+        u = cursor.fetchone()
+    has_token = bool(u and u['discord_token'] and len(u['discord_token']) > 20)
+    d_name = (u['discord_username'] if u and u['discord_username'] else None)
+    d_avatar = (u['discord_avatar'] if u and u['discord_avatar'] else None)
+    return render_template('index.html', username=session.get('username'), has_token=has_token, discord_username=d_name, discord_avatar=d_avatar)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
+        captcha = request.form.get('captcha', '').strip()
+        expected = str(session.get('captcha_answer', ''))
+        if not captcha or captcha != expected:
+            flash('Mã Captcha không chính xác! Vui lòng tính lại kết quả.', 'error')
+            return redirect(url_for('login'))
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         if not username or not password:
@@ -524,6 +816,10 @@ def login():
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
+            if user['discord_token']:
+                session['discord_token'] = user['discord_token']
+                session['discord_username'] = user['discord_username']
+                session['discord_avatar'] = user['discord_avatar']
             flash(f'Chào mừng trở lại, {username}!', 'success')
             return redirect(url_for('index'))
         else:
@@ -533,6 +829,11 @@ def login():
 
 @app.route('/register', methods=['POST'])
 def register():
+    captcha = request.form.get('captcha', '').strip()
+    expected = str(session.get('captcha_answer', ''))
+    if not captcha or captcha != expected:
+        flash('Mã Captcha không chính xác! Vui lòng tính lại kết quả.', 'error')
+        return redirect(url_for('login'))
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
@@ -561,6 +862,271 @@ def logout():
     session.clear()
     flash('Đã đăng xuất thành công.', 'info')
     return redirect(url_for('login'))
+
+@app.route('/api/account/info', methods=['GET'])
+@login_required
+def api_account_info():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT username, discord_token, discord_id, discord_username, discord_avatar FROM users WHERE id = ?', (user_id,))
+        u = cursor.fetchone()
+    if not u:
+        return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản'}), 404
+    token = u['discord_token'] or ''
+    has_token = bool(token and len(token) > 20)
+    masked = (token[:10] + '...' + token[-6:]) if has_token else ''
+    return jsonify({
+        'success': True,
+        'username': u['username'],
+        'has_token': has_token,
+        'discord_id': u['discord_id'] or '',
+        'discord_username': u['discord_username'] or '',
+        'discord_avatar': u['discord_avatar'] or '',
+        'masked_token': masked
+    })
+
+@app.route('/api/account/bind_token', methods=['POST'])
+@login_required
+def api_account_bind_token():
+    data = request.get_json() or {}
+    token = data.get('token', '').strip()
+    if not token:
+        return jsonify({'success': False, 'message': 'Vui lòng cung cấp Discord User Token'}), 400
+    try:
+        headers = {
+            'Authorization': token,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        res = requests.get('https://discord.com/api/v9/users/@me', headers=headers, timeout=8)
+        if res.status_code != 200:
+            return jsonify({'success': False, 'message': f'Token Discord không hợp lệ hoặc đã hết hạn (Mã lỗi {res.status_code})'}), 400
+        user_info = res.json()
+        d_id = str(user_info.get('id', ''))
+        d_username = user_info.get('global_name') or user_info.get('username') or 'Discord User'
+        avatar_hash = user_info.get('avatar')
+        d_avatar = f"https://cdn.discordapp.com/avatars/{d_id}/{avatar_hash}.png?size=128" if avatar_hash else "https://cdn.discordapp.com/embed/avatars/0.png"
+
+        user_id = session['user_id']
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
+                           (token, d_id, d_username, d_avatar, user_id))
+            conn.commit()
+
+        session['discord_token'] = token
+        session['discord_username'] = d_username
+        session['discord_avatar'] = d_avatar
+        log_event(f'Tài khoản {session.get("username")} đã liên kết Discord: {d_username} ({d_id})', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Liên kết thành công với Discord: {d_username}!',
+            'discord_id': d_id,
+            'discord_username': d_username,
+            'discord_avatar': d_avatar
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi kết nối xác minh Discord: {str(e)}'}), 500
+
+@app.route('/api/account/unbind_token', methods=['POST'])
+@login_required
+def api_account_unbind_token():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE users SET discord_token = "", discord_id = "", discord_username = "", discord_avatar = "" WHERE id = ?', (user_id,))
+        conn.commit()
+    session.pop('discord_token', None)
+    session.pop('discord_username', None)
+    session.pop('discord_avatar', None)
+    log_event(f'Đã hủy liên kết Discord Token cho tài khoản {session.get("username")}', 'info')
+    return jsonify({'success': True, 'message': 'Đã hủy liên kết token thành công'})
+
+@app.route('/api/quests', methods=['GET'])
+@login_required
+def api_quests():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    
+    quests = [
+        {
+            'id': 'quest_genshin_v5',
+            'title': 'Genshin Impact: Khám Phá Vùng Đất Mới',
+            'game_name': 'Genshin Impact',
+            'reward': '30 Nguyên Thạch + Khung Avatar Đặc Biệt',
+            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812425932820.png',
+            'target_seconds': 45,
+            'badge': 'Hot Promo'
+        },
+        {
+            'id': 'quest_honkai_starrail',
+            'title': 'Honkai: Star Rail: Hành Trình Khai Phá',
+            'game_name': 'Honkai: Star Rail',
+            'reward': '60 Ngọc Ánh Sao + 1 Tháng Discord Nitro Trial',
+            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298453284323538.png',
+            'target_seconds': 50,
+            'badge': 'Đối Tác Discord'
+        },
+        {
+            'id': 'quest_valorant_masters',
+            'title': 'VALORANT: Chiến Trường Sinh Tử',
+            'game_name': 'VALORANT',
+            'reward': 'Danh hiệu Độc Quyền + Huy Hiệu Hồ Sơ',
+            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823040.png',
+            'target_seconds': 40,
+            'badge': 'Mới'
+        },
+        {
+            'id': 'quest_discord_desktop',
+            'title': 'Discord Desktop Streaming Challenge',
+            'game_name': 'Discord Desktop App',
+            'reward': 'Huy Hiệu Streaming Star Trên Hồ Sơ',
+            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299466493956258.png',
+            'target_seconds': 30,
+            'badge': 'Hàng Tuần'
+        }
+    ]
+
+    if token:
+        try:
+            headers = {'Authorization': token, 'User-Agent': 'Mozilla/5.0'}
+            res = requests.get('https://discord.com/api/v9/quests/@me', headers=headers, timeout=6)
+            if res.status_code == 200:
+                raw = res.json()
+                raw_quests = raw.get('quests', [])
+                if raw_quests:
+                    extracted = []
+                    for q in raw_quests:
+                        qid = str(q.get('id', ''))
+                        cfg = q.get('config', {})
+                        msgs = cfg.get('messages', {})
+                        qtitle = msgs.get('quest_name') or msgs.get('game_title') or 'Nhiệm Vụ Discord'
+                        game_title = msgs.get('game_title') or 'Trò Chơi Discord'
+                        extracted.append({
+                            'id': qid,
+                            'title': qtitle,
+                            'game_name': game_title,
+                            'reward': 'Phần Thưởng Độc Quyền Discord',
+                            'banner': 'https://cdn.discordapp.com/embed/avatars/1.png',
+                            'target_seconds': 60,
+                            'badge': 'Discord API'
+                        })
+                    if extracted:
+                        quests = extracted
+        except Exception:
+            pass
+
+    runner = get_user_quest_runner(user_id)
+    return jsonify({
+        'success': True,
+        'quests': quests,
+        'worker_status': runner.get_status()
+    })
+
+@app.route('/api/quests/start', methods=['POST'])
+@login_required
+def api_quests_start():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Vui lòng liên kết Discord Token trước khi cày Quest!'}), 400
+
+    data = request.get_json() or {}
+    quest_id = data.get('quest_id', 'quest_discord_desktop')
+    quest_name = data.get('quest_name', 'Nhiệm Vụ Discord')
+    task_type = data.get('task_type', 'PLAY_ON_DESKTOP')
+    target_seconds = int(data.get('target_seconds', 45))
+
+    runner = get_user_quest_runner(user_id)
+    runner.start(token, quest_id, quest_name, task_type=task_type, target_seconds=target_seconds)
+    return jsonify({'success': True, 'message': f'Đã bắt đầu chạy Auto Quest cho {quest_name}!'})
+
+@app.route('/api/quests/stop', methods=['POST'])
+@login_required
+def api_quests_stop():
+    user_id = session['user_id']
+    runner = get_user_quest_runner(user_id)
+    runner.stop()
+    return jsonify({'success': True, 'message': 'Đã dừng tiến trình Auto Quest'})
+
+@app.route('/api/quests/status', methods=['GET'])
+@login_required
+def api_quests_status():
+    user_id = session['user_id']
+    runner = get_user_quest_runner(user_id)
+    return jsonify({'success': True, 'status': runner.get_status()})
+
+@app.route('/api/hypesquad/claim', methods=['POST'])
+@login_required
+def api_hypesquad_claim():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Vui lòng liên kết Discord Token trước!'}), 400
+
+    data = request.get_json() or {}
+    house_id = int(data.get('house_id', 1))
+    houses = {1: 'Bravery (Tím)', 2: 'Brilliance (Cam)', 3: 'Balance (Xanh Lá)'}
+    house_name = houses.get(house_id, 'Bravery')
+
+    try:
+        headers = make_discord_headers(token)
+        res = requests.post('https://discord.com/api/v9/hypesquad/online', headers=headers, json={'house_id': house_id}, timeout=8)
+        if res.status_code == 204:
+            log_event(f'Nhận thành công huy hiệu HypeSquad {house_name} cho tài khoản {session.get("username")}', 'success')
+            return jsonify({'success': True, 'message': f'Chúc mừng! Đã nhận thành công huy hiệu HypeSquad {house_name}!'})
+        elif res.status_code == 429:
+            retry = res.headers.get('Retry-After', '60')
+            return jsonify({'success': False, 'message': f'Discord Rate Limited. Vui lòng thử lại sau {retry}s'}), 429
+        else:
+            return jsonify({'success': False, 'message': f'Không thể nhận huy hiệu (Mã lỗi {res.status_code})'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi kết nối: {str(e)}'}), 500
+
+@app.route('/api/lyrics/sync', methods=['POST'])
+@login_required
+def api_lyrics_sync():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Tài khoản chưa liên kết Discord Token!'}), 400
+
+    data = request.get_json() or {}
+    text = data.get('text', '').strip()
+    emoji = data.get('emoji', '🎵').strip()
+    ok, msg = lyric_worker.update_lyric(token, text, emoji=emoji)
+    return jsonify({'success': ok, 'message': msg})
+
+@app.route('/api/lyrics/clear', methods=['POST'])
+@login_required
+def api_lyrics_clear():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Tài khoản chưa liên kết Discord Token!'}), 400
+
+    ok, msg = lyric_worker.clear_lyric(token)
+    return jsonify({'success': ok, 'message': msg})
 
 @app.route('/api/status', methods=['GET'])
 @login_required
