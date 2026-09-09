@@ -11,8 +11,10 @@ import hashlib
 import random
 import re
 import base64
+import io
 from functools import wraps
 from typing import Optional, List, Dict, Union, Any
+from PIL import Image, ImageDraw, ImageFilter
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 if hasattr(sys.stderr, 'reconfigure'):
@@ -45,9 +47,30 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 UPLOAD_PATH_MAP = {}
-KNOWN_ASSET_ICONS = {'vscode': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299466493956258.png', 'python': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299282380918886.png', 'git': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298453284323538.png', 'docker': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823040.png', 'js': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299016025964687.png', 'ts': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299427059236984.png', 'jsx': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299015983894651.png', 'tsx': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299426262319284.png', 'html': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823041.png', 'css': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812694364230.png', 'c': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812165881958.png', 'cpp': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812425932820.png', 'csharp': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812555952138.png', 'java': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299015862255717.png', 'rust': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299282934567013.png', 'go': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813357064273.png'}
+KNOWN_ASSET_ICONS = {
+    'vscode': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg',
+    'python': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+    'git': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg',
+    'docker': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
+    'js': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
+    'ts': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
+    'jsx': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
+    'tsx': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
+    'html': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
+    'css': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg',
+    'c': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg',
+    'cpp': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
+    'csharp': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg',
+    'java': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
+    'rust': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg',
+    'go': 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg'
+}
 LOG_BUFFER = []
 MAX_LOG_ENTRIES = 120
+
+QUEST_LOG_BUFFER = []
+QUEST_LOG_LOCK = threading.Lock()
+MAX_QUEST_LOG_ENTRIES = 200
 
 def log_event(message: str, level: str='info'):
     timestamp = time.strftime('%H:%M:%S')
@@ -56,6 +79,17 @@ def log_event(message: str, level: str='info'):
     if len(LOG_BUFFER) > MAX_LOG_ENTRIES:
         LOG_BUFFER.pop(0)
     print(f'[{timestamp}] [{level.upper()}] {message}')
+
+def quest_log(message: str, level: str = 'info'):
+    """Push log entry into QUEST_LOG_BUFFER for realtime terminal display"""
+    timestamp = time.strftime('%H:%M:%S')
+    entry = {'time': timestamp, 'message': str(message), 'level': level}
+    with QUEST_LOG_LOCK:
+        QUEST_LOG_BUFFER.append(entry)
+        if len(QUEST_LOG_BUFFER) > MAX_QUEST_LOG_ENTRIES:
+            QUEST_LOG_BUFFER.pop(0)
+    print(f'[QUEST][{timestamp}] [{level.upper()}] {message}')
+
 log_event('Hệ thống Discord RPC Master v2.2 đã sẵn sàng hoạt động.', 'info')
 
 def get_db():
@@ -90,7 +124,7 @@ def init_db():
         ''')
         cursor.execute("PRAGMA table_info(users)")
         cols = [r['name'] for r in cursor.fetchall()]
-        for col_name in ['discord_token', 'discord_id', 'discord_username', 'discord_avatar']:
+        for col_name in ['discord_token', 'discord_id', 'discord_username', 'discord_avatar', 'config']:
             if col_name not in cols:
                 try:
                     cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} TEXT DEFAULT ''")
@@ -99,47 +133,97 @@ def init_db():
         conn.commit()
 init_db()
 
-def generate_captcha_svg():
-    a = random.randint(3, 19)
-    b = random.randint(2, 9)
-    op = random.choice(['+', '-', '*'])
-    if op == '+':
-        ans = a + b
-        text = f"{a} + {b} = ?"
-    elif op == '-':
-        if a < b:
-            a, b = b, a
-        ans = a - b
-        text = f"{a} - {b} = ?"
-    else:
-        a = random.randint(2, 9)
-        b = random.randint(2, 9)
-        ans = a * b
-        text = f"{a} x {b} = ?"
-    session['captcha_answer'] = str(ans)
-    
-    noise_lines = []
-    for _ in range(5):
-        x1 = random.randint(0, 160)
-        y1 = random.randint(0, 46)
-        x2 = random.randint(0, 160)
-        y2 = random.randint(0, 46)
-        noise_lines.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="rgba(99,102,241,0.3)" stroke-width="1.5"/>')
-    noise_dots = []
-    for _ in range(12):
-        cx = random.randint(5, 155)
-        cy = random.randint(5, 41)
-        r = random.randint(1, 3)
-        noise_dots.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="rgba(168,85,247,0.35)"/>')
-    
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="160" height="46" viewBox="0 0 160 46">
-      <rect width="160" height="46" rx="8" fill="#0c101d"/>
-      <rect width="160" height="46" rx="8" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1.2"/>
-      {''.join(noise_lines)}
-      {''.join(noise_dots)}
-      <text x="50%" y="30" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="700" fill="#38bdf8" text-anchor="middle" letter-spacing="3">{text}</text>
-    </svg>'''
-    return svg
+def generate_slide_captcha():
+    """Tạo captcha trượt TikTok-style siêu xịn từ hình nền ngẫu nhiên và cắt khối puzzle ghép"""
+    width, height = 320, 160
+    piece_w, piece_h = 44, 44
+
+    # Thử lấy ảnh đẹp từ picsum hoặc internet, fallback sang gradient canvas cực đẹp
+    bg_img = None
+    try:
+        urls = [
+            'https://picsum.photos/320/160?random=' + str(random.randint(1, 9999)),
+            'https://picsum.photos/320/160'
+        ]
+        url = random.choice(urls)
+        res = requests.get(url, timeout=2.5)
+        if res.status_code == 200:
+            bg_img = Image.open(io.BytesIO(res.content)).convert('RGBA')
+            if bg_img.size != (width, height):
+                bg_img = bg_img.resize((width, height), Image.Resampling.LANCZOS)
+    except Exception:
+        bg_img = None
+
+    if bg_img is None:
+        # Fallback render canvas cyberpunk/cyber neon siêu đẹp nếu không có mạng
+        bg_img = Image.new('RGBA', (width, height), (15, 23, 42, 255))
+        draw = ImageDraw.Draw(bg_img)
+        # Gradient background
+        for y in range(height):
+            r = int(15 + (45 - 15) * (y / height))
+            g = int(23 + (15 - 23) * (y / height))
+            b = int(42 + (90 - 42) * (y / height))
+            draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
+        # Grid lines
+        for i in range(0, width, 24):
+            draw.line([(i, 0), (i, height)], fill=(99, 102, 241, 40), width=1)
+        for j in range(0, height, 20):
+            draw.line([(0, j), (width, j)], fill=(6, 182, 212, 40), width=1)
+        # Random cyber decorative circles/arcs
+        for _ in range(8):
+            cx = random.randint(20, width - 20)
+            cy = random.randint(20, height - 20)
+            rad = random.randint(15, 45)
+            draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], outline=(129, 140, 248, 80), width=2)
+            draw.text((cx - 10, cy - 8), "#RPC", fill=(56, 189, 248, 120))
+
+    # Tọa độ khối ghép mục tiêu (Target X, Y)
+    target_x = random.randint(80, width - piece_w - 20)
+    target_y = random.randint(15, height - piece_h - 15)
+
+    # Lưu đáp án chính xác vào session
+    session['slide_target_x'] = target_x
+    session['slide_target_y'] = target_y
+    session['slide_verified'] = False
+
+    # Tạo mask bo góc cho mảnh ghép (puzzle shape)
+    mask = Image.new('L', (piece_w, piece_h), 0)
+    m_draw = ImageDraw.Draw(mask)
+    m_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, fill=255)
+
+    # Cắt mảnh ghép từ ảnh nền
+    crop = bg_img.crop((target_x, target_y, target_x + piece_w, target_y + piece_h))
+    piece_img = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 0))
+    piece_img.paste(crop, (0, 0), mask)
+
+    # Viền phát sáng cho mảnh ghép
+    p_draw = ImageDraw.Draw(piece_img)
+    p_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, outline=(99, 102, 241, 255), width=2)
+
+    # Đục lỗ (khuyết) trên ảnh nền chính
+    hole = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 215))
+    bg_img.paste(hole, (target_x, target_y), mask)
+    bg_draw = ImageDraw.Draw(bg_img)
+    bg_draw.rounded_rectangle([target_x, target_y, target_x + piece_w - 1, target_y + piece_h - 1], radius=7, outline=(255, 255, 255, 180), width=2)
+
+    # Chuyển đổi sang base64 PNG
+    bg_buffer = io.BytesIO()
+    bg_img.convert('RGB').save(bg_buffer, format='JPEG', quality=88)
+    bg_base64 = base64.b64encode(bg_buffer.getvalue()).decode('utf-8')
+
+    piece_buffer = io.BytesIO()
+    piece_img.save(piece_buffer, format='PNG')
+    piece_base64 = base64.b64encode(piece_buffer.getvalue()).decode('utf-8')
+
+    return {
+        'bg_image': f"data:image/jpeg;base64,{bg_base64}",
+        'piece_image': f"data:image/png;base64,{piece_base64}",
+        'target_y': target_y,
+        'piece_width': piece_w,
+        'piece_height': piece_h,
+        'bg_width': width,
+        'bg_height': height
+    }
 
 def login_required(f):
 
@@ -351,7 +435,14 @@ class DiscordRPCWorker:
             img_val = ''
         img_val = img_val.strip()
         lower_val = img_val.lower()
+
+        # NẾU LÀ ẢNH NHỎ VÀ NGƯỜI DÙNG KHÔNG NHẬP HOẶC ĐÃ GỠ -> TRẢ VỀ NONE HẲN (KHÔNG HIỆN ẢNH NHỎ TRÊN DISCORD)
+        if prefix == 's' and not img_val:
+            return None
+
         if lower_val in ('', 'bot', 'app', 'bot_avatar', 'app_icon', 'developer_portal', 'portal', 'default'):
+            if prefix == 's':
+                return None
             if app:
                 try:
                     bot = getattr(app, 'bot', None)
@@ -401,7 +492,7 @@ class DiscordRPCWorker:
                     return icon_url
             except Exception as icon_err:
                 print(f'[RPC Worker] Lưu ý cập nhật App Icon: {icon_err}')
-        if app:
+        if app and prefix == 'l':
             try:
                 bot = getattr(app, 'bot', None)
                 if not bot and hasattr(app, 'fetch_bot'):
@@ -414,9 +505,7 @@ class DiscordRPCWorker:
                 pass
         if prefix == 'l':
             return KNOWN_ASSET_ICONS.get('vscode')
-        elif prefix == 's':
-            return KNOWN_ASSET_ICONS.get('python')
-        return img_val
+        return None
 
     async def _build_activity(self, config):
         activity_type_str = config.get('activityType', 'playing')
@@ -577,7 +666,83 @@ class DiscordRPCWorker:
                         self.loop = None
 rpc_worker = DiscordRPCWorker()
 
-def make_super_properties(build_number: int = 504649) -> str:
+def normalize_rpc_config(data: dict) -> dict:
+    if not isinstance(data, dict):
+        return {}
+    out = dict(data)
+    
+    # Map snake_case to camelCase
+    if 'name' in data and not data.get('activityName'):
+        out['activityName'] = data['name']
+    if 'activity_name' in data and not data.get('activityName'):
+        out['activityName'] = data['activity_name']
+    if not out.get('activityName'):
+        out['activityName'] = 'Visual Studio Code'
+        
+    if 'activity_type' in data and not data.get('activityType'):
+        out['activityType'] = data['activity_type']
+    if 'stream_url' in data and not data.get('streamUrl'):
+        out['streamUrl'] = data['stream_url']
+    if 'large_image' in data and not data.get('largeImage'):
+        out['largeImage'] = data['large_image']
+    if 'small_image' in data and not data.get('smallImage'):
+        out['smallImage'] = data['small_image']
+    if 'large_text' in data and not data.get('largeText'):
+        out['largeText'] = data['large_text']
+    if 'small_text' in data and not data.get('smallText'):
+        out['smallText'] = data['small_text']
+    if 'app_id' in data and not data.get('appId'):
+        out['appId'] = data['app_id']
+    if 'use_timestamp' in data and not data.get('hasTimestamp'):
+        out['hasTimestamp'] = bool(data['use_timestamp'])
+        
+    # Buttons
+    buttons = data.get('buttons', [])
+    if isinstance(buttons, list) and len(buttons) > 0:
+        if len(buttons) >= 1 and isinstance(buttons[0], dict):
+            out['btn1Label'] = buttons[0].get('label', '')
+            out['btn1Url'] = buttons[0].get('url', '')
+        if len(buttons) >= 2 and isinstance(buttons[1], dict):
+            out['btn2Label'] = buttons[1].get('label', '')
+            out['btn2Url'] = buttons[1].get('url', '')
+            
+    return out
+
+
+_DISCORD_BUILD_NUMBER = None
+_DISCORD_BUILD_NUMBER_TIME = 0
+
+def fetch_latest_build_number() -> int:
+    global _DISCORD_BUILD_NUMBER, _DISCORD_BUILD_NUMBER_TIME
+    FALLBACK = 504649
+    now = time.time()
+    if _DISCORD_BUILD_NUMBER and (now - _DISCORD_BUILD_NUMBER_TIME) < 86400:
+        return _DISCORD_BUILD_NUMBER
+    try:
+        ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        r = requests.get("https://discord.com/app", headers={"User-Agent": ua}, timeout=6)
+        if r.status_code == 200:
+            scripts = re.findall(r'/assets/([a-f0-9]+)\.js', r.text)
+            if not scripts:
+                scripts_alt = re.findall(r'src="(/assets/[^"]+\.js)"', r.text)
+                scripts = [s.split('/')[-1].replace('.js', '') for s in scripts_alt]
+            for asset_hash in scripts[-5:]:
+                try:
+                    ar = requests.get(f"https://discord.com/assets/{asset_hash}.js", headers={"User-Agent": ua}, timeout=6)
+                    m = re.search(r'buildNumber["\s:]+["\s]*(\d{5,7})', ar.text)
+                    if m:
+                        _DISCORD_BUILD_NUMBER = int(m.group(1))
+                        _DISCORD_BUILD_NUMBER_TIME = now
+                        return _DISCORD_BUILD_NUMBER
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return _DISCORD_BUILD_NUMBER or FALLBACK
+
+def make_super_properties(build_number: int = None) -> str:
+    if not build_number:
+        build_number = fetch_latest_build_number()
     obj = {
         "os": "Windows",
         "browser": "Discord Client",
@@ -609,8 +774,110 @@ def make_discord_headers(token: str) -> dict:
         "Referer": "https://discord.com/channels/@me"
     }
 
-class DiscordUserQuestRunner:
+SUPPORTED_QUEST_TASKS = [
+    "WATCH_VIDEO",
+    "PLAY_ON_DESKTOP",
+    "STREAM_ON_DESKTOP",
+    "PLAY_ACTIVITY",
+    "WATCH_VIDEO_ON_MOBILE",
+]
 
+def _quest_get(d, *keys):
+    if not isinstance(d, dict):
+        return None
+    for k in keys:
+        if k in d:
+            return d[k]
+    return None
+
+def parse_discord_quest_item(q: dict) -> dict:
+    qid = str(q.get("id", ""))
+    cfg = q.get("config", {})
+    msgs = cfg.get("messages", {})
+    name = _quest_get(msgs, "questName", "quest_name") or _quest_get(msgs, "gameTitle", "game_title") or cfg.get("application", {}).get("name") or f"Quest #{qid}"
+    game = _quest_get(msgs, "gameTitle", "game_title") or cfg.get("application", {}).get("name") or "Discord Game"
+    
+    # Task config
+    tc = _quest_get(cfg, "taskConfig", "task_config", "taskConfigV2", "task_config_v2") or {}
+    tasks = tc.get("tasks", {})
+    task_type = None
+    target_seconds = 0
+    for t in SUPPORTED_QUEST_TASKS:
+        if tasks.get(t) is not None:
+            task_type = t
+            target_seconds = tasks[t].get("target", 0)
+            break
+
+    # Kiểm tra hạn quest
+    expires_at = _quest_get(cfg, "expiresAt", "expires_at")
+    is_expired = False
+    if expires_at:
+        try:
+            exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            if exp_dt <= datetime.now(timezone.utc):
+                is_expired = True
+        except Exception:
+            pass
+
+    # Chỉ tính là completable khi có task_type được hỗ trợ cày tự động và chưa hết hạn
+    completable = bool(task_type is not None and not is_expired)
+
+    # User Status
+    us = _quest_get(q, "userStatus", "user_status") or {}
+    enrolled = bool(_quest_get(us, "enrolledAt", "enrolled_at"))
+    completed = bool(_quest_get(us, "completedAt", "completed_at"))
+    
+    prog = us.get("progress", {}) or {}
+    seconds_done = 0
+    if task_type and task_type in prog and isinstance(prog[task_type], dict):
+        seconds_done = prog[task_type].get("value", 0)
+    elif "value" in prog:
+        seconds_done = prog.get("value", 0)
+
+    pct = 0
+    if target_seconds > 0:
+        pct = min(100, int((seconds_done / target_seconds) * 100))
+    if completed:
+        pct = 100
+
+    # Banner / Asset
+    assets = cfg.get("assets", {})
+    banner_url = assets.get("hero") or assets.get("banner") or assets.get("quest_bar_hero")
+    if not banner_url:
+        banner_url = "https://cdn.discordapp.com/embed/avatars/0.png"
+    elif not banner_url.startswith("http"):
+        banner_url = f"https://cdn.discordapp.com/assets/{qid}/{banner_url}.png"
+
+    # Rewards
+    rewards_config = cfg.get("rewards_config", {}) or cfg.get("rewardsConfig", {})
+    rewards_list = rewards_config.get("rewards", [])
+    reward_name = "Phần Thưởng Độc Quyền Discord"
+    if rewards_list and isinstance(rewards_list[0], dict):
+        reward_name = rewards_list[0].get("name") or rewards_list[0].get("description") or reward_name
+
+    return {
+        "id": qid,
+        "title": name,
+        "name": name,
+        "game_name": game,
+        "app_name": game,
+        "task_type": task_type or "UNSUPPORTED",
+        "type": task_type or "UNSUPPORTED",
+        "target_seconds": int(target_seconds) if target_seconds else 0,
+        "seconds_done": float(seconds_done),
+        "progress_pct": pct,
+        "enrolled": enrolled,
+        "completed": completed,
+        "completable": completable,
+        "is_expired": is_expired,
+        "banner": banner_url,
+        "banner_url": banner_url,
+        "reward": reward_name,
+        "rewards_text": reward_name,
+        "badge": "Discord Quest"
+    }
+
+class DiscordUserQuestRunner:
     def __init__(self, user_id: int):
         self.user_id = user_id
         self.status = 'idle'
@@ -620,6 +887,7 @@ class DiscordUserQuestRunner:
         self.progress_pct = 0
         self.target_seconds = 60
         self.elapsed_seconds = 0
+        self.is_auto_mode = False
         self.thread = None
         self.stop_flag = threading.Event()
         self.lock = threading.Lock()
@@ -633,21 +901,46 @@ class DiscordUserQuestRunner:
                 'task_type': self.task_type,
                 'progress_pct': self.progress_pct,
                 'elapsed_seconds': self.elapsed_seconds,
-                'target_seconds': self.target_seconds
+                'target_seconds': self.target_seconds,
+                'is_auto_mode': self.is_auto_mode
             }
+
+    def start_auto(self, token: str):
+        """Bắt đầu chạy tự động toàn bộ: Tự quét, tự nhận (enroll) và tự cày lần lượt từng quest tới khi xong hết"""
+        self.stop()
+        with self.lock:
+            self.status = 'running'
+            self.is_auto_mode = True
+            self.current_quest_id = None
+            self.current_quest_name = "Tự Động Quét & Hoàn Thành Quest"
+            self.progress_pct = 0
+            self.elapsed_seconds = 0
+            self.target_seconds = 100
+            self.stop_flag.clear()
+            self.thread = threading.Thread(
+                target=self._run_auto_quest_loop,
+                args=(token,),
+                daemon=True
+            )
+            self.thread.start()
 
     def start(self, token: str, quest_id: str, quest_name: str, task_type: str = 'PLAY_ON_DESKTOP', target_seconds: int = 60):
         self.stop()
         with self.lock:
             self.status = 'running'
+            self.is_auto_mode = False
             self.current_quest_id = quest_id
             self.current_quest_name = quest_name
             self.task_type = task_type
-            self.target_seconds = target_seconds
+            self.target_seconds = max(10, int(target_seconds))
             self.progress_pct = 0
             self.elapsed_seconds = 0
             self.stop_flag.clear()
-            self.thread = threading.Thread(target=self._run_quest_thread, args=(token, quest_id, quest_name, task_type, target_seconds), daemon=True)
+            self.thread = threading.Thread(
+                target=self._run_quest_thread,
+                args=(token, quest_id, quest_name, task_type, self.target_seconds),
+                daemon=True
+            )
             self.thread.start()
 
     def stop(self):
@@ -656,30 +949,319 @@ class DiscordUserQuestRunner:
             if self.status == 'running':
                 self.status = 'stopped'
 
-    def _enroll_if_needed(self, token: str, quest_id: str):
+    def enroll(self, token: str, quest_id: str) -> bool:
+        headers = make_discord_headers(token)
+        for attempt in range(1, 4):
+            try:
+                payload = {
+                    "location": 11,
+                    "is_targeted": False,
+                    "metadata_raw": None,
+                    "metadata_sealed": None
+                }
+                res = requests.post(f"https://discord.com/api/v9/quests/{quest_id}/enroll", headers=headers, json=payload, timeout=10)
+                if res.status_code in (200, 201, 204):
+                    return True
+                if res.status_code == 429:
+                    wait = res.json().get("retry_after", 5) + 1
+                    time.sleep(wait)
+                    continue
+                return False
+            except Exception:
+                pass
+        return False
+
+    def _fetch_quests(self, token: str) -> list:
         try:
             headers = make_discord_headers(token)
-            payload = {
-                "location": 11,
-                "is_targeted": False,
-                "metadata_raw": None,
-                "metadata_sealed": None
-            }
-            requests.post(f"https://discord.com/api/v9/quests/{quest_id}/enroll", headers=headers, json=payload, timeout=6)
+            r = requests.get("https://discord.com/api/v9/quests/@me", headers=headers, timeout=12)
+            if r.status_code == 200:
+                data = r.json()
+                if isinstance(data, dict):
+                    return data.get("quests", [])
+                elif isinstance(data, list):
+                    return data
+            elif r.status_code == 429:
+                wait = r.json().get("retry_after", 5) + 1
+                time.sleep(wait)
+                return self._fetch_quests(token)
+        except Exception as e:
+            quest_log(f"Lỗi khi lấy danh sách quest: {e}", "error")
+        return []
+
+    def _complete_video(self, token: str, qid: str, name: str, seconds_needed: int, seconds_done: float, enrolled_ts: float):
+        headers = make_discord_headers(token)
+        speed = 7
+        interval = 1
+        max_future = 10
+
+        quest_log(f"🎬 Video: {name} ({int(seconds_done)}/{seconds_needed}s)", "info")
+
+        while not self.stop_flag.is_set() and seconds_done < seconds_needed:
+            max_allowed = (time.time() - enrolled_ts) + max_future
+            diff = max_allowed - seconds_done
+            timestamp = seconds_done + speed
+
+            if diff >= speed:
+                try:
+                    payload = {"timestamp": min(seconds_needed, timestamp + random.random())}
+                    r = requests.post(f"https://discord.com/api/v9/quests/{qid}/video-progress", headers=headers, json=payload, timeout=8)
+                    if r.status_code == 200:
+                        body = r.json()
+                        if body.get("completed_at"):
+                            quest_log(f"✅ Hoàn thành video: {name}!", "success")
+                            with self.lock:
+                                self.progress_pct = 100
+                                self.elapsed_seconds = seconds_needed
+                            return
+                        seconds_done = min(seconds_needed, timestamp)
+                        with self.lock:
+                            self.elapsed_seconds = int(seconds_done)
+                            self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100))
+                        quest_log(f"  [{name}] {int(seconds_done)}/{seconds_needed}s (Video)", "info")
+                    elif r.status_code == 429:
+                        retry_after = r.json().get("retry_after", 5) + 1
+                        time.sleep(retry_after)
+                        continue
+                except Exception as e:
+                    quest_log(f"  Lỗi video: {e}", "error")
+
+            if timestamp >= seconds_needed:
+                break
+            time.sleep(interval)
+
+        try:
+            requests.post(f"https://discord.com/api/v9/quests/{qid}/video-progress", headers=headers, json={"timestamp": seconds_needed}, timeout=5)
         except Exception:
             pass
+        quest_log(f"✅ Hoàn thành video: {name}!", "success")
+
+    def _complete_heartbeat(self, token: str, qid: str, name: str, task_type: str, seconds_needed: int, seconds_done: float):
+        headers = make_discord_headers(token)
+        remaining = max(0, seconds_needed - seconds_done)
+        quest_log(f"🎮 {task_type}: {name} (~{int(remaining // 60)} phút còn lại)", "info")
+        pid = random.randint(1000, 30000)
+
+        while not self.stop_flag.is_set() and seconds_done < seconds_needed:
+            try:
+                r = requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": f"call:0:{pid}", "terminal": False}, timeout=10)
+                if r.status_code == 200:
+                    body = r.json()
+                    progress_data = body.get("progress", {})
+                    if progress_data and task_type in progress_data:
+                        seconds_done = progress_data[task_type].get("value", seconds_done + 20)
+                    else:
+                        seconds_done += 20
+                    with self.lock:
+                        self.elapsed_seconds = int(seconds_done)
+                        self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100))
+                    quest_log(f"  [{name}] {int(seconds_done)}/{seconds_needed}s [{self.progress_pct}%]", "info")
+                    if body.get("completed_at") or seconds_done >= seconds_needed:
+                        quest_log(f"✅ Hoàn thành: {name}!", "success")
+                        return
+                elif r.status_code == 429:
+                    retry_after = r.json().get("retry_after", 10) + 1
+                    time.sleep(retry_after)
+                    continue
+            except Exception as e:
+                quest_log(f"  Lỗi heartbeat: {e}", "error")
+            
+            for _ in range(20):
+                if self.stop_flag.is_set():
+                    break
+                time.sleep(1)
+
+        try:
+            requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": f"call:0:{pid}", "terminal": True}, timeout=6)
+        except Exception:
+            pass
+        quest_log(f"✅ Hoàn thành: {name}!", "success")
+
+    def _complete_activity(self, token: str, qid: str, name: str, seconds_needed: int, seconds_done: float):
+        headers = make_discord_headers(token)
+        remaining = max(0, seconds_needed - seconds_done)
+        quest_log(f"🕹️ Activity: {name} (~{int(remaining // 60)} phút còn lại)", "info")
+        stream_key = "call:0:1"
+
+        while not self.stop_flag.is_set() and seconds_done < seconds_needed:
+            try:
+                r = requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": False}, timeout=10)
+                if r.status_code == 200:
+                    body = r.json()
+                    progress_data = body.get("progress", {})
+                    if progress_data and "PLAY_ACTIVITY" in progress_data:
+                        seconds_done = progress_data["PLAY_ACTIVITY"].get("value", seconds_done + 20)
+                    else:
+                        seconds_done += 20
+                    with self.lock:
+                        self.elapsed_seconds = int(seconds_done)
+                        self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100))
+                    quest_log(f"  [{name}] {int(seconds_done)}/{seconds_needed}s [{self.progress_pct}%]", "info")
+                    if body.get("completed_at") or seconds_done >= seconds_needed:
+                        quest_log(f"✅ Hoàn thành: {name}!", "success")
+                        return
+                elif r.status_code == 429:
+                    retry_after = r.json().get("retry_after", 10) + 1
+                    time.sleep(retry_after)
+                    continue
+            except Exception as e:
+                quest_log(f"  Lỗi activity: {e}", "error")
+
+            for _ in range(20):
+                if self.stop_flag.is_set():
+                    break
+                time.sleep(1)
+
+        try:
+            requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": True}, timeout=6)
+        except Exception:
+            pass
+        quest_log(f"✅ Hoàn thành: {name}!", "success")
+
+    def _run_auto_quest_loop(self, token: str):
+        """Vòng lặp tự phát hiện, tự nhận và hoàn thành toàn bộ quest (chuẩn code mhao)"""
+        quest_log("══════════════════════════════════════════════════", "info")
+        quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER v3.0", "success")
+        quest_log("Tự động quét Discord, tự nhận và cày tất cả nhiệm vụ!", "info")
+        quest_log("══════════════════════════════════════════════════", "info")
+
+        completed_ids = set()
+        cycle = 0
+
+        while not self.stop_flag.is_set():
+            cycle += 1
+            quest_log(f"─── Quét nhiệm vụ lần #{cycle} ───", "info")
+            raw_quests = self._fetch_quests(token)
+            total = len(raw_quests)
+
+            if not raw_quests:
+                quest_log("Không tìm thấy nhiệm vụ nào từ Discord.", "warning")
+            else:
+                parsed_list = [parse_discord_quest_item(q) for q in raw_quests]
+                valid_quests = [q for q in parsed_list if q['completable']]
+                enrolled_count = sum(1 for q in valid_quests if q['enrolled'])
+                completed_count = sum(1 for q in valid_quests if q['completed'])
+
+                quest_log(f"Discord có: {total} quest ({len(valid_quests)} hỗ trợ cày) | Đã nhận: {enrolled_count} | Hoàn thành: {completed_count}", "info")
+
+                # Auto enroll unaccepted - CHỈ enroll các quest có completable == True
+                for q in raw_quests:
+                    if self.stop_flag.is_set():
+                        break
+                    p = parse_discord_quest_item(q)
+                    if not p['completable']:
+                        continue
+                    if not p['enrolled'] and not p['completed']:
+                        quest_log(f"Đang nhận quest: {p['title']}...", "info")
+                        if self.enroll(token, p['id']):
+                            quest_log(f"  -> Đã nhận thành công: {p['title']}", "success")
+                        else:
+                            quest_log(f"  -> Bỏ qua (không thể tự nhận): {p['title']}", "warning")
+                        time.sleep(2)
+
+                # Re-fetch after enrollment
+                raw_quests = self._fetch_quests(token)
+                completable_quests = []
+                for q in raw_quests:
+                    p = parse_discord_quest_item(q)
+                    qid = p['id']
+                    # CHỈ cày quest:
+                    # 1. Thuộc loại hỗ trợ tự động (completable)
+                    # 2. ĐÃ ĐƯỢC NHẬN THẬT (enrolled)
+                    # 3. CHƯA hoàn thành (not completed)
+                    # 4. Chưa hoàn thành trong phiên này
+                    if not p['completable']:
+                        continue
+                    if not p['enrolled']:
+                        continue
+                    if p['completed'] or qid in completed_ids:
+                        continue
+                    completable_quests.append((q, p))
+
+                if not completable_quests:
+                    quest_log("Không có nhiệm vụ nào đủ điều kiện cần cày lúc này.", "info")
+                else:
+                    for q, p in completable_quests:
+                        if self.stop_flag.is_set():
+                            break
+                        qid = p['id']
+                        name = p['title']
+                        task_type = p['task_type']
+                        seconds_needed = p['target_seconds']
+                        seconds_done = p['seconds_done']
+
+                        with self.lock:
+                            self.current_quest_id = qid
+                            self.current_quest_name = name
+                            self.task_type = task_type
+                            self.target_seconds = seconds_needed
+                            self.elapsed_seconds = int(seconds_done)
+                            self.progress_pct = p['progress_pct']
+
+                        quest_log(f"━━━ Bắt đầu cày: {name} [{task_type}] ━━━", "success")
+
+                        us = _quest_get(q, "userStatus", "user_status") or {}
+                        enrolled_at_str = _quest_get(us, "enrolledAt", "enrolled_at")
+                        if enrolled_at_str:
+                            try:
+                                enrolled_ts = datetime.fromisoformat(enrolled_at_str.replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                enrolled_ts = time.time()
+                        else:
+                            enrolled_ts = time.time()
+
+                        if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
+                            self._complete_video(token, qid, name, seconds_needed, seconds_done, enrolled_ts)
+                        elif task_type in ("PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP"):
+                            self._complete_heartbeat(token, qid, name, task_type, seconds_needed, seconds_done)
+                        elif task_type == "PLAY_ACTIVITY":
+                            self._complete_activity(token, qid, name, seconds_needed, seconds_done)
+
+                        completed_ids.add(qid)
+                        time.sleep(2)
+
+            quest_log("Chờ 60s để quét lại nhiệm vụ...", "info")
+            for _ in range(60):
+                if self.stop_flag.is_set():
+                    break
+                time.sleep(1)
+
+        with self.lock:
+            self.status = 'stopped'
+            quest_log("⛔ Đã dừng Auto Quest Completer.", "warning")
 
     def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
-        log_event(f'Bắt đầu Auto Quest cho tài khoản #{self.user_id}: {quest_name} [{task_type}]', 'info')
-        self._enroll_if_needed(token, quest_id)
-        
+        quest_log(f'╔══ BẮT ĐẦU AUTO QUEST ══╗', 'info')
+        quest_log(f'► Nhiệm vụ: {quest_name}', 'info')
+        quest_log(f'► Quest ID: {quest_id}', 'info')
+        quest_log(f'► Loại task: {task_type}', 'info')
+        quest_log(f'► Thời gian cần: {target_seconds}s', 'info')
+        quest_log(f'► Đang đăng ký tham gia quest...', 'info')
+        log_event(f'Bắt đầu Auto Quest cho user #{self.user_id}: {quest_name} [{task_type}] - Cần {target_seconds}s', 'info')
+
+        enrolled = self.enroll(token, quest_id)
+        if enrolled:
+            quest_log(f'✅ Đăng ký quest thành công!', 'success')
+        else:
+            quest_log(f'⚠ Đăng ký quest thất bại (có thể đã đăng ký rồi, tiếp tục...)', 'warning')
+
         headers = make_discord_headers(token)
+
+        is_video = task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE")
+        is_activity = task_type == "PLAY_ACTIVITY"
+
         pid = random.randint(1000, 30000)
-        stream_key = f"call:0:{pid}" if task_type in ('PLAY_ON_DESKTOP', 'STREAM_ON_DESKTOP') else "call:0:1"
-        is_video = task_type in ('WATCH_VIDEO', 'WATCH_VIDEO_ON_MOBILE')
+        stream_key = "call:0:1" if is_activity else f"call:0:{pid}"
+
+        if is_video:
+            quest_log(f'► Chế độ: VIDEO PROGRESS (gửi timestamp mỗi 1s)', 'info')
+        else:
+            quest_log(f'► Chế độ: HEARTBEAT (gửi heartbeat mỗi 5s, pid={pid})', 'info')
 
         step_interval = 1 if is_video else 5
         seconds_done = 0
+        last_log_pct = -1
+        quest_log(f'═══ BẮT ĐẦU TIẾN TRÌNH CÀY ═══', 'info')
 
         while not self.stop_flag.is_set() and seconds_done < target_seconds:
             time.sleep(step_interval)
@@ -689,42 +1271,102 @@ class DiscordUserQuestRunner:
             if is_video:
                 seconds_done = min(target_seconds, seconds_done + 7)
                 try:
-                    r = requests.post(f"https://discord.com/api/v9/quests/{quest_id}/video-progress", headers=headers, json={"timestamp": seconds_done + random.random()}, timeout=5)
-                    if r.status_code == 200 and r.json().get('completed_at'):
-                        seconds_done = target_seconds
-                except Exception:
-                    pass
+                    payload_ts = min(target_seconds, seconds_done + random.random())
+                    r = requests.post(
+                        f"https://discord.com/api/v9/quests/{quest_id}/video-progress",
+                        headers=headers,
+                        json={"timestamp": payload_ts},
+                        timeout=5
+                    )
+                    if r.status_code == 200:
+                        b = r.json()
+                        if b.get("completed_at"):
+                            seconds_done = target_seconds
+                            quest_log(f'✅ Discord xác nhận hoàn thành video!', 'success')
+                        else:
+                            quest_log(f'📹 Video progress: {payload_ts:.1f}s → HTTP {r.status_code}', 'info')
+                    elif r.status_code == 429:
+                        wait = r.json().get("retry_after", 3)
+                        quest_log(f'⏳ Rate limited! Chờ {wait}s...', 'warning')
+                        time.sleep(wait)
+                        continue
+                    else:
+                        quest_log(f'⚠ Video progress lỗi HTTP {r.status_code}: {r.text[:80]}', 'warning')
+                except Exception as e:
+                    quest_log(f'✗ Lỗi gửi video progress: {e}', 'error')
             else:
                 seconds_done = min(target_seconds, seconds_done + step_interval)
                 if seconds_done % 15 == 0 or seconds_done >= target_seconds:
                     try:
-                        requests.post(f"https://discord.com/api/v9/quests/{quest_id}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": False}, timeout=6)
-                    except Exception:
-                        pass
+                        r = requests.post(
+                            f"https://discord.com/api/v9/quests/{quest_id}/heartbeat",
+                            headers=headers,
+                            json={"stream_key": stream_key, "terminal": False},
+                            timeout=6
+                        )
+                        if r.status_code == 200:
+                            b = r.json()
+                            if b.get("completed_at"):
+                                seconds_done = target_seconds
+                                quest_log(f'✅ Discord xác nhận hoàn thành heartbeat!', 'success')
+                            else:
+                                quest_log(f'💓 Heartbeat OK: {seconds_done}s/{target_seconds}s → HTTP {r.status_code}', 'info')
+                        elif r.status_code == 429:
+                            wait = r.json().get("retry_after", 5)
+                            quest_log(f'⏳ Rate limited! Chờ {wait}s...', 'warning')
+                            time.sleep(wait)
+                            continue
+                        else:
+                            quest_log(f'⚠ Heartbeat lỗi HTTP {r.status_code}: {r.text[:80]}', 'warning')
+                    except Exception as e:
+                        quest_log(f'✗ Lỗi gửi heartbeat: {e}', 'error')
 
             with self.lock:
                 self.elapsed_seconds = seconds_done
                 self.progress_pct = min(100, int((seconds_done / target_seconds) * 100))
 
-            log_event(f'Quest [{quest_name}]: {self.progress_pct}% ({seconds_done}s/{target_seconds}s)', 'info')
+            pct = self.progress_pct
+            # Log mỗi 10% thay đổi để tránh spam
+            if pct // 10 != last_log_pct // 10:
+                last_log_pct = pct
+                bar_filled = int(pct / 5)
+                bar = '█' * bar_filled + '░' * (20 - bar_filled)
+                quest_log(f'[{bar}] {pct}% ({int(seconds_done)}s / {target_seconds}s)', 'info')
 
+        # Final terminal call
+        quest_log(f'═══ GỬI TÍN HIỆU HOÀN THÀNH CUỐI ═══', 'info')
         try:
-            if not is_video:
-                requests.post(f"https://discord.com/api/v9/quests/{quest_id}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": True}, timeout=6)
+            if is_video:
+                r = requests.post(
+                    f"https://discord.com/api/v9/quests/{quest_id}/video-progress",
+                    headers=headers,
+                    json={"timestamp": target_seconds},
+                    timeout=5
+                )
+                quest_log(f'📹 Final video-progress → HTTP {r.status_code}', 'info')
             else:
-                requests.post(f"https://discord.com/api/v9/quests/{quest_id}/video-progress", headers=headers, json={"timestamp": target_seconds}, timeout=5)
-        except Exception:
-            pass
+                r = requests.post(
+                    f"https://discord.com/api/v9/quests/{quest_id}/heartbeat",
+                    headers=headers,
+                    json={"stream_key": stream_key, "terminal": True},
+                    timeout=6
+                )
+                quest_log(f'💓 Final heartbeat (terminal=True) → HTTP {r.status_code}', 'info')
+        except Exception as e:
+            quest_log(f'✗ Lỗi gửi tín hiệu cuối: {e}', 'error')
 
         with self.lock:
             if not self.stop_flag.is_set() and seconds_done >= target_seconds:
                 self.status = 'completed'
                 self.progress_pct = 100
-                log_event(f'Hoàn thành xuất sắc nhiệm vụ: {quest_name}!', 'success')
+                quest_log(f'╚══ ✅ HOÀN THÀNH! {quest_name} ══╝', 'success')
+                quest_log(f'► Vào Discord để nhận phần thưởng!', 'success')
+                log_event(f'✅ Hoàn thành xuất sắc nhiệm vụ Discord: {quest_name}!', 'success')
             else:
                 if self.status != 'completed':
                     self.status = 'stopped'
-                log_event(f'Đã dừng nhiệm vụ: {quest_name}', 'info')
+                quest_log(f'╚══ ⛔ ĐÃ DỪNG: {quest_name} ══╝', 'warning')
+                log_event(f'Đã dừng nhiệm vụ Discord: {quest_name}', 'info')
 
 USER_QUEST_RUNNERS = {}
 USER_QUEST_LOCK = threading.Lock()
@@ -780,8 +1422,36 @@ lyric_worker = DiscordLyricWorker()
 
 @app.route('/api/captcha')
 def api_captcha():
-    svg = generate_captcha_svg()
-    return Response(svg, mimetype='image/svg+xml')
+    captcha_data = generate_slide_captcha()
+    return jsonify({
+        'success': True,
+        'bg_image': captcha_data['bg_image'],
+        'piece_image': captcha_data['piece_image'],
+        'target_y': captcha_data['target_y'],
+        'piece_width': captcha_data['piece_width'],
+        'piece_height': captcha_data['piece_height'],
+        'bg_width': captcha_data['bg_width'],
+        'bg_height': captcha_data['bg_height']
+    })
+
+@app.route('/api/captcha/verify', methods=['POST'])
+def api_captcha_verify():
+    data = request.get_json() or {}
+    slide_x = data.get('x')
+    target_x = session.get('slide_target_x')
+    if slide_x is None or target_x is None:
+        return jsonify({'success': False, 'message': 'Thiếu dữ liệu xác thực captcha'}), 400
+    try:
+        slide_x = float(slide_x)
+        # Dung sai cho phép: +/- 7 pixel
+        if abs(slide_x - target_x) <= 7:
+            session['slide_verified'] = True
+            return jsonify({'success': True, 'message': 'Xác thực thành công!'})
+        else:
+            session['slide_verified'] = False
+            return jsonify({'success': False, 'message': 'Khối ghép chưa đúng vị trí, hãy thử lại!'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 400
 
 @app.route('/')
 @login_required
@@ -799,11 +1469,12 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        captcha = request.form.get('captcha', '').strip()
-        expected = str(session.get('captcha_answer', ''))
-        if not captcha or captcha != expected:
-            flash('Mã Captcha không chính xác! Vui lòng tính lại kết quả.', 'error')
+        if not session.get('slide_verified', False):
+            flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
             return redirect(url_for('login'))
+        # Đã dùng xong captcha -> reset lại để bảo mật tuyệt đối
+        session['slide_verified'] = False
+
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         if not username or not password:
@@ -829,11 +1500,11 @@ def login():
 
 @app.route('/register', methods=['POST'])
 def register():
-    captcha = request.form.get('captcha', '').strip()
-    expected = str(session.get('captcha_answer', ''))
-    if not captcha or captcha != expected:
-        flash('Mã Captcha không chính xác! Vui lòng tính lại kết quả.', 'error')
+    if not session.get('slide_verified', False):
+        flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
         return redirect(url_for('login'))
+    session['slide_verified'] = False
+
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     confirm_password = request.form.get('confirm_password', '').strip()
@@ -952,73 +1623,22 @@ def api_quests():
         row = cursor.fetchone()
     token = (row['discord_token'] if row else '') or session.get('discord_token', '')
     
-    quests = [
-        {
-            'id': 'quest_genshin_v5',
-            'title': 'Genshin Impact: Khám Phá Vùng Đất Mới',
-            'game_name': 'Genshin Impact',
-            'reward': '30 Nguyên Thạch + Khung Avatar Đặc Biệt',
-            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298812425932820.png',
-            'target_seconds': 45,
-            'badge': 'Hot Promo'
-        },
-        {
-            'id': 'quest_honkai_starrail',
-            'title': 'Honkai: Star Rail: Hành Trình Khai Phá',
-            'game_name': 'Honkai: Star Rail',
-            'reward': '60 Ngọc Ánh Sao + 1 Tháng Discord Nitro Trial',
-            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298453284323538.png',
-            'target_seconds': 50,
-            'badge': 'Đối Tác Discord'
-        },
-        {
-            'id': 'quest_valorant_masters',
-            'title': 'VALORANT: Chiến Trường Sinh Tử',
-            'game_name': 'VALORANT',
-            'reward': 'Danh hiệu Độc Quyền + Huy Hiệu Hồ Sơ',
-            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359298813092823040.png',
-            'target_seconds': 40,
-            'badge': 'Mới'
-        },
-        {
-            'id': 'quest_discord_desktop',
-            'title': 'Discord Desktop Streaming Challenge',
-            'game_name': 'Discord Desktop App',
-            'reward': 'Huy Hiệu Streaming Star Trên Hồ Sơ',
-            'banner': 'https://cdn.discordapp.com/app-assets/383226320970055681/1359299466493956258.png',
-            'target_seconds': 30,
-            'badge': 'Hàng Tuần'
-        }
-    ]
-
+    quests = []
     if token:
         try:
-            headers = {'Authorization': token, 'User-Agent': 'Mozilla/5.0'}
-            res = requests.get('https://discord.com/api/v9/quests/@me', headers=headers, timeout=6)
+            headers = make_discord_headers(token)
+            res = requests.get('https://discord.com/api/v9/quests/@me', headers=headers, timeout=10)
             if res.status_code == 200:
                 raw = res.json()
-                raw_quests = raw.get('quests', [])
-                if raw_quests:
-                    extracted = []
-                    for q in raw_quests:
-                        qid = str(q.get('id', ''))
-                        cfg = q.get('config', {})
-                        msgs = cfg.get('messages', {})
-                        qtitle = msgs.get('quest_name') or msgs.get('game_title') or 'Nhiệm Vụ Discord'
-                        game_title = msgs.get('game_title') or 'Trò Chơi Discord'
-                        extracted.append({
-                            'id': qid,
-                            'title': qtitle,
-                            'game_name': game_title,
-                            'reward': 'Phần Thưởng Độc Quyền Discord',
-                            'banner': 'https://cdn.discordapp.com/embed/avatars/1.png',
-                            'target_seconds': 60,
-                            'badge': 'Discord API'
-                        })
-                    if extracted:
-                        quests = extracted
-        except Exception:
-            pass
+                raw_quests = []
+                if isinstance(raw, dict):
+                    raw_quests = raw.get('quests', [])
+                elif isinstance(raw, list):
+                    raw_quests = raw
+                for q in raw_quests:
+                    quests.append(parse_discord_quest_item(q))
+        except Exception as e:
+            log_event(f'Lỗi tải Quests Discord từ API: {e}', 'warn')
 
     runner = get_user_quest_runner(user_id)
     return jsonify({
@@ -1026,6 +1646,39 @@ def api_quests():
         'quests': quests,
         'worker_status': runner.get_status()
     })
+
+@app.route('/api/quests/enroll_all', methods=['POST'])
+@login_required
+def api_quests_enroll_all():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Vui lòng liên kết Discord Token trước!'}), 400
+
+    runner = get_user_quest_runner(user_id)
+    count = 0
+    try:
+        headers = make_discord_headers(token)
+        res = requests.get('https://discord.com/api/v9/quests/@me', headers=headers, timeout=8)
+        if res.status_code == 200:
+            raw = res.json()
+            raw_quests = raw.get('quests', []) if isinstance(raw, dict) else raw
+            for q in raw_quests:
+                p = parse_discord_quest_item(q)
+                if not p['completable']:
+                    continue
+                if not p['enrolled'] and not p['completed']:
+                    if runner.enroll(token, p['id']):
+                        count += 1
+                        time.sleep(1.5)
+        log_event(f'Đã tự động nhận {count} nhiệm vụ Discord mới!', 'success')
+        return jsonify({'success': True, 'count': count, 'message': f'Đã nhận thành công {count} nhiệm vụ mới!'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi nhận nhiệm vụ: {str(e)}'}), 500
 
 @app.route('/api/quests/start', methods=['POST'])
 @login_required
@@ -1040,12 +1693,18 @@ def api_quests_start():
         return jsonify({'success': False, 'message': 'Vui lòng liên kết Discord Token trước khi cày Quest!'}), 400
 
     data = request.get_json() or {}
+    runner = get_user_quest_runner(user_id)
+
+    # Chế độ tự động hoàn toàn (Auto Completer)
+    if data.get('auto', False) or data.get('quest_id') == 'auto':
+        runner.start_auto(token)
+        return jsonify({'success': True, 'message': 'Đã khởi động chế độ Tự Động Quét & Cày Tất Cả Nhiệm Vụ!'})
+
     quest_id = data.get('quest_id', 'quest_discord_desktop')
     quest_name = data.get('quest_name', 'Nhiệm Vụ Discord')
     task_type = data.get('task_type', 'PLAY_ON_DESKTOP')
     target_seconds = int(data.get('target_seconds', 45))
 
-    runner = get_user_quest_runner(user_id)
     runner.start(token, quest_id, quest_name, task_type=task_type, target_seconds=target_seconds)
     return jsonify({'success': True, 'message': f'Đã bắt đầu chạy Auto Quest cho {quest_name}!'})
 
@@ -1063,6 +1722,19 @@ def api_quests_status():
     user_id = session['user_id']
     runner = get_user_quest_runner(user_id)
     return jsonify({'success': True, 'status': runner.get_status()})
+
+@app.route('/api/quests/logs', methods=['GET', 'DELETE'])
+@login_required
+def api_quests_logs():
+    global QUEST_LOG_BUFFER
+    if request.method == 'DELETE':
+        with QUEST_LOG_LOCK:
+            QUEST_LOG_BUFFER.clear()
+        quest_log('Đã xóa nhật ký Quest Console.', 'info')
+        return jsonify({'success': True, 'message': 'Đã xóa nhật ký'})
+    with QUEST_LOG_LOCK:
+        logs_copy = list(QUEST_LOG_BUFFER)
+    return jsonify({'success': True, 'logs': logs_copy})
 
 @app.route('/api/hypesquad/claim', methods=['POST'])
 @login_required
@@ -1136,34 +1808,97 @@ def api_status():
 @app.route('/api/start', methods=['POST'])
 @login_required
 def api_start():
-    data = request.get_json() or {}
+    raw_data = request.get_json() or {}
+    data = normalize_rpc_config(raw_data)
     token = data.get('token', '').strip()
-    activity_name = data.get('activityName', '').strip()
     if not token:
-        return (jsonify({'success': False, 'message': 'Thiếu Discord User Token'}), 400)
+        user_id = session.get('user_id')
+        if user_id:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+                row = cursor.fetchone()
+                if row and row['discord_token']:
+                    token = row['discord_token']
+        if not token and 'discord_token' in session:
+            token = session['discord_token']
+    if not token:
+        return (jsonify({'success': False, 'message': 'Chưa có token. Vui lòng liên kết Discord Token tại mục Quản Lý Tài Khoản trước!'}), 400)
+    data['token'] = token
+    activity_name = data.get('activityName', '').strip()
     if not activity_name:
-        return (jsonify({'success': False, 'message': 'Thiếu tên hoạt động / ứng dụng'}), 400)
+        data['activityName'] = 'Visual Studio Code'
     rpc_worker.start(data)
+    log_event(f'Khởi động Discord RPC: {data["activityName"]}', 'success')
     return jsonify({'success': True, 'message': 'Đã gửi lệnh kết nối tới Discord Gateway'})
 
 @app.route('/api/update', methods=['POST'])
 @login_required
 def api_update():
-    data = request.get_json() or {}
+    raw_data = request.get_json() or {}
+    data = normalize_rpc_config(raw_data)
+    token = data.get('token', '').strip()
+    if not token:
+        user_id = session.get('user_id')
+        if user_id:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+                row = cursor.fetchone()
+                if row and row['discord_token']:
+                    token = row['discord_token']
+        if not token and 'discord_token' in session:
+            token = session['discord_token']
+    if token:
+        data['token'] = token
     activity_name = data.get('activityName', '').strip()
     if not activity_name:
-        return (jsonify({'success': False, 'message': 'Thiếu tên hoạt động / ứng dụng'}), 400)
+        data['activityName'] = 'Visual Studio Code'
     try:
         rpc_worker.update_presence(data)
+        log_event(f'Cập nhật Discord RPC: {data["activityName"]}', 'info')
         return jsonify({'success': True, 'message': 'Đã cập nhật trạng thái Discord thành công!'})
     except Exception as e:
         return (jsonify({'success': False, 'message': f'Lỗi khi cập nhật: {str(e)}'}), 500)
+
+@app.route('/api/save_config', methods=['POST'])
+@login_required
+def api_save_config():
+    user_id = session['user_id']
+    data = request.get_json() or {}
+    cfg = normalize_rpc_config(data)
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('UPDATE users SET config = ? WHERE id = ?', (json.dumps(cfg), user_id))
+        conn.commit()
+    log_event('Đã lưu cấu hình RPC thành công', 'success')
+    return jsonify({'success': True, 'message': 'Đã lưu cấu hình thành công!'})
+
+@app.route('/api/get_config', methods=['GET'])
+@login_required
+def api_get_config():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT config FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    cfg_raw = (row['config'] if row and row['config'] else '')
+    if cfg_raw:
+        try:
+            return jsonify({'success': True, 'config': json.loads(cfg_raw)})
+        except Exception:
+            pass
+    return jsonify({'success': True, 'config': None})
 
 @app.route('/api/stop', methods=['POST'])
 @login_required
 def api_stop():
     rpc_worker.stop()
     return jsonify({'success': True, 'message': 'Đã dừng Discord RPC'})
+
+@app.route('/bot_avatar')
+def serve_bot_avatar():
+    return redirect('https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg')
 
 @app.route('/api/portal_app_info', methods=['GET', 'POST'])
 @login_required
@@ -1174,12 +1909,21 @@ def api_portal_app_info():
         token = data.get('token', '').strip()
     if not token:
         token = request.args.get('token', '').strip()
-    if not token and rpc_worker and rpc_worker.config:
-        token = rpc_worker.config.get('token', '').strip()
+    if not token:
+        user_id = session.get('user_id')
+        if user_id:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+                row = cursor.fetchone()
+                if row and row['discord_token']:
+                    token = row['discord_token']
     if not token and 'discord_token' in session:
         token = session['discord_token']
+    if not token and rpc_worker and rpc_worker.current_config:
+        token = rpc_worker.current_config.get('token', '').strip()
     if not token:
-        return (jsonify({'success': True, 'apps': [], 'message': 'Chưa nhập Discord User Token'}), 200)
+        return (jsonify({'success': True, 'apps': [], 'message': 'Chưa liên kết Discord Token tại mục Tài Khoản'}), 200)
     try:
         session['discord_token'] = token
         headers = {'Authorization': token, 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
