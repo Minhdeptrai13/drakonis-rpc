@@ -1007,7 +1007,7 @@ class DiscordUserQuestRunner:
                 return True
             if res.status_code == 429:
                 wait = res.json().get("retry_after", 5)
-                quest_log(f"⚠️ Discord tạm khóa nhận quest ({wait:.0f}s) - Bỏ qua để ưu tiên cày quest có sẵn!", "warning")
+                quest_log(f"[RATE LIMIT] Discord tạm khóa nhận quest ({wait:.0f}s) - Bỏ qua để cày quest có sẵn", "warning")
                 return False
             quest_log(f"Enroll '{name}' thất bại (HTTP {res.status_code})", "warning")
             return False
@@ -1038,7 +1038,7 @@ class DiscordUserQuestRunner:
         speed = 7
         interval = 1
         max_future = 10
-        quest_log(f"🎬 Video: {name} ({int(seconds_done)}/{seconds_needed}s)", "info")
+        quest_log(f"[VIDEO] {name} ({int(seconds_done)}/{seconds_needed}s)", "info")
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
             max_allowed = (time.time() - enrolled_ts) + max_future
@@ -1052,7 +1052,7 @@ class DiscordUserQuestRunner:
                     if r.status_code == 200:
                         body = r.json()
                         if body.get("completed_at"):
-                            quest_log(f"✅ Hoàn thành video: {name}!", "success")
+                            quest_log(f"Hoàn thành video: {name}", "success")
                             with self.lock:
                                 self.progress_pct = 100
                                 self.elapsed_seconds = seconds_needed
@@ -1077,12 +1077,12 @@ class DiscordUserQuestRunner:
             requests.post(f"https://discord.com/api/v9/quests/{qid}/video-progress", headers=headers, json={"timestamp": seconds_needed}, timeout=5)
         except Exception:
             pass
-        quest_log(f"✅ Hoàn thành video: {name}!", "success")
+        quest_log(f"Hoàn thành video: {name}", "success")
 
     def _complete_heartbeat(self, token: str, qid: str, name: str, task_type: str, seconds_needed: int, seconds_done: float):
         headers = make_discord_headers(token)
         remaining = max(0, seconds_needed - seconds_done)
-        quest_log(f"🎮 {task_type}: {name} (~{int(remaining // 60)} phút còn lại)", "info")
+        quest_log(f"[{task_type}] {name} (~{int(remaining // 60)} phút còn lại)", "info")
         pid = random.randint(1000, 30000)
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
@@ -1105,7 +1105,7 @@ class DiscordUserQuestRunner:
                         self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100))
                     quest_log(f"  [{name}] {int(seconds_done)}/{seconds_needed}s [{self.progress_pct}%]", "info")
                     if body.get("completed_at") or seconds_done >= seconds_needed:
-                        quest_log(f"✅ Hoàn thành: {name}!", "success")
+                        quest_log(f"Hoàn thành: {name}", "success")
                         return
                 elif r.status_code == 429:
                     retry_after = r.json().get("retry_after", 10) + 1
@@ -1123,12 +1123,12 @@ class DiscordUserQuestRunner:
             requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": f"call:0:{pid}", "terminal": True}, timeout=6)
         except Exception:
             pass
-        quest_log(f"✅ Hoàn thành: {name}!", "success")
+        quest_log(f"Hoàn thành: {name}", "success")
 
     def _complete_activity(self, token: str, qid: str, name: str, seconds_needed: int, seconds_done: float):
         headers = make_discord_headers(token)
         remaining = max(0, seconds_needed - seconds_done)
-        quest_log(f"🕹️ Activity: {name} (~{int(remaining // 60)} phút còn lại)", "info")
+        quest_log(f"[ACTIVITY] {name} (~{int(remaining // 60)} phút còn lại)", "info")
         stream_key = "call:0:1"
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
@@ -1151,7 +1151,7 @@ class DiscordUserQuestRunner:
                         self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100))
                     quest_log(f"  [{name}] {int(seconds_done)}/{seconds_needed}s [{self.progress_pct}%]", "info")
                     if body.get("completed_at") or seconds_done >= seconds_needed:
-                        quest_log(f"✅ Hoàn thành: {name}!", "success")
+                        quest_log(f"Hoàn thành: {name}", "success")
                         return
                 elif r.status_code == 429:
                     retry_after = r.json().get("retry_after", 10) + 1
@@ -1169,20 +1169,20 @@ class DiscordUserQuestRunner:
             requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": True}, timeout=6)
         except Exception:
             pass
-        quest_log(f"✅ Hoàn thành: {name}!", "success")
+        quest_log(f"Hoàn thành: {name}", "success")
 
     def _run_auto_quest_loop(self, token: str):
-        quest_log("══════════════════════════════════════════════════", "info")
-        quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER v3.0", "success")
-        quest_log("Cơ chế cuốn chiếu: Cày sạch quest đã nhận -> Nhận 1 cày 1!", "info")
-        quest_log("══════════════════════════════════════════════════", "info")
+        quest_log("==================================================", "info")
+        quest_log("KHOI DONG AUTO QUEST COMPLETER - Minh", "success")
+        quest_log("Co che cuon chieu: Cay sach quest da nhan -> Nhan 1 cay 1", "info")
+        quest_log("==================================================", "info")
 
         completed_ids = set()
         cycle = 0
 
         while not self.stop_flag.is_set():
             cycle += 1
-            quest_log(f"─── Quét nhiệm vụ lần #{cycle} ───", "info")
+            quest_log(f"--- Quet nhiem vu lan #{cycle} ---", "info")
             raw_quests = self._fetch_quests(token)
 
             if not raw_quests:
@@ -1195,8 +1195,8 @@ class DiscordUserQuestRunner:
                 unaccepted_count = sum(1 for q in valid_quests if not is_enrolled(q) and not is_completed(q))
 
                 quest_log(
-                    f"📊 Discord có: {total} quest ({len(valid_quests)} hỗ trợ) | "
-                    f"Đã nhận: {enrolled_count} | Đã xong: {completed_count} | Chưa nhận: {unaccepted_count}",
+                    f"[THONG KE] Discord co: {total} quest ({len(valid_quests)} ho tro) | "
+                    f"Da nhan: {enrolled_count} | Da xong: {completed_count} | Chua nhan: {unaccepted_count}",
                     "info"
                 )
 
@@ -1204,11 +1204,11 @@ class DiscordUserQuestRunner:
                     name = get_quest_name(q)
                     task = get_task_type(q)
                     if is_completed(q):
-                        tag = "✅ [ĐÃ XONG]"
+                        tag = "[DA XONG]"
                     elif is_enrolled(q):
-                        tag = "▶️ [ĐÃ NHẬN]"
+                        tag = "[DA NHAN]"
                     else:
-                        tag = "⚪ [CHƯA NHẬN]"
+                        tag = "[CHUA NHAN]"
                     quest_log(f"  {tag} {name} [{task}]", "info")
 
                 actionable = [
@@ -1251,7 +1251,7 @@ class DiscordUserQuestRunner:
                             self.elapsed_seconds = int(seconds_done)
                             self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100)) if seconds_needed else 0
 
-                        quest_log(f"━━━ Bắt đầu cày: {name} [{task_type}] ━━━", "success")
+                        quest_log(f"--- Bat dau cay: {name} [{task_type}] ---", "success")
 
                         us = _quest_get(q, "userStatus", "user_status") or {}
                         enrolled_str = _quest_get(us, "enrolledAt", "enrolled_at")
@@ -1280,11 +1280,11 @@ class DiscordUserQuestRunner:
 
         with self.lock:
             self.status = 'stopped'
-            quest_log("⛔ Đã dừng Auto Quest Completer.", "warning")
+            quest_log("Đã dừng Auto Quest Completer.", "warning")
 
     def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
-        quest_log(f"╔══ BẮT ĐẦU AUTO QUEST ══╗", "info")
-        quest_log(f"► Nhiệm vụ: {quest_name} [{task_type}] - Cần {target_seconds}s", "info")
+        quest_log("--- BAT DAU AUTO QUEST ---", "info")
+        quest_log(f"Nhiệm vụ: {quest_name} [{task_type}] - Cần {target_seconds}s", "info")
 
         raw_quests = self._fetch_quests(token)
         target_quest = next((q for q in raw_quests if str(q.get("id")) == str(quest_id)), None)
@@ -1578,46 +1578,134 @@ def get_user_quest_runner(user_id: int) -> DiscordUserQuestRunner:
             USER_QUEST_RUNNERS[user_id] = DiscordUserQuestRunner(user_id)
         return USER_QUEST_RUNNERS[user_id]
 
-class DiscordLyricWorker:
+import xml.etree.ElementTree as ET
 
-    def update_lyric(self, token: str, text: str, emoji: str = '🎵'):
+class DiscordLyricWorker:
+    def __init__(self):
+        self.active_threads = {}
+        self.stop_events = {}
+        self.lock = threading.Lock()
+
+    def update_lyric(self, token: str, text: str, emoji: str = '🎵') -> tuple[bool, str]:
         if not token or not text:
-            return False, 'Thiếu token hoặc câu hát'
+            return False, 'Thiếu token hoặc nội dung'
         try:
-            headers = {
-                'Authorization': token,
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            headers = make_discord_headers(token)
             payload = {
                 'custom_status': {
                     'text': str(text)[:128],
-                    'emoji_name': emoji
+                    'emoji_name': emoji,
+                    'emoji_id': None
                 }
             }
-            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=5)
+            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=6)
             if res.status_code == 200:
-                return True, 'Đã cập nhật câu hát lên Discord Status'
+                return True, 'Đã cập nhật trạng thái suy nghĩ'
             return False, f'Discord trả về lỗi mã {res.status_code}'
         except Exception as e:
             return False, str(e)
 
-    def clear_lyric(self, token: str):
+    def clear_lyric(self, token: str) -> tuple[bool, str]:
         if not token:
             return False, 'Thiếu token'
         try:
-            headers = {
-                'Authorization': token,
-                'Content-Type': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            headers = make_discord_headers(token)
             payload = {'custom_status': None}
-            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=5)
+            res = requests.patch('https://discord.com/api/v9/users/@me/settings', headers=headers, json=payload, timeout=6)
             if res.status_code == 200:
-                return True, 'Đã xóa trạng thái câu hát trên Discord'
+                return True, 'Đã xóa trạng thái suy nghĩ'
             return False, f'Discord trả về lỗi mã {res.status_code}'
         except Exception as e:
             return False, str(e)
+
+    def fetch_nct_lyrics(self, keyword: str) -> tuple[bool, str, list]:
+        try:
+            search_url = f"https://www.nhaccuatui.com/tim-kiem/bai-hat.html?q={requests.utils.quote(keyword)}"
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            r = requests.get(search_url, headers=headers, timeout=8)
+            if r.status_code != 200:
+                return False, 'Lỗi tìm kiếm trên NCT', []
+
+            match_song = re.search(r'href="(https://www\.nhaccuatui\.com/bai-hat/[^"]+\.html)" title="([^"]+)"', r.text)
+            if not match_song:
+                return False, 'Không tìm thấy bài hát này trên NCT', []
+
+            song_url = match_song.group(1)
+            song_title = match_song.group(2)
+
+            song_res = requests.get(song_url, headers=headers, timeout=8)
+            match_xml = re.search(r'(https://www\.nhaccuatui\.com/flash/xml\?key=[a-zA-Z0-9]+)', song_res.text)
+            if not match_xml:
+                return False, 'Không lấy được cấu hình nhạc', []
+
+            xml_res = requests.get(match_xml.group(1), headers=headers, timeout=8)
+            root = ET.fromstring(xml_res.text)
+            lyric_url = root.findtext('.//lyric')
+
+            if not lyric_url or not lyric_url.startswith('http'):
+                return False, 'Bài hát này chưa có lời đồng bộ (.lrc)', []
+
+            lrc_res = requests.get(lyric_url, headers=headers, timeout=8)
+            lrc_res.encoding = 'utf-8'
+            parsed_lyrics = self.parse_lrc(lrc_res.text)
+
+            if not parsed_lyrics:
+                return False, 'Không phân tích được lời bài hát', []
+
+            return True, song_title, parsed_lyrics
+        except Exception as e:
+            return False, f'Lỗi lấy lyric NCT: {e}', []
+
+    def parse_lrc(self, lrc_content: str) -> list:
+        lines = []
+        for line in lrc_content.splitlines():
+            matches = re.findall(r'\[(\d{2}):(\d{2}(?:\.\d+)?)\]', line)
+            if matches:
+                text = re.sub(r'\[\d{2}:\d{2}(?:\.\d+)?\]', '', line).strip()
+                if text:
+                    for m in matches:
+                        sec = int(m[0]) * 60 + float(m[1])
+                        lines.append((sec, text))
+        lines.sort(key=lambda x: x[0])
+        return lines
+
+    def start_lyric_stream(self, user_id: int, token: str, lyrics: list, emoji: str = '🎵'):
+        self.stop_lyric_stream(user_id)
+        stop_event = threading.Event()
+
+        def _worker():
+            start_time = time.time()
+            idx = 0
+            total = len(lyrics)
+            quest_log(f"Bắt đầu phát lyric đồng bộ ({total} câu)...", "info")
+
+            while not stop_event.is_set() and idx < total:
+                elapsed = time.time() - start_time
+                target_sec, text = lyrics[idx]
+
+                if elapsed >= target_sec:
+                    self.update_lyric(token, text, emoji)
+                    quest_log(f"[Lyric] {text}", "info")
+                    idx += 1
+                time.sleep(0.3)
+
+            if not stop_event.is_set():
+                time.sleep(3)
+                self.clear_lyric(token)
+
+        th = threading.Thread(target=_worker, daemon=True)
+        with self.lock:
+            self.active_threads[user_id] = th
+            self.stop_events[user_id] = stop_event
+        th.start()
+
+    def stop_lyric_stream(self, user_id: int):
+        with self.lock:
+            if user_id in self.stop_events:
+                self.stop_events[user_id].set()
+                del self.stop_events[user_id]
+            if user_id in self.active_threads:
+                del self.active_threads[user_id]
 
 lyric_worker = DiscordLyricWorker()
 
@@ -1981,8 +2069,19 @@ def api_lyrics_sync():
         return jsonify({'success': False, 'message': 'Tài khoản chưa liên kết Discord Token!'}), 400
 
     data = request.get_json() or {}
-    text = data.get('text', '').strip()
+    
+    # Tìm kiếm theo tên bài hát và tự phát đồng bộ theo thời gian bài hát
+    song_name = data.get('song', '').strip()
     emoji = data.get('emoji', '🎵').strip()
+    if song_name:
+        ok, title, lyrics = lyric_worker.fetch_nct_lyrics(song_name)
+        if not ok:
+            return jsonify({'success': False, 'message': title}), 400
+        lyric_worker.start_lyric_stream(user_id, token, lyrics, emoji=emoji)
+        return jsonify({'success': True, 'message': f'Đang phát: {title} ({len(lyrics)} câu)'})
+
+    # Cập nhật một câu status tùy chỉnh thủ công
+    text = data.get('text', '').strip()
     ok, msg = lyric_worker.update_lyric(token, text, emoji=emoji)
     return jsonify({'success': ok, 'message': msg})
 
@@ -1995,6 +2094,8 @@ def api_lyrics_clear():
         cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
     token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+
+    lyric_worker.stop_lyric_stream(user_id)
     if not token:
         return jsonify({'success': False, 'message': 'Tài khoản chưa liên kết Discord Token!'}), 400
 
