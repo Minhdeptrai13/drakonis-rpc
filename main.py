@@ -809,18 +809,30 @@ def parse_discord_quest_item(q: dict) -> dict:
             break
 
     # Kiểm tra hạn quest
+    # LƯU Ý: quest thật của Discord LUÔN có expiresAt. Nếu field này bị thiếu/null,
+    # nhiều khả năng đây là quest "ảo" (nội bộ/test/preview) mà API vẫn trả về cho
+    # một số tài khoản nhưng không thể enroll/cày thật -> coi như hết hạn để loại bỏ.
     expires_at = _quest_get(cfg, "expiresAt", "expires_at")
-    is_expired = False
+    is_expired = True
     if expires_at:
         try:
             exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-            if exp_dt <= datetime.now(timezone.utc):
-                is_expired = True
+            is_expired = exp_dt <= datetime.now(timezone.utc)
         except Exception:
-            pass
+            is_expired = True
 
-    # Chỉ tính là completable khi có task_type được hỗ trợ cày tự động và chưa hết hạn
-    completable = bool(task_type is not None and not is_expired)
+    # Quest thật luôn có rewards_config với ít nhất 1 phần thưởng cụ thể.
+    rewards_config_check = cfg.get("rewards_config", {}) or cfg.get("rewardsConfig", {})
+    has_real_rewards = bool(rewards_config_check.get("rewards"))
+
+    # Quest thật luôn có tên game/ứng dụng gắn kèm (application id), quest "ảo"
+    # thường thiếu hẳn phần config này.
+    has_application = bool(cfg.get("application", {}).get("id") or cfg.get("application_id"))
+
+    # Chỉ tính là completable khi: có task_type hỗ trợ, chưa hết hạn (hoặc có hạn rõ ràng),
+    # có phần thưởng thật, và có application gắn kèm. Thiếu 1 trong các điều kiện này
+    # => rất có thể là quest ảo, sẽ bị loại để tránh auto-quest cứ cố "nhận" nó.
+    completable = bool(task_type is not None and not is_expired and has_real_rewards and has_application)
 
     # User Status
     us = _quest_get(q, "userStatus", "user_status") or {}
@@ -1139,10 +1151,13 @@ class DiscordUserQuestRunner:
             else:
                 parsed_list = [parse_discord_quest_item(q) for q in raw_quests]
                 valid_quests = [q for q in parsed_list if q['completable']]
+                skipped_quests = [q for q in parsed_list if not q['completable']]
                 enrolled_count = sum(1 for q in valid_quests if q['enrolled'])
                 completed_count = sum(1 for q in valid_quests if q['completed'])
 
                 quest_log(f"Discord có: {total} quest ({len(valid_quests)} hỗ trợ cày) | Đã nhận: {enrolled_count} | Hoàn thành: {completed_count}", "info")
+                for sq in skipped_quests:
+                    quest_log(f"  ⚠️ Bỏ qua (nghi ngờ quest ảo/không hỗ trợ): {sq['title']} [id={sq['id']}]", "warning")
 
                 # Auto enroll unaccepted - CHỈ enroll các quest có completable == True
                 for q in raw_quests:
@@ -1799,6 +1814,75 @@ def api_lyrics_clear():
 
     ok, msg = lyric_worker.clear_lyric(token)
     return jsonify({'success': ok, 'message': msg})
+
+ALLOWED_AUDIO_EXTENSIONS = {'mp3', 'wav', 'm4a', 'ogg', 'flac', 'webm'}
+_STT_MODEL = None
+_STT_MODEL_LOCK = threading.Lock()
+
+def _get_stt_model():
+    """Lazy-load faster-whisper model (chi tai 1 lan, dung chung cho ca app)."""
+    global _STT_MODEL
+    with _STT_MODEL_LOCK:
+        if _STT_MODEL is None:
+            from faster_whisper import WhisperModel
+            model_size = os.environ.get('STT_MODEL_SIZE', 'base')
+            _STT_MODEL = WhisperModel(model_size, device='cpu', compute_type='int8')
+        return _STT_MODEL
+
+def _format_lrc_timestamp(seconds: float) -> str:
+    seconds = max(0, seconds)
+    m = int(seconds // 60)
+    s = int(seconds % 60)
+    return f'[{m:02d}:{s:02d}]'
+
+@app.route('/api/lyrics/transcribe', methods=['POST'])
+@login_required
+def api_lyrics_transcribe():
+    """Nhan file am thanh, dung faster-whisper de tu dong nhan dien loi bai hat -> LRC."""
+    if 'audio' not in request.files:
+        return jsonify({'success': False, 'message': 'Không tìm thấy file âm thanh'}), 400
+    file = request.files['audio']
+    if not file or file.filename == '':
+        return jsonify({'success': False, 'message': 'Chưa chọn file âm thanh nào'}), 400
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ALLOWED_AUDIO_EXTENSIONS:
+        return jsonify({'success': False, 'message': 'Định dạng không hỗ trợ (mp3, wav, m4a, ogg, flac)'}), 400
+
+    tmp_name = f'{uuid.uuid4().hex}.{ext}'
+    tmp_path = os.path.join(UPLOAD_FOLDER, tmp_name)
+    file.save(tmp_path)
+    try:
+        try:
+            model = _get_stt_model()
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'message': 'Chưa cài thư viện nhận diện giọng nói. Chạy: pip install faster-whisper'
+            }), 500
+
+        segments, _info = model.transcribe(tmp_path, task='transcribe', vad_filter=True)
+        lines = []
+        count = 0
+        for seg in segments:
+            text = (seg.text or '').strip()
+            if not text:
+                continue
+            lines.append(f'{_format_lrc_timestamp(seg.start)} {text}')
+            count += 1
+
+        if not lines:
+            return jsonify({'success': False, 'message': 'Không nhận diện được lời bài hát nào từ file này.'}), 200
+
+        lrc_text = '\n'.join(lines)
+        quest_log(f'🎤 STT: đã tạo {count} dòng lời từ file {file.filename}', 'info')
+        return jsonify({'success': True, 'lrc': lrc_text, 'segments': count})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi khi nhận diện: {e}'}), 500
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
 
 @app.route('/api/status', methods=['GET'])
 @login_required

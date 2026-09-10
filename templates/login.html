@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,29 +8,32 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="icon" href="https://cdn.discordapp.com/emojis/1054366629930778644.webp" type="image/webp">
 </head>
+
 <body class="auth-page-body">
 
   <div class="auth-center-container">
     <div class="auth-card-rounded">
-      
+
       <div class="auth-brand-header">
         <div class="brand-logo-wrap mb-2 auth-brand-logo-wrap">
           <svg class="brand-logo-svg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="drakonis-auth-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#818cf8"/>
-                <stop offset="50%" stop-color="#6366f1"/>
-                <stop offset="100%" stop-color="#06b6d4"/>
+                <stop offset="0%" stop-color="#818cf8" />
+                <stop offset="50%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#06b6d4" />
               </linearGradient>
               <filter id="authLogoGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="2.5" result="blur"/>
-                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
               </filter>
             </defs>
-            <polygon points="22,3 38,10 41,25 32,38 22,42 12,38 3,25 6,10" fill="url(#drakonis-auth-grad)" fill-opacity="0.18" stroke="url(#drakonis-auth-grad)" stroke-width="1.8" stroke-linejoin="round"/>
-            <path d="M22 8L31 15L33 26L27 34L22 38L17 34L11 26L13 15Z" fill="url(#drakonis-auth-grad)" fill-opacity="0.32" stroke="#a5b4fc" stroke-width="1.4" stroke-linejoin="round"/>
-            <polygon points="22,14 28,23 22,31 16,23" fill="#ffffff" filter="url(#authLogoGlow)" opacity="0.95"/>
-            <circle cx="22" cy="23" r="2.5" fill="#06b6d4"/>
+            <polygon points="22,3 38,10 41,25 32,38 22,42 12,38 3,25 6,10" fill="url(#drakonis-auth-grad)"
+              fill-opacity="0.18" stroke="url(#drakonis-auth-grad)" stroke-width="1.8" stroke-linejoin="round" />
+            <path d="M22 8L31 15L33 26L27 34L22 38L17 34L11 26L13 15Z" fill="url(#drakonis-auth-grad)"
+              fill-opacity="0.32" stroke="#a5b4fc" stroke-width="1.4" stroke-linejoin="round" />
+            <polygon points="22,14 28,23 22,31 16,23" fill="#ffffff" filter="url(#authLogoGlow)" opacity="0.95" />
+            <circle cx="22" cy="23" r="2.5" fill="#06b6d4" />
           </svg>
         </div>
         <h1 class="auth-heading"><span>Drakonis</span> <span class="brand-name-highlight">RPC</span></h1>
@@ -37,15 +41,15 @@
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="auth-flash-box mb-3">
-            {% for category, message in messages %}
-              <div class="toast-item {{ category }} w-100">
-                <span>{{ message }}</span>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
+      {% if messages %}
+      <div class="auth-flash-box mb-3">
+        {% for category, message in messages %}
+        <div class="toast-item {{ category }} w-100">
+          <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% endwith %}
 
       <div class="auth-pill-tabs mb-3">
@@ -60,12 +64,14 @@
       <form id="form-login" method="POST" action="{{ url_for('login') }}">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-username">Tên tài khoản</label>
-          <input type="text" id="login-username" name="username" class="input-rounded" placeholder="Nhập tên đăng nhập..." required autofocus autocomplete="username">
+          <input type="text" id="login-username" name="username" class="input-rounded"
+            placeholder="Nhập tên đăng nhập..." required autofocus autocomplete="username">
         </div>
-        
+
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-password">Mật khẩu</label>
-          <input type="password" id="login-password" name="password" class="input-rounded" placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+          <input type="password" id="login-password" name="password" class="input-rounded"
+            placeholder="Nhập mật khẩu..." required autocomplete="current-password">
         </div>
 
         <div class="form-row mb-3">
@@ -83,7 +89,7 @@
               <div class="slide-captcha-hint-text" id="login-hint">Kéo thanh trượt để ghép hình ảnh</div>
               <div class="slide-captcha-thumb" id="login-thumb">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M9 18l6-6-6-6"/>
+                  <path d="M9 18l6-6-6-6" />
                 </svg>
               </div>
             </div>
@@ -99,24 +105,28 @@
       <form id="form-register" method="POST" action="{{ url_for('register') }}" class="d-none">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="register-username">Tên tài khoản mới</label>
-          <input type="text" id="register-username" name="username" class="input-rounded" placeholder="Tạo tên đăng nhập (từ 3 ký tự)..." required minlength="3" autocomplete="username">
+          <input type="text" id="register-username" name="username" class="input-rounded"
+            placeholder="Tạo tên đăng nhập (từ 3 ký tự)..." required minlength="3" autocomplete="username">
         </div>
 
         <div class="form-row mb-3">
           <label class="form-label-clean" for="register-password">Mật khẩu</label>
-          <input type="password" id="register-password" name="password" class="input-rounded" placeholder="Tạo mật khẩu (từ 4 ký tự)..." required minlength="4" autocomplete="new-password">
+          <input type="password" id="register-password" name="password" class="input-rounded"
+            placeholder="Tạo mật khẩu (từ 4 ký tự)..." required minlength="4" autocomplete="new-password">
         </div>
 
         <div class="form-row mb-3">
           <label class="form-label-clean" for="register-confirm-password">Xác nhận mật khẩu</label>
-          <input type="password" id="register-confirm-password" name="confirm_password" class="input-rounded" placeholder="Nhập lại mật khẩu..." required minlength="4" autocomplete="new-password">
+          <input type="password" id="register-confirm-password" name="confirm_password" class="input-rounded"
+            placeholder="Nhập lại mật khẩu..." required minlength="4" autocomplete="new-password">
         </div>
 
         <div class="form-row mb-3">
           <div class="slide-captcha-container">
             <div class="slide-captcha-header">
               <span>Xác thực chống Bot kiểu TikTok</span>
-              <button type="button" class="btn-captcha-refresh" onclick="reloadSlideCaptcha('register')">Đổi ảnh</button>
+              <button type="button" class="btn-captcha-refresh" onclick="reloadSlideCaptcha('register')">Đổi
+                ảnh</button>
             </div>
             <div class="slide-captcha-stage" id="register-stage">
               <img class="slide-captcha-bg" id="register-captcha-bg" alt="Captcha Background" src="">
@@ -127,7 +137,7 @@
               <div class="slide-captcha-hint-text" id="register-hint">Kéo thanh trượt để ghép hình ảnh</div>
               <div class="slide-captcha-thumb" id="register-thumb">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M9 18l6-6-6-6"/>
+                  <path d="M9 18l6-6-6-6" />
                 </svg>
               </div>
             </div>
@@ -258,7 +268,7 @@
         const pieceWidth = (captchaState[type].data && captchaState[type].data.piece_width) || 44;
         const maxPieceSlide = stageWidth - pieceWidth;
         const piecePos = (captchaState[type].currentX / maxSlide) * maxPieceSlide;
-        
+
         // Quy đổi tọa độ hiển thị sang tọa độ gốc trên ảnh
         const scale = stageWidth / naturalWidth;
         const originalX = piecePos / scale;
@@ -340,9 +350,10 @@
       initSlideController('register');
       reloadSlideCaptcha('login');
       {% if mode == 'register' %}
-        switchAuthMode('register');
+      switchAuthMode('register');
       {% endif %}
     });
   </script>
 </body>
+
 </html>

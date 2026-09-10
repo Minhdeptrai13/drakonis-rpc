@@ -1,64 +1,64 @@
 
 const KNOWN_ASSET_ICONS = {
-  vscode:   {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg', name:'VSCode'},
-  python:   {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg', name:'Python'},
-  git:      {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg', name:'Git'},
-  docker:   {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg', name:'Docker'},
-  js:       {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg', name:'JavaScript'},
-  ts:       {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg', name:'TypeScript'},
-  jsx:      {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', name:'React JSX'},
-  tsx:      {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', name:'React TSX'},
-  html:     {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg', name:'HTML'},
-  css:      {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg', name:'CSS'},
-  c:        {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg', name:'C'},
-  cpp:      {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg', name:'C++'},
-  csharp:   {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg', name:'C#'},
-  java:     {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg', name:'Java'},
-  rust:     {url:'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg', name:'Rust'},
-  go:       {url:'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg', name:'Go'}
+  vscode: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg', name: 'VSCode' },
+  python: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg', name: 'Python' },
+  git: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg', name: 'Git' },
+  docker: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg', name: 'Docker' },
+  js: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg', name: 'JavaScript' },
+  ts: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg', name: 'TypeScript' },
+  jsx: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', name: 'React JSX' },
+  tsx: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg', name: 'React TSX' },
+  html: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg', name: 'HTML' },
+  css: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg', name: 'CSS' },
+  c: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/c/c-original.svg', name: 'C' },
+  cpp: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg', name: 'C++' },
+  csharp: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/csharp-original.svg', name: 'C#' },
+  java: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg', name: 'Java' },
+  rust: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-original.svg', name: 'Rust' },
+  go: { url: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg', name: 'Go' }
 };
 
 const LYRIC_TRACKS = {
   sunset: {
     url: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/236166415&color=%236366f1&auto_play=false&hide_related=true&show_comments=false',
     lyrics: [
-      {t:0,  l:''},
-      {t:5,  l:'Chieu tan, anh den neon le loi'},
-      {t:12, l:'Bong toi phu mo con duong nhung nguoi di'},
-      {t:20, l:'Ta nhin troi, mua roi thay tung giot le roi'},
-      {t:28, l:'Nho ai do, noi xa xoi, mot minh toi'},
-      {t:36, l:'Sunset lover, em trong giac mo anh'},
-      {t:44, l:'Mau vang hong phu len nhung duong chan troi'},
-      {t:52, l:'Song con song... am am tren mat bien'},
-      {t:60, l:'Gio thoi, mem mai, nghe nhu tieng goi'},
-      {t:68, l:'Ta bay di cung em, noi minh tu do'},
-      {t:76, l:'Khong con lo, khong con so, chi yeu thoi...'},
+      { t: 0, l: '' },
+      { t: 5, l: 'Chieu tan, anh den neon le loi' },
+      { t: 12, l: 'Bong toi phu mo con duong nhung nguoi di' },
+      { t: 20, l: 'Ta nhin troi, mua roi thay tung giot le roi' },
+      { t: 28, l: 'Nho ai do, noi xa xoi, mot minh toi' },
+      { t: 36, l: 'Sunset lover, em trong giac mo anh' },
+      { t: 44, l: 'Mau vang hong phu len nhung duong chan troi' },
+      { t: 52, l: 'Song con song... am am tren mat bien' },
+      { t: 60, l: 'Gio thoi, mem mai, nghe nhu tieng goi' },
+      { t: 68, l: 'Ta bay di cung em, noi minh tu do' },
+      { t: 76, l: 'Khong con lo, khong con so, chi yeu thoi...' },
     ]
   },
   cyber: {
     url: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1087027808&color=%2306b6d4&auto_play=false&hide_related=true&show_comments=false',
     lyrics: [
-      {t:0,  l:''},
-      {t:4,  l:'Neon lights flicker in the rain'},
-      {t:10, l:'Circuits pulse beneath the city veins'},
-      {t:17, l:'We run through data streams and code'},
-      {t:24, l:'A ghost in the machine, alone on this road'},
-      {t:32, l:'System override — engage'},
-      {t:40, l:'The future burns, turn the page'},
-      {t:48, l:'Chrome and steel, synthetic heart'},
-      {t:56, l:'We were built for breaking apart'},
+      { t: 0, l: '' },
+      { t: 4, l: 'Neon lights flicker in the rain' },
+      { t: 10, l: 'Circuits pulse beneath the city veins' },
+      { t: 17, l: 'We run through data streams and code' },
+      { t: 24, l: 'A ghost in the machine, alone on this road' },
+      { t: 32, l: 'System override — engage' },
+      { t: 40, l: 'The future burns, turn the page' },
+      { t: 48, l: 'Chrome and steel, synthetic heart' },
+      { t: 56, l: 'We were built for breaking apart' },
     ]
   },
   midnight: {
     url: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1391843740&color=%23a855f7&auto_play=false&hide_related=true&show_comments=false',
     lyrics: [
-      {t:0,  l:''},
-      {t:6,  l:'Mua roi tren Tokyo, uot mem ban tay'},
-      {t:14, l:'Den sap tat, con gac tro vang bong den'},
-      {t:22, l:'Tieng piano khe khang, nho ai tu xa'},
-      {t:30, l:'Dem Nhat Ban, ben minh chi co mot minh'},
-      {t:38, l:'Sakura roi tren toc, lanh nhung dep'},
-      {t:46, l:'Tieng hat vong, tieng hat vong trong gio'},
+      { t: 0, l: '' },
+      { t: 6, l: 'Mua roi tren Tokyo, uot mem ban tay' },
+      { t: 14, l: 'Den sap tat, con gac tro vang bong den' },
+      { t: 22, l: 'Tieng piano khe khang, nho ai tu xa' },
+      { t: 30, l: 'Dem Nhat Ban, ben minh chi co mot minh' },
+      { t: 38, l: 'Sakura roi tren toc, lanh nhung dep' },
+      { t: 46, l: 'Tieng hat vong, tieng hat vong trong gio' },
     ]
   }
 };
@@ -157,8 +157,8 @@ async function handleBindToken() {
   try {
     const r = await fetch('/api/account/bind_token', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({token: tokenEl.value.trim(), app_id: appIdEl?.value.trim() || ''})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: tokenEl.value.trim(), app_id: appIdEl?.value.trim() || '' })
     });
     const d = await r.json();
     if (d.success) {
@@ -168,7 +168,7 @@ async function handleBindToken() {
       document.getElementById('token-alert-bar')?.remove();
       loadAvailableQuests();
     } else showToast(d.message || d.error || 'Token khong hop le', 'error');
-  } catch(e) { showToast('Loi ket noi may chu', 'error'); }
+  } catch (e) { showToast('Loi ket noi may chu', 'error'); }
 }
 
 async function handleSaveConfig() {
@@ -177,7 +177,7 @@ async function handleSaveConfig() {
   try {
     const r = await fetch('/api/save_config', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cfg)
     });
     const d = await r.json();
@@ -186,7 +186,7 @@ async function handleSaveConfig() {
     } else {
       showToast(d.message || 'Loi khi luu cau hinh', 'error');
     }
-  } catch(e) {
+  } catch (e) {
     showToast('Loi ket noi toi may chu', 'error');
   }
 }
@@ -194,10 +194,10 @@ async function handleSaveConfig() {
 async function handleUnbindToken() {
   if (!confirm('Huy lien ket Discord Token?')) return;
   try {
-    await fetch('/api/account/unbind_token', {method:'POST'});
+    await fetch('/api/account/unbind_token', { method: 'POST' });
     showToast('Da huy lien ket token', 'info');
     location.reload();
-  } catch(e) { showToast('Loi huy lien ket', 'error'); }
+  } catch (e) { showToast('Loi huy lien ket', 'error'); }
 }
 
 function updateAccountUI(data) {
@@ -247,17 +247,19 @@ function buildRPCConfig() {
   const appId = document.getElementById('input-app-id')?.value.trim() || '1546849576986607657';
   const streamUrl = document.getElementById('input-stream-url')?.value.trim() || '';
   const buttons = [];
-  if (btn1Label && btn1Url) buttons.push({label: btn1Label, url: btn1Url});
-  if (btn2Label && btn2Url) buttons.push({label: btn2Label, url: btn2Url});
-  return { activity_type: actType, name, details, state, large_image: largeImage, small_image: smallImage,
+  if (btn1Label && btn1Url) buttons.push({ label: btn1Label, url: btn1Url });
+  if (btn2Label && btn2Url) buttons.push({ label: btn2Label, url: btn2Url });
+  return {
+    activity_type: actType, name, details, state, large_image: largeImage, small_image: smallImage,
     large_text: largeText, small_text: smallText, buttons, use_timestamp: useTimestamp,
-    status, app_id: appId, stream_url: streamUrl };
+    status, app_id: appId, stream_url: streamUrl
+  };
 }
 
 async function handleStartRPC() {
   const cfg = buildRPCConfig();
   try {
-    const r = await fetch('/api/start', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cfg)});
+    const r = await fetch('/api/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
     const d = await r.json();
     if (d.success) {
       rpcRunning = true; rpcStartTime = Date.now();
@@ -267,22 +269,22 @@ async function handleStartRPC() {
       setLed('running'); startTimer(); startLogPolling();
       showToast('RPC da khoi dong!', 'success');
     } else showToast(d.error || 'Khoi dong that bai', 'error');
-  } catch(e) { showToast('Loi ket noi may chu', 'error'); }
+  } catch (e) { showToast('Loi ket noi may chu', 'error'); }
 }
 
 async function handleUpdateRPC() {
   const cfg = buildRPCConfig();
   try {
-    const r = await fetch('/api/update', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cfg)});
+    const r = await fetch('/api/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
     const d = await r.json();
     if (d.success) showToast('Da cap nhat RPC!', 'success');
     else showToast(d.error || 'Cap nhat that bai', 'error');
-  } catch(e) { showToast('Loi ket noi', 'error'); }
+  } catch (e) { showToast('Loi ket noi', 'error'); }
 }
 
 async function handleStopRPC() {
   try {
-    const r = await fetch('/api/stop', {method:'POST'});
+    const r = await fetch('/api/stop', { method: 'POST' });
     const d = await r.json();
     if (d.success) {
       rpcRunning = false; rpcStartTime = null;
@@ -292,7 +294,7 @@ async function handleStopRPC() {
       setLed('idle'); stopTimer();
       showToast('Da dung RPC', 'info');
     }
-  } catch(e) { showToast('Loi dung RPC', 'error'); }
+  } catch (e) { showToast('Loi dung RPC', 'error'); }
 }
 
 
@@ -314,7 +316,7 @@ function updateLivePreview() {
   const useTimer = document.getElementById('check-timestamp')?.checked;
   const userStatus = document.getElementById('select-user-status')?.value || 'online';
 
-  const typeMap = {playing:'PLAYING A GAME', streaming:'LIVE ON TWITCH', listening:'LISTENING TO', watching:'WATCHING', competing:'COMPETING IN'};
+  const typeMap = { playing: 'PLAYING A GAME', streaming: 'LIVE ON TWITCH', listening: 'LISTENING TO', watching: 'WATCHING', competing: 'COMPETING IN' };
   const el = (id) => document.getElementById(id);
   if (el('pv-activity-type-header')) el('pv-activity-type-header').textContent = typeMap[actType] || 'PLAYING A GAME';
   if (el('pv-activity-name')) el('pv-activity-name').textContent = name || '\u200b';
@@ -335,7 +337,7 @@ function updateLivePreview() {
 
   const dotEl = document.getElementById('pv-status-dot');
   if (dotEl) {
-    const cols = {online:'#3ba55c', idle:'#faa61a', dnd:'#ed4245', invisible:'#747f8d'};
+    const cols = { online: '#3ba55c', idle: '#faa61a', dnd: '#ed4245', invisible: '#747f8d' };
     dotEl.style.background = cols[userStatus] || '#3ba55c';
   }
 
@@ -386,8 +388,8 @@ function startTimer() {
     const h = Math.floor(elapsed / 3600);
     const m = Math.floor((elapsed % 3600) / 60);
     const s = elapsed % 60;
-    const txt = h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} elapsed`
-                      : `${m}:${String(s).padStart(2,'0')} elapsed`;
+    const txt = h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} elapsed`
+      : `${m}:${String(s).padStart(2, '0')} elapsed`;
     const el = document.getElementById('pv-timer-text');
     if (el) el.textContent = txt;
   }, 1000);
@@ -449,7 +451,7 @@ async function fetchLogs(type = 'rpc') {
       });
       if (wasBottom) screen.scrollTop = screen.scrollHeight;
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function clearLogs() {
@@ -458,7 +460,7 @@ function clearLogs() {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ============================================================
@@ -471,7 +473,7 @@ async function loadPresets() {
     const d = await r.json();
     currentPresets = d.presets || [];
     renderPresets();
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function renderPresets() {
@@ -526,7 +528,7 @@ async function loadPreset(id) {
     onManualImageChange('small');
     updateLivePreview();
     showToast(`Da load preset "${d.name}"`, 'success');
-  } catch(e) { showToast('Loi load preset', 'error'); }
+  } catch (e) { showToast('Loi load preset', 'error'); }
 }
 
 async function saveCurrentAsPreset() {
@@ -534,20 +536,20 @@ async function saveCurrentAsPreset() {
   if (!name?.trim()) return;
   const cfg = buildRPCConfig();
   try {
-    const r = await fetch('/api/presets', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: name.trim(), config: cfg})});
+    const r = await fetch('/api/presets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim(), config: cfg }) });
     const d = await r.json();
     if (d.success) { showToast(`Da luu preset "${name}"`, 'success'); loadPresets(); }
     else showToast(d.error || 'Luu that bai', 'error');
-  } catch(e) { showToast('Loi luu preset', 'error'); }
+  } catch (e) { showToast('Loi luu preset', 'error'); }
 }
 
 async function deletePreset(id) {
   if (!confirm('Xoa preset nay?')) return;
   try {
-    await fetch(`/api/presets/${id}`, {method:'DELETE'});
+    await fetch(`/api/presets/${id}`, { method: 'DELETE' });
     showToast('Da xoa preset', 'info');
     loadPresets();
-  } catch(e) {}
+  } catch (e) { }
 }
 
 // ============================================================
@@ -577,7 +579,7 @@ async function uploadImageFile(input, type) {
   formData.append('type', type);
   showToast('Dang tai len anh...', 'info', 2000);
   try {
-    const r = await fetch('/api/upload', {method:'POST', body: formData});
+    const r = await fetch('/api/upload', { method: 'POST', body: formData });
     const d = await r.json();
     if (d.success) {
       const url = d.url;
@@ -606,7 +608,7 @@ async function uploadImageFile(input, type) {
       }
       showToast('Da tai len anh!', 'success');
     } else showToast(d.error || 'Tai len that bai', 'error');
-  } catch(e) { showToast('Loi tai len anh', 'error'); }
+  } catch (e) { showToast('Loi tai len anh', 'error'); }
 }
 
 function onManualImageChange(type) {
@@ -755,7 +757,7 @@ async function scanPortalApps(silent = false) {
     } else {
       if (!silent) showToast('Khong tim thay app nao tren Portal', 'warning');
     }
-  } catch(e) { if (!silent) showToast('Loi quet Portal', 'error'); }
+  } catch (e) { if (!silent) showToast('Loi quet Portal', 'error'); }
 }
 
 function applyDetectedAvatar() {
@@ -885,14 +887,14 @@ function handleStopLyricAudio() {
 
 async function handleClearDiscordStatus() {
   try {
-    const r = await fetch('/api/lyrics/clear', {method:'POST'});
+    const r = await fetch('/api/lyrics/clear', { method: 'POST' });
     const d = await r.json();
     if (d.success) {
       showToast('Da xoa Custom Status!', 'success');
       const lyr = document.getElementById('lsc-lyric-current');
       if (lyr) lyr.textContent = 'Status da duoc xoa';
     } else showToast(d.error || 'Loi xoa status', 'error');
-  } catch(e) { showToast('Loi ket noi', 'error'); }
+  } catch (e) { showToast('Loi ket noi', 'error'); }
 }
 
 function syncLyric() {
@@ -949,9 +951,9 @@ function updateLyricDisplay(line, sec) {
   if (lyricSyncing && line) {
     fetch('/api/lyrics/sync', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({status: line, emoji: emoji})
-    }).catch(() => {});
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: line, emoji: emoji })
+    }).catch(() => { });
   }
 }
 
@@ -968,7 +970,45 @@ function formatTime(sec) {
   const s = Math.floor(sec);
   const m = Math.floor(s / 60);
   const ss = s % 60;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+}
+
+async function handleTranscribeAudio() {
+  const fileInput = document.getElementById('input-audio-stt');
+  const statusText = document.getElementById('stt-status-text');
+  const btn = document.getElementById('btn-stt-transcribe');
+  const file = fileInput?.files?.[0];
+  if (!file) {
+    if (statusText) statusText.textContent = 'Chua chon file nhac nao.';
+    return;
+  }
+  const fd = new FormData();
+  fd.append('audio', file);
+  if (btn) { btn.disabled = true; btn.textContent = 'Dang nhan dien...'; }
+  if (statusText) statusText.textContent = 'Dang xu ly am thanh (co the mat 30s - vai phut tuy do dai bai hat)...';
+  try {
+    const res = await fetch('/api/lyrics/transcribe', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+      const ta = document.getElementById('input-custom-lrc');
+      if (ta) ta.value = data.lrc;
+      currentLyrics = parseLRC(data.lrc);
+      const sel = document.getElementById('select-lyric-track');
+      if (sel) sel.value = 'custom';
+      const customGroup = document.getElementById('custom-lrc-group');
+      if (customGroup) customGroup.classList.remove('d-none');
+      if (statusText) statusText.textContent = `Da nhan dien xong ${data.segments || 0} dong loi.`;
+      showToast('Da tu dong tao loi bai hat tu am thanh', 'success');
+    } else {
+      if (statusText) statusText.textContent = data.message || 'Nhan dien that bai.';
+      showToast(data.message || 'Nhan dien that bai', 'error');
+    }
+  } catch (e) {
+    if (statusText) statusText.textContent = 'Loi ket noi khi nhan dien.';
+    showToast('Loi ket noi khi nhan dien', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Nhan Dien Loi'; }
+  }
 }
 
 function parseLRC(raw) {
@@ -1004,7 +1044,7 @@ async function loadAvailableQuests() {
       const card = buildQuestCard(q);
       container.appendChild(card);
     });
-  } catch(e) {
+  } catch (e) {
     container.innerHTML = '<div class="quest-loading">Loi khi tai danh sach nhiem vu tu may chu.</div>';
   }
 }
@@ -1056,7 +1096,7 @@ async function fetchQuestLogs() {
       }
       questLogLastCount = logs.length;
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function startQuestLogPolling() {
@@ -1072,7 +1112,7 @@ function stopQuestLogPolling() {
 async function handleAutoEnrollAll() {
   showToast('Dang tu dong nhan tat ca Quest tren Discord...', 'info', 2500);
   try {
-    const r = await fetch('/api/quests/enroll_all', {method: 'POST'});
+    const r = await fetch('/api/quests/enroll_all', { method: 'POST' });
     const d = await r.json();
     if (d.success) {
       showToast(d.message || `Da nhan tat ca nhiem vu thanh cong!`, 'success');
@@ -1080,7 +1120,7 @@ async function handleAutoEnrollAll() {
     } else {
       showToast(d.message || 'Khong the nhan nhiem vu', 'error');
     }
-  } catch(e) {
+  } catch (e) {
     showToast('Loi ket noi khi nhan nhiem vu', 'error');
   }
 }
@@ -1131,15 +1171,15 @@ async function handleStartAutoQuest() {
 
   // Clear console and start log polling
   clearQuestLog();
-  await fetch('/api/quests/logs', {method: 'DELETE'});
+  await fetch('/api/quests/logs', { method: 'DELETE' });
   questLogLastCount = 0;
   startQuestLogPolling();
 
   try {
     const r = await fetch('/api/quests/start', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({auto: true})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auto: true })
     });
     const d = await r.json();
     if (d.success) {
@@ -1152,7 +1192,7 @@ async function handleStartAutoQuest() {
       if (stopBtn) stopBtn.disabled = true;
       stopQuestLogPolling();
     }
-  } catch(e) {
+  } catch (e) {
     showToast('Lỗi kết nối máy chủ', 'error');
     stopQuestLogPolling();
   }
@@ -1177,15 +1217,15 @@ async function handleStartQuest(id, name, game, imgUrl, taskType, targetSec) {
 
   // Clear console and start log polling
   clearQuestLog();
-  await fetch('/api/quests/logs', {method: 'DELETE'});
+  await fetch('/api/quests/logs', { method: 'DELETE' });
   questLogLastCount = 0;
   startQuestLogPolling();
 
   try {
     const r = await fetch('/api/quests/start', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({quest_id: id, quest_name: name, task_type: taskType, target_seconds: targetSec})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quest_id: id, quest_name: name, task_type: taskType, target_seconds: targetSec })
     });
     const d = await r.json();
     if (d.success) {
@@ -1198,7 +1238,7 @@ async function handleStartQuest(id, name, game, imgUrl, taskType, targetSec) {
       if (stopBtn) stopBtn.disabled = true;
       stopQuestLogPolling();
     }
-  } catch(e) { showToast('Lỗi kết nối máy chủ', 'error'); stopQuestLogPolling(); }
+  } catch (e) { showToast('Lỗi kết nối máy chủ', 'error'); stopQuestLogPolling(); }
 }
 
 function startQuestProgressPolling(id, targetSec) {
@@ -1248,13 +1288,13 @@ function startQuestProgressPolling(id, targetSec) {
         const stopBtn = document.getElementById('btn-quest-stop');
         if (stopBtn) stopBtn.disabled = true;
       }
-    } catch(e) {}
+    } catch (e) { }
   }, 1200);
 }
 
 async function handleStopQuest() {
   try {
-    await fetch('/api/quests/stop', {method:'POST'});
+    await fetch('/api/quests/stop', { method: 'POST' });
     if (questRunnerInterval) {
       clearInterval(questRunnerInterval);
       questRunnerInterval = null;
@@ -1265,7 +1305,7 @@ async function handleStopQuest() {
     if (chip) { chip.textContent = 'Da Dung'; chip.className = 'quest-status-badge'; }
     document.getElementById('btn-quest-stop').disabled = true;
     showToast('Da dung auto quest', 'info');
-  } catch(e) { showToast('Loi dung quest', 'error'); }
+  } catch (e) { showToast('Loi dung quest', 'error'); }
 }
 
 // ============================================================
@@ -1273,18 +1313,18 @@ async function handleStopQuest() {
 // ============================================================
 
 async function handleClaimHypeSquad(house) {
-  const names = {1:'Bravery', 2:'Brilliance', 3:'Balance'};
+  const names = { 1: 'Bravery', 2: 'Brilliance', 3: 'Balance' };
   showToast(`Dang nhan HypeSquad ${names[house]}...`, 'info', 2000);
   try {
     const r = await fetch('/api/hypesquad/claim', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({house_id: house})
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ house_id: house })
     });
     const d = await r.json();
     if (d.success) showToast(`Da nhan Huy Hieu ${names[house]}!`, 'success');
     else showToast(d.error || 'Nhan huy hieu that bai', 'error');
-  } catch(e) { showToast('Loi ket noi', 'error'); }
+  } catch (e) { showToast('Loi ket noi', 'error'); }
 }
 
 // Fix typo in HTML for balance button
@@ -1328,7 +1368,7 @@ async function loadSavedConfig() {
       }
       updateLivePreview();
     }
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function init() {
