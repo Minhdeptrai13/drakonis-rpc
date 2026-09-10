@@ -990,7 +990,7 @@ class DiscordUserQuestRunner:
         name = get_quest_name(quest) if isinstance(quest, dict) else f"Quest #{qid}"
         raw_meta = quest.get("traffic_metadata_raw") if isinstance(quest, dict) else None
         sealed_meta = quest.get("traffic_metadata_sealed") if isinstance(quest, dict) else None
-        
+
         headers = make_discord_headers(token)
         payload = {
             "location": 11,
@@ -1000,23 +1000,20 @@ class DiscordUserQuestRunner:
             "traffic_metadata_raw": raw_meta,
             "traffic_metadata_sealed": sealed_meta
         }
-        for attempt in range(1, 4):
-            try:
-                res = requests.post(f"https://discord.com/api/v9/quests/{qid}/enroll", headers=headers, json=payload, timeout=10)
-                if res.status_code in (200, 201, 204):
-                    quest_log(f"Đã nhận thành công: {name}", "success")
-                    return True
-                if res.status_code == 429:
-                    wait = res.json().get("retry_after", 5) + 1
-                    quest_log(f"Rate limited nhận '{name}' - Chờ {wait}s...", "warning")
-                    time.sleep(wait)
-                    continue
-                quest_log(f"Enroll '{name}' thất bại (HTTP {res.status_code})", "warning")
+        try:
+            res = requests.post(f"https://discord.com/api/v9/quests/{qid}/enroll", headers=headers, json=payload, timeout=10)
+            if res.status_code in (200, 201, 204):
+                quest_log(f"Đã nhận thành công: {name}", "success")
+                return True
+            if res.status_code == 429:
+                wait = res.json().get("retry_after", 5)
+                quest_log(f"⚠️ Discord tạm khóa nhận quest ({wait:.0f}s) - Bỏ qua để ưu tiên cày quest có sẵn!", "warning")
                 return False
-            except Exception as e:
-                quest_log(f"Lỗi enroll '{name}': {e}", "error")
-                return False
-        return False
+            quest_log(f"Enroll '{name}' thất bại (HTTP {res.status_code})", "warning")
+            return False
+        except Exception as e:
+            quest_log(f"Lỗi enroll '{name}': {e}", "error")
+            return False
 
     def _fetch_quests(self, token: str) -> list:
         try:
@@ -1177,7 +1174,7 @@ class DiscordUserQuestRunner:
     def _run_auto_quest_loop(self, token: str):
         quest_log("══════════════════════════════════════════════════", "info")
         quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER v3.0", "success")
-        quest_log("Tự động quét Discord, tự nhận và cày tất cả nhiệm vụ!", "info")
+        quest_log("Cơ chế cuốn chiếu: Cày sạch quest đã nhận -> Nhận 1 cày 1!", "info")
         quest_log("══════════════════════════════════════════════════", "info")
 
         completed_ids = set()
@@ -1191,18 +1188,48 @@ class DiscordUserQuestRunner:
             if not raw_quests:
                 quest_log("Không tìm thấy nhiệm vụ nào từ Discord.", "warning")
             else:
-                unaccepted = [q for q in raw_quests if not is_enrolled(q) and not is_completed(q) and is_completable(q)]
-                for q in unaccepted:
-                    if self.stop_flag.is_set():
-                        break
-                    self.enroll(token, q)
-                    time.sleep(3)
+                total = len(raw_quests)
+                valid_quests = [q for q in raw_quests if is_completable(q)]
+                enrolled_count = sum(1 for q in valid_quests if is_enrolled(q))
+                completed_count = sum(1 for q in valid_quests if is_completed(q))
+                unaccepted_count = sum(1 for q in valid_quests if not is_enrolled(q) and not is_completed(q))
 
-                raw_quests = self._fetch_quests(token)
+                quest_log(
+                    f"📊 Discord có: {total} quest ({len(valid_quests)} hỗ trợ) | "
+                    f"Đã nhận: {enrolled_count} | Đã xong: {completed_count} | Chưa nhận: {unaccepted_count}",
+                    "info"
+                )
+
+                for q in valid_quests:
+                    name = get_quest_name(q)
+                    task = get_task_type(q)
+                    if is_completed(q):
+                        tag = "✅ [ĐÃ XONG]"
+                    elif is_enrolled(q):
+                        tag = "▶️ [ĐÃ NHẬN]"
+                    else:
+                        tag = "⚪ [CHƯA NHẬN]"
+                    quest_log(f"  {tag} {name} [{task}]", "info")
+
                 actionable = [
                     q for q in raw_quests
                     if is_enrolled(q) and not is_completed(q) and is_completable(q) and q.get("id") not in completed_ids
                 ]
+
+                if not actionable:
+                    unaccepted = [
+                        q for q in raw_quests
+                        if not is_enrolled(q) and not is_completed(q) and is_completable(q) and q.get("id") not in completed_ids
+                    ]
+                    for q in unaccepted:
+                        if self.stop_flag.is_set():
+                            break
+                        if self.enroll(token, q):
+                            actionable.append(q)
+                            time.sleep(2)
+                            break
+                        else:
+                            time.sleep(1)
 
                 if not actionable:
                     quest_log("Không có nhiệm vụ nào đủ điều kiện cần cày lúc này.", "info")
@@ -1245,8 +1272,8 @@ class DiscordUserQuestRunner:
                         completed_ids.add(qid)
                         time.sleep(2)
 
-            quest_log("Chờ 60s để quét lại nhiệm vụ...", "info")
-            for _ in range(60):
+            quest_log("Chờ 30s để kiểm tra đợt nhiệm vụ tiếp theo...", "info")
+            for _ in range(30):
                 if self.stop_flag.is_set():
                     break
                 time.sleep(1)
