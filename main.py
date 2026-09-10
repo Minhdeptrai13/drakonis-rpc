@@ -13,6 +13,7 @@ import re
 import base64
 import io
 from functools import wraps
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Union, Any
 from PIL import Image, ImageDraw, ImageFilter
 if hasattr(sys.stdout, 'reconfigure'):
@@ -774,6 +775,14 @@ def make_discord_headers(token: str) -> dict:
         "Referer": "https://discord.com/channels/@me"
     }
 
+def create_discord_session(token: str) -> requests.Session:
+    """Tái sử dụng TCP session giữ kết nối liên tục, chống bị Discord đóng kết nối bất thường"""
+    sess = requests.Session()
+    sess.headers.update(make_discord_headers(token))
+    return sess
+
+from datetime import datetime, timezone
+
 SUPPORTED_QUEST_TASKS = [
     "WATCH_VIDEO",
     "PLAY_ON_DESKTOP",
@@ -790,61 +799,80 @@ def _quest_get(d, *keys):
             return d[k]
     return None
 
+def get_task_config(quest: dict) -> dict:
+    cfg = quest.get("config", {})
+    return _quest_get(cfg, "taskConfig", "task_config", "taskConfigV2", "task_config_v2") or {}
+
+def get_quest_name(quest: dict) -> str:
+    cfg = quest.get("config", {})
+    msgs = cfg.get("messages", {})
+    name = _quest_get(msgs, "questName", "quest_name")
+    if name:
+        return name.strip()
+    game = _quest_get(msgs, "gameTitle", "game_title")
+    if game:
+        return game.strip()
+    app_name = cfg.get("application", {}).get("name")
+    if app_name:
+        return app_name.strip()
+    return f"Quest #{quest.get('id', '?')}"
+
+def is_completable(quest: dict) -> bool:
+    expires = _quest_get(quest.get("config", {}), "expiresAt", "expires_at")
+    if expires:
+        try:
+            exp_dt = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+            if exp_dt <= datetime.now(timezone.utc):
+                return False
+        except Exception:
+            pass
+    tc = get_task_config(quest)
+    tasks = tc.get("tasks", {})
+    return any(tasks.get(t) is not None for t in SUPPORTED_QUEST_TASKS)
+
+def is_enrolled(quest: dict) -> bool:
+    us = _quest_get(quest, "userStatus", "user_status") or {}
+    return bool(_quest_get(us, "enrolledAt", "enrolled_at"))
+
+def is_completed(quest: dict) -> bool:
+    us = _quest_get(quest, "userStatus", "user_status") or {}
+    return bool(_quest_get(us, "completedAt", "completed_at"))
+
+def get_task_type(quest: dict) -> str:
+    tc = get_task_config(quest)
+    tasks = tc.get("tasks", {})
+    for t in SUPPORTED_QUEST_TASKS:
+        if tasks.get(t) is not None:
+            return t
+    return "UNSUPPORTED"
+
+def get_seconds_needed(quest: dict) -> int:
+    tc = get_task_config(quest)
+    ttype = get_task_type(quest)
+    if not tc or ttype == "UNSUPPORTED":
+        return 0
+    return tc.get("tasks", {}).get(ttype, {}).get("target", 0)
+
+def get_seconds_done(quest: dict) -> float:
+    ttype = get_task_type(quest)
+    if ttype == "UNSUPPORTED":
+        return 0.0
+    us = _quest_get(quest, "userStatus", "user_status") or {}
+    prog = us.get("progress", {})
+    if isinstance(prog, dict) and ttype in prog:
+        return float(prog[ttype].get("value", 0))
+    return float(prog.get("value", 0)) if isinstance(prog, dict) else 0.0
+
 def parse_discord_quest_item(q: dict) -> dict:
     qid = str(q.get("id", ""))
     cfg = q.get("config", {})
-    msgs = cfg.get("messages", {})
-    name = _quest_get(msgs, "questName", "quest_name") or _quest_get(msgs, "gameTitle", "game_title") or cfg.get("application", {}).get("name") or f"Quest #{qid}"
-    game = _quest_get(msgs, "gameTitle", "game_title") or cfg.get("application", {}).get("name") or "Discord Game"
-    
-    # Task config
-    tc = _quest_get(cfg, "taskConfig", "task_config", "taskConfigV2", "task_config_v2") or {}
-    tasks = tc.get("tasks", {})
-    task_type = None
-    target_seconds = 0
-    for t in SUPPORTED_QUEST_TASKS:
-        if tasks.get(t) is not None:
-            task_type = t
-            target_seconds = tasks[t].get("target", 0)
-            break
-
-    # Kiểm tra hạn quest
-    # LƯU Ý: quest thật của Discord LUÔN có expiresAt. Nếu field này bị thiếu/null,
-    # nhiều khả năng đây là quest "ảo" (nội bộ/test/preview) mà API vẫn trả về cho
-    # một số tài khoản nhưng không thể enroll/cày thật -> coi như hết hạn để loại bỏ.
-    expires_at = _quest_get(cfg, "expiresAt", "expires_at")
-    is_expired = True
-    if expires_at:
-        try:
-            exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-            is_expired = exp_dt <= datetime.now(timezone.utc)
-        except Exception:
-            is_expired = True
-
-    # Quest thật luôn có rewards_config với ít nhất 1 phần thưởng cụ thể.
-    rewards_config_check = cfg.get("rewards_config", {}) or cfg.get("rewardsConfig", {})
-    has_real_rewards = bool(rewards_config_check.get("rewards"))
-
-    # Quest thật luôn có tên game/ứng dụng gắn kèm (application id), quest "ảo"
-    # thường thiếu hẳn phần config này.
-    has_application = bool(cfg.get("application", {}).get("id") or cfg.get("application_id"))
-
-    # Chỉ tính là completable khi: có task_type hỗ trợ, chưa hết hạn (hoặc có hạn rõ ràng),
-    # có phần thưởng thật, và có application gắn kèm. Thiếu 1 trong các điều kiện này
-    # => rất có thể là quest ảo, sẽ bị loại để tránh auto-quest cứ cố "nhận" nó.
-    completable = bool(task_type is not None and not is_expired and has_real_rewards and has_application)
-
-    # User Status
-    us = _quest_get(q, "userStatus", "user_status") or {}
-    enrolled = bool(_quest_get(us, "enrolledAt", "enrolled_at"))
-    completed = bool(_quest_get(us, "completedAt", "completed_at"))
-    
-    prog = us.get("progress", {}) or {}
-    seconds_done = 0
-    if task_type and task_type in prog and isinstance(prog[task_type], dict):
-        seconds_done = prog[task_type].get("value", 0)
-    elif "value" in prog:
-        seconds_done = prog.get("value", 0)
+    name = get_quest_name(q)
+    task_type = get_task_type(q)
+    target_seconds = get_seconds_needed(q)
+    seconds_done = get_seconds_done(q)
+    enrolled = is_enrolled(q)
+    completed = is_completed(q)
+    completable = is_completable(q)
 
     pct = 0
     if target_seconds > 0:
@@ -852,7 +880,6 @@ def parse_discord_quest_item(q: dict) -> dict:
     if completed:
         pct = 100
 
-    # Banner / Asset
     assets = cfg.get("assets", {})
     banner_url = assets.get("hero") or assets.get("banner") or assets.get("quest_bar_hero")
     if not banner_url:
@@ -860,7 +887,6 @@ def parse_discord_quest_item(q: dict) -> dict:
     elif not banner_url.startswith("http"):
         banner_url = f"https://cdn.discordapp.com/assets/{qid}/{banner_url}.png"
 
-    # Rewards
     rewards_config = cfg.get("rewards_config", {}) or cfg.get("rewardsConfig", {})
     rewards_list = rewards_config.get("rewards", [])
     reward_name = "Phần Thưởng Độc Quyền Discord"
@@ -871,17 +897,16 @@ def parse_discord_quest_item(q: dict) -> dict:
         "id": qid,
         "title": name,
         "name": name,
-        "game_name": game,
-        "app_name": game,
-        "task_type": task_type or "UNSUPPORTED",
-        "type": task_type or "UNSUPPORTED",
-        "target_seconds": int(target_seconds) if target_seconds else 0,
+        "game_name": name,
+        "app_name": name,
+        "task_type": task_type,
+        "type": task_type,
+        "target_seconds": int(target_seconds),
         "seconds_done": float(seconds_done),
         "progress_pct": pct,
         "enrolled": enrolled,
         "completed": completed,
         "completable": completable,
-        "is_expired": is_expired,
         "banner": banner_url,
         "banner_url": banner_url,
         "reward": reward_name,
@@ -918,7 +943,6 @@ class DiscordUserQuestRunner:
             }
 
     def start_auto(self, token: str):
-        """Bắt đầu chạy tự động toàn bộ: Tự quét, tự nhận (enroll) và tự cày lần lượt từng quest tới khi xong hết"""
         self.stop()
         with self.lock:
             self.status = 'running'
@@ -961,26 +985,37 @@ class DiscordUserQuestRunner:
             if self.status == 'running':
                 self.status = 'stopped'
 
-    def enroll(self, token: str, quest_id: str) -> bool:
+    def enroll(self, token: str, quest: Union[dict, str]) -> bool:
+        qid = quest["id"] if isinstance(quest, dict) else str(quest)
+        name = get_quest_name(quest) if isinstance(quest, dict) else f"Quest #{qid}"
+        raw_meta = quest.get("traffic_metadata_raw") if isinstance(quest, dict) else None
+        sealed_meta = quest.get("traffic_metadata_sealed") if isinstance(quest, dict) else None
+        
         headers = make_discord_headers(token)
+        payload = {
+            "location": 11,
+            "is_targeted": False,
+            "metadata_raw": None,
+            "metadata_sealed": None,
+            "traffic_metadata_raw": raw_meta,
+            "traffic_metadata_sealed": sealed_meta
+        }
         for attempt in range(1, 4):
             try:
-                payload = {
-                    "location": 11,
-                    "is_targeted": False,
-                    "metadata_raw": None,
-                    "metadata_sealed": None
-                }
-                res = requests.post(f"https://discord.com/api/v9/quests/{quest_id}/enroll", headers=headers, json=payload, timeout=10)
+                res = requests.post(f"https://discord.com/api/v9/quests/{qid}/enroll", headers=headers, json=payload, timeout=10)
                 if res.status_code in (200, 201, 204):
+                    quest_log(f"Đã nhận thành công: {name}", "success")
                     return True
                 if res.status_code == 429:
                     wait = res.json().get("retry_after", 5) + 1
+                    quest_log(f"Rate limited nhận '{name}' - Chờ {wait}s...", "warning")
                     time.sleep(wait)
                     continue
+                quest_log(f"Enroll '{name}' thất bại (HTTP {res.status_code})", "warning")
                 return False
-            except Exception:
-                pass
+            except Exception as e:
+                quest_log(f"Lỗi enroll '{name}': {e}", "error")
+                return False
         return False
 
     def _fetch_quests(self, token: str) -> list:
@@ -998,7 +1033,7 @@ class DiscordUserQuestRunner:
                 time.sleep(wait)
                 return self._fetch_quests(token)
         except Exception as e:
-            quest_log(f"Lỗi khi lấy danh sách quest: {e}", "error")
+            quest_log(f"Lỗi khi tải danh sách quest: {e}", "error")
         return []
 
     def _complete_video(self, token: str, qid: str, name: str, seconds_needed: int, seconds_done: float, enrolled_ts: float):
@@ -1006,7 +1041,6 @@ class DiscordUserQuestRunner:
         speed = 7
         interval = 1
         max_future = 10
-
         quest_log(f"🎬 Video: {name} ({int(seconds_done)}/{seconds_needed}s)", "info")
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
@@ -1056,7 +1090,12 @@ class DiscordUserQuestRunner:
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
             try:
-                r = requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": f"call:0:{pid}", "terminal": False}, timeout=10)
+                r = requests.post(
+                    f"https://discord.com/api/v9/quests/{qid}/heartbeat",
+                    headers=headers,
+                    json={"stream_key": f"call:0:{pid}", "terminal": False},
+                    timeout=10
+                )
                 if r.status_code == 200:
                     body = r.json()
                     progress_data = body.get("progress", {})
@@ -1077,7 +1116,7 @@ class DiscordUserQuestRunner:
                     continue
             except Exception as e:
                 quest_log(f"  Lỗi heartbeat: {e}", "error")
-            
+
             for _ in range(20):
                 if self.stop_flag.is_set():
                     break
@@ -1097,7 +1136,12 @@ class DiscordUserQuestRunner:
 
         while not self.stop_flag.is_set() and seconds_done < seconds_needed:
             try:
-                r = requests.post(f"https://discord.com/api/v9/quests/{qid}/heartbeat", headers=headers, json={"stream_key": stream_key, "terminal": False}, timeout=10)
+                r = requests.post(
+                    f"https://discord.com/api/v9/quests/{qid}/heartbeat",
+                    headers=headers,
+                    json={"stream_key": stream_key, "terminal": False},
+                    timeout=10
+                )
                 if r.status_code == 200:
                     body = r.json()
                     progress_data = body.get("progress", {})
@@ -1129,6 +1173,121 @@ class DiscordUserQuestRunner:
         except Exception:
             pass
         quest_log(f"✅ Hoàn thành: {name}!", "success")
+
+    def _run_auto_quest_loop(self, token: str):
+        quest_log("══════════════════════════════════════════════════", "info")
+        quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER v3.0", "success")
+        quest_log("Tự động quét Discord, tự nhận và cày tất cả nhiệm vụ!", "info")
+        quest_log("══════════════════════════════════════════════════", "info")
+
+        completed_ids = set()
+        cycle = 0
+
+        while not self.stop_flag.is_set():
+            cycle += 1
+            quest_log(f"─── Quét nhiệm vụ lần #{cycle} ───", "info")
+            raw_quests = self._fetch_quests(token)
+
+            if not raw_quests:
+                quest_log("Không tìm thấy nhiệm vụ nào từ Discord.", "warning")
+            else:
+                unaccepted = [q for q in raw_quests if not is_enrolled(q) and not is_completed(q) and is_completable(q)]
+                for q in unaccepted:
+                    if self.stop_flag.is_set():
+                        break
+                    self.enroll(token, q)
+                    time.sleep(3)
+
+                raw_quests = self._fetch_quests(token)
+                actionable = [
+                    q for q in raw_quests
+                    if is_enrolled(q) and not is_completed(q) and is_completable(q) and q.get("id") not in completed_ids
+                ]
+
+                if not actionable:
+                    quest_log("Không có nhiệm vụ nào đủ điều kiện cần cày lúc này.", "info")
+                else:
+                    for q in actionable:
+                        if self.stop_flag.is_set():
+                            break
+                        qid = q.get("id")
+                        name = get_quest_name(q)
+                        task_type = get_task_type(q)
+                        seconds_needed = get_seconds_needed(q)
+                        seconds_done = get_seconds_done(q)
+
+                        with self.lock:
+                            self.current_quest_id = qid
+                            self.current_quest_name = name
+                            self.task_type = task_type
+                            self.target_seconds = seconds_needed
+                            self.elapsed_seconds = int(seconds_done)
+                            self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100)) if seconds_needed else 0
+
+                        quest_log(f"━━━ Bắt đầu cày: {name} [{task_type}] ━━━", "success")
+
+                        us = _quest_get(q, "userStatus", "user_status") or {}
+                        enrolled_str = _quest_get(us, "enrolledAt", "enrolled_at")
+                        enrolled_ts = time.time()
+                        if enrolled_str:
+                            try:
+                                enrolled_ts = datetime.fromisoformat(enrolled_str.replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                pass
+
+                        if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
+                            self._complete_video(token, qid, name, seconds_needed, seconds_done, enrolled_ts)
+                        elif task_type in ("PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP"):
+                            self._complete_heartbeat(token, qid, name, task_type, seconds_needed, seconds_done)
+                        elif task_type == "PLAY_ACTIVITY":
+                            self._complete_activity(token, qid, name, seconds_needed, seconds_done)
+
+                        completed_ids.add(qid)
+                        time.sleep(2)
+
+            quest_log("Chờ 60s để quét lại nhiệm vụ...", "info")
+            for _ in range(60):
+                if self.stop_flag.is_set():
+                    break
+                time.sleep(1)
+
+        with self.lock:
+            self.status = 'stopped'
+            quest_log("⛔ Đã dừng Auto Quest Completer.", "warning")
+
+    def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
+        quest_log(f"╔══ BẮT ĐẦU AUTO QUEST ══╗", "info")
+        quest_log(f"► Nhiệm vụ: {quest_name} [{task_type}] - Cần {target_seconds}s", "info")
+
+        raw_quests = self._fetch_quests(token)
+        target_quest = next((q for q in raw_quests if str(q.get("id")) == str(quest_id)), None)
+
+        if target_quest and not is_enrolled(target_quest):
+            self.enroll(token, target_quest)
+            time.sleep(2)
+
+        enrolled_ts = time.time()
+        if target_quest:
+            us = _quest_get(target_quest, "userStatus", "user_status") or {}
+            enrolled_str = _quest_get(us, "enrolledAt", "enrolled_at")
+            if enrolled_str:
+                try:
+                    enrolled_ts = datetime.fromisoformat(enrolled_str.replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    pass
+
+        seconds_done = get_seconds_done(target_quest) if target_quest else 0
+
+        if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
+            self._complete_video(token, quest_id, quest_name, target_seconds, seconds_done, enrolled_ts)
+        elif task_type in ("PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP"):
+            self._complete_heartbeat(token, quest_id, quest_name, task_type, target_seconds, seconds_done)
+        elif task_type == "PLAY_ACTIVITY":
+            self._complete_activity(token, quest_id, quest_name, target_seconds, seconds_done)
+
+        with self.lock:
+            self.status = 'completed' if not self.stop_flag.is_set() else 'stopped'
+            self.progress_pct = 100 if self.status == 'completed' else self.progress_pct
 
     def _run_auto_quest_loop(self, token: str):
         """Vòng lặp tự phát hiện, tự nhận và hoàn thành toàn bộ quest (chuẩn code mhao)"""
