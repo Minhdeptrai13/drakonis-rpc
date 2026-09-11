@@ -144,9 +144,18 @@ function toggleTokenVisibility() {
 }
 
 function copyTokenScript() {
-  const script = `(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()`;
-  navigator.clipboard.writeText(script).then(() => showToast('Da copy script — Mo Discord Web > F12 > Dan vao Console', 'success'))
-    .catch(() => showToast('Khong the copy — hay tu copy script', 'error'));
+  const script = `window.webpackChunkdiscord_app.push([[Math.random()],{},(e)=>{for(const n of Object.values(e.c)){try{const e=n?.exports?.default;if(e?.getToken){const t=e.getToken();copy(t);console.log("%c[SUCCESS] Token copied!","color:#22c55e;font-size:16px;font-weight:bold");return}}catch{}}}]);`;
+  navigator.clipboard.writeText(script).then(() => showToast('Đã sao chép Script lấy Token — Vào Discord Web > F12 > Console > Dán & Enter', 'success'))
+    .catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = script;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Đã sao chép Script lấy Token vào Clipboard!', 'success');
+    });
 }
 
 async function handleBindToken() {
@@ -244,9 +253,7 @@ function updateAccountUI(data) {
   if (accName) accName.textContent = username;
   if (accStatus) {
     accStatus.className = `acc-status-pill ${isLinked ? 'linked' : 'unlinked'}`;
-    accStatus.innerHTML = isLinked 
-      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Đã liên kết Discord</span>`
-      : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>Chưa liên kết Discord Token</span>`;
+    accStatus.innerHTML = `<span class="acc-status-dot ${isLinked ? 'green' : 'amber'}"></span><span>${isLinked ? 'Đã liên kết Discord' : 'Chưa liên kết Discord Token'}</span>`;
   }
   if (isLinked && avatar) {
     if (accAvatar) { accAvatar.src = avatar; accAvatar.classList.remove('d-none'); }
@@ -293,20 +300,26 @@ function updateAccountUI(data) {
     }
   }
 
-  // 5. Toggle Locked Section Overlays (RPC & Lyric)
+  // 5. Toggle Locked Section Overlays (Form + Preview RPC & Lyric)
   const rpcOverlay = document.getElementById('rpc-locked-overlay');
+  const rpcPreviewOverlay = document.getElementById('rpc-preview-locked-overlay');
   const lyricOverlay = document.getElementById('lyric-locked-overlay');
+  const lyricPreviewOverlay = document.getElementById('lyric-preview-locked-overlay');
   const unbindBtn = document.getElementById('btn-account-unbind');
 
   if (isLinked) {
     if (rpcOverlay) rpcOverlay.classList.add('d-none');
+    if (rpcPreviewOverlay) rpcPreviewOverlay.classList.add('d-none');
     if (lyricOverlay) lyricOverlay.classList.add('d-none');
+    if (lyricPreviewOverlay) lyricPreviewOverlay.classList.add('d-none');
     if (unbindBtn) unbindBtn.classList.remove('d-none');
     const alertBar = document.getElementById('token-alert-bar');
     if (alertBar) alertBar.remove();
   } else {
     if (rpcOverlay) rpcOverlay.classList.remove('d-none');
+    if (rpcPreviewOverlay) rpcPreviewOverlay.classList.remove('d-none');
     if (lyricOverlay) lyricOverlay.classList.remove('d-none');
+    if (lyricPreviewOverlay) lyricPreviewOverlay.classList.remove('d-none');
     if (unbindBtn) unbindBtn.classList.add('d-none');
   }
 }
@@ -392,27 +405,43 @@ async function handleStopRPC() {
 
 function updateLivePreview() {
   const actType = document.getElementById('select-activity-type')?.value || 'playing';
-  const name = document.getElementById('input-activity-name')?.value || 'Visual Studio Code';
-  const details = document.getElementById('input-details')?.value || '';
-  const state = document.getElementById('input-state')?.value || '';
-  const btn1L = document.getElementById('input-btn1-label')?.value || '';
-  const btn1U = document.getElementById('input-btn1-url')?.value || '#';
-  const btn2L = document.getElementById('input-btn2-label')?.value || '';
-  const btn2U = document.getElementById('input-btn2-url')?.value || '#';
+  const name = document.getElementById('input-activity-name')?.value.trim() || '';
+  const details = document.getElementById('input-details')?.value.trim() || '';
+  const state = document.getElementById('input-state')?.value.trim() || '';
+  const btn1L = document.getElementById('input-btn1-label')?.value.trim() || '';
+  const btn1U = document.getElementById('input-btn1-url')?.value.trim() || '#';
+  const btn2L = document.getElementById('input-btn2-label')?.value.trim() || '';
+  const btn2U = document.getElementById('input-btn2-url')?.value.trim() || '#';
   const useTimer = document.getElementById('check-timestamp')?.checked;
   const userStatus = document.getElementById('select-user-status')?.value || 'online';
 
   const typeMap = { playing: 'PLAYING A GAME', streaming: 'LIVE ON TWITCH', listening: 'LISTENING TO', watching: 'WATCHING', competing: 'COMPETING IN' };
   const el = (id) => document.getElementById(id);
   if (el('pv-activity-type-header')) el('pv-activity-type-header').textContent = typeMap[actType] || 'PLAYING A GAME';
-  if (el('pv-activity-name')) el('pv-activity-name').textContent = name || '\u200b';
-  if (el('pv-details')) el('pv-details').textContent = details || '';
-  if (el('pv-state')) el('pv-state').textContent = state || '';
-  el('pv-details').style.display = details ? '' : 'none';
-  el('pv-state').style.display = state ? '' : 'none';
+
+  const emptyCard = el('pv-empty-activity');
+  const actCard = el('pv-activity-card');
+
+  if (!name) {
+    if (emptyCard) emptyCard.classList.remove('d-none');
+    if (actCard) actCard.classList.add('d-none');
+  } else {
+    if (emptyCard) emptyCard.classList.add('d-none');
+    if (actCard) actCard.classList.remove('d-none');
+  }
+
+  if (el('pv-activity-name')) el('pv-activity-name').textContent = name || '';
+  if (el('pv-details')) {
+    el('pv-details').textContent = details || '';
+    el('pv-details').style.display = details ? '' : 'none';
+  }
+  if (el('pv-state')) {
+    el('pv-state').textContent = state || '';
+    el('pv-state').style.display = state ? '' : 'none';
+  }
   if (el('pv-time')) el('pv-time').style.display = useTimer ? '' : 'none';
 
-  const btnsEl = document.querySelector('.dpm-act-buttons');
+  const btnsEl = document.getElementById('pv-btn-group') || document.querySelector('.dpm-act-buttons');
   if (btnsEl) {
     const b1 = document.getElementById('pv-btn1');
     const b2 = document.getElementById('pv-btn2');
@@ -427,23 +456,25 @@ function updateLivePreview() {
     dotEl.style.background = cols[userStatus] || '#3ba55c';
   }
 
-  // Dong bo hien thi anh lon
+  // Đồng bộ hiển thị ảnh lớn: Nếu chưa chọn ảnh thì ẩn hoàn toàn, không hiện icon mặc định
   const largeImgVal = document.getElementById('input-large-image')?.value.trim() || currentLargeImageUrl;
   const pvLarge = document.getElementById('pv-large-img');
   if (pvLarge) {
     if (largeImgVal) {
       if (!largeImgVal.startsWith('http')) {
         const known = KNOWN_ASSET_ICONS[largeImgVal];
-        pvLarge.src = known ? known.url : 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg';
+        pvLarge.src = known ? known.url : largeImgVal;
       } else {
         pvLarge.src = largeImgVal;
       }
+      pvLarge.style.display = 'block';
     } else {
-      pvLarge.src = 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg';
+      pvLarge.src = '';
+      pvLarge.style.display = 'none';
     }
   }
 
-  // Dong bo hien thi anh nho: Neu co anh nho thi hien de len goc anh to, neu go anh nho thi chi hien 1 anh to
+  // Đồng bộ hiển thị ảnh nhỏ
   const smallImgVal = document.getElementById('input-small-image')?.value.trim() || currentSmallImageUrl;
   const pvSmall = document.getElementById('pv-small-img');
   if (pvSmall) {
@@ -509,30 +540,31 @@ function setLed(state) {
 }
 
 // ============================================================
-// LOG POLLING
+// LOG ENGINES (RPC, LYRIC, QUEST ISOLATED)
 // ============================================================
 
-function startLogPolling(type = 'rpc') {
+function startLogPolling() {
   if (logPollingInterval) { clearInterval(logPollingInterval); logPollingInterval = null; }
-  logPollingInterval = setInterval(() => fetchLogs(type), 2000);
+  logPollingInterval = setInterval(fetchRPCLogs, 2000);
 }
 
-async function fetchLogs(type = 'rpc') {
+async function fetchRPCLogs() {
   try {
     const r = await fetch('/api/logs');
     const d = await r.json();
-    const screenId = type === 'quest' ? 'quest-log-screen' : 'terminal-screen';
-    const screen = document.getElementById(screenId);
+    const screen = document.getElementById('rpc-log-screen') || document.getElementById('terminal-screen');
     if (!screen || !d.logs) return;
     const wasBottom = screen.scrollTop + screen.clientHeight >= screen.scrollHeight - 5;
     const existing = screen.querySelectorAll('.log-line').length;
     if (d.logs.length > existing) {
       const newLogs = d.logs.slice(existing);
       newLogs.forEach(log => {
+        // Filter out quest or lyric specific lines if any
+        if (log.message && (log.message.includes('[QUEST]') || log.message.includes('[LYRIC]'))) return;
         const div = document.createElement('div');
         const lvl = log.level || 'info';
         div.className = `log-line ${lvl}`;
-        div.innerHTML = `<span class="log-time">[${log.time}]</span><span class="log-tag">[${lvl.toUpperCase()}]</span><span class="log-msg">${escapeHtml(log.message)}</span>`;
+        div.innerHTML = `<span class="log-time">[${log.time || 'RPC'}]</span><span class="log-tag">[${lvl.toUpperCase()}]</span><span class="log-msg">${escapeHtml(log.message)}</span>`;
         screen.appendChild(div);
       });
       if (wasBottom) screen.scrollTop = screen.scrollHeight;
@@ -540,8 +572,32 @@ async function fetchLogs(type = 'rpc') {
   } catch (e) { }
 }
 
+function clearRPCLog() {
+  const screen = document.getElementById('rpc-log-screen') || document.getElementById('terminal-screen');
+  if (screen) screen.innerHTML = '';
+}
+
 function clearLogs() {
-  const screen = document.getElementById('terminal-screen');
+  clearRPCLog();
+}
+
+function logLyric(message, level = 'info') {
+  const screen = document.getElementById('lyric-log-screen');
+  if (!screen) return;
+  const div = document.createElement('div');
+  div.className = `log-line ${level}`;
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  div.innerHTML = `<span class="log-time">[${timeStr}]</span><span class="log-tag">[LYRIC]</span><span class="log-msg">${escapeHtml(message)}</span>`;
+  screen.appendChild(div);
+  screen.scrollTop = screen.scrollHeight;
+  while (screen.children.length > 80) {
+    screen.removeChild(screen.firstChild);
+  }
+}
+
+function clearLyricLog() {
+  const screen = document.getElementById('lyric-log-screen');
   if (screen) screen.innerHTML = '';
 }
 
@@ -1071,6 +1127,7 @@ function handleToggleLyricAudio() {
 
   if (!currentLyrics || !currentLyrics.length) {
     showToast('Vui lòng chọn bài hát hoặc dán lời LRC trước', 'warning');
+    logLyric('Không thể đồng bộ: Chưa chọn bài hát hoặc chưa có lời LRC', 'warn');
     return;
   }
 
@@ -1080,8 +1137,8 @@ function handleToggleLyricAudio() {
 
   lyricSyncing = true;
   setLed('lyric');
-  const playBtn = document.getElementById('btn-lyric-play');
-  const stopBtn = document.getElementById('btn-lyric-stop');
+  const playBtn = document.getElementById('btn-lyric-play') || document.getElementById('btn-lyric-sync-toggle');
+  const stopBtn = document.getElementById('btn-lyric-stop') || document.getElementById('btn-lyric-sync-stop');
   if (playBtn) playBtn.textContent = 'Dừng Đồng Bộ';
   if (stopBtn) stopBtn.disabled = false;
   const syncInd = document.getElementById('lyric-sync-indicator');
@@ -1089,7 +1146,16 @@ function handleToggleLyricAudio() {
   const liveDot = document.getElementById('lyric-live-dot');
   if (liveDot) liveDot.style.display = '';
 
+  logLyric(`Bắt đầu đồng bộ lời bài hát realtime lên Discord Custom Status...`, 'info');
   lyricInterval = setInterval(syncLyric, 400);
+}
+
+function handleToggleLyricSync() {
+  handleToggleLyricAudio();
+}
+
+function handleStopLyricSync() {
+  handleStopLyricAudio();
 }
 
 function handleStopLyricAudio() {
@@ -1098,14 +1164,15 @@ function handleStopLyricAudio() {
   clearInterval(lyricInterval);
   lyricInterval = null;
   setLed('idle');
-  const playBtn = document.getElementById('btn-lyric-play');
-  const stopBtn = document.getElementById('btn-lyric-stop');
-  if (playBtn) playBtn.textContent = 'Bắt Đầu Đồng Bộ';
+  const playBtn = document.getElementById('btn-lyric-play') || document.getElementById('btn-lyric-sync-toggle');
+  const stopBtn = document.getElementById('btn-lyric-stop') || document.getElementById('btn-lyric-sync-stop');
+  if (playBtn) playBtn.textContent = 'Bắt Đầu Đồng Bộ Discord';
   if (stopBtn) stopBtn.disabled = true;
   const syncInd = document.getElementById('lyric-sync-indicator');
   if (syncInd) syncInd.style.display = 'none';
   const liveDot = document.getElementById('lyric-live-dot');
   if (liveDot) liveDot.style.display = 'none';
+  logLyric('Đã dừng đồng bộ trạng thái Discord.', 'warn');
   showToast('Đã dừng Lyric Sync', 'info');
 }
 
@@ -1116,9 +1183,19 @@ async function handleClearDiscordStatus() {
     if (d.success) {
       showToast('Đã xóa Custom Status!', 'success');
       const lyr = document.getElementById('lsc-lyric-current');
-      if (lyr) lyr.textContent = 'Status đã được xóa';
-    } else showToast(d.error || 'Lỗi xóa status', 'error');
-  } catch (e) { showToast('Lỗi kết nối', 'error'); }
+      if (lyr) {
+        lyr.textContent = 'Chưa có câu hát nào được đồng bộ';
+        lyr.classList.add('empty-state');
+      }
+      logLyric('Đã xóa Custom Status trên tài khoản Discord thành công.', 'info');
+    } else {
+      showToast(d.error || 'Lỗi xóa status', 'error');
+      logLyric(`Lỗi khi xóa status: ${d.error || 'Thất bại'}`, 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối', 'error');
+    logLyric('Lỗi kết nối khi gửi yêu cầu xóa status.', 'error');
+  }
 }
 
 function syncLyric() {
@@ -1144,7 +1221,15 @@ function updateLyricDisplay(line, sec) {
   const emoji = document.getElementById('select-lyric-emoji')?.value || '🎵';
   const lscEl = document.getElementById('lsc-lyric-current');
   const emojiEl = document.getElementById('lsc-emoji');
-  if (lscEl) lscEl.textContent = line || '♪ ♫ ♪';
+  if (lscEl) {
+    if (line) {
+      lscEl.textContent = line;
+      lscEl.classList.remove('empty-state');
+    } else {
+      lscEl.textContent = 'Chưa có câu hát nào được đồng bộ';
+      lscEl.classList.add('empty-state');
+    }
+  }
   if (emojiEl) emojiEl.textContent = emoji;
 
   // Active line highlight & auto-scroll
@@ -1169,11 +1254,14 @@ function updateLyricDisplay(line, sec) {
 
   if (lyricSyncing && line && line !== lastSyncedLine) {
     lastSyncedLine = line;
+    logLyric(`[SYNC] ${emoji} ${line}`, 'info');
     fetch('/api/lyrics/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: line, emoji: emoji })
-    }).catch(() => { });
+    }).catch(() => {
+      logLyric(`[ERROR] Không thể gửi câu hát: "${line}" lên Discord API`, 'error');
+    });
   }
 }
 

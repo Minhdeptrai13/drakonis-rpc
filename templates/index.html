@@ -130,6 +130,48 @@
             </div>
 
           </div>
+
+          <!-- SECTION HƯỚNG DẪN LẤY DISCORD TOKEN & SCRIPT 1-CLICK -->
+          <div class="home-guide-section">
+            <div class="hgs-header">
+              <div class="hgs-title">Khởi Tạo &amp; Lấy Discord User Token</div>
+              <div class="hgs-sub">Trích xuất Discord User Token trực tiếp từ trình duyệt web của bạn với 3 bước an toàn.</div>
+            </div>
+
+            <div class="hgs-steps-grid">
+              <div class="hgs-step-card">
+                <div class="hgs-step-num">01</div>
+                <div class="hgs-step-name">Mở Discord Web</div>
+                <div class="hgs-step-desc">Đăng nhập tài khoản Discord trên trình duyệt (Chrome, Edge, Brave, v.v.).</div>
+              </div>
+              <div class="hgs-step-card">
+                <div class="hgs-step-num">02</div>
+                <div class="hgs-step-name">Bật Console F12</div>
+                <div class="hgs-step-desc">Nhấn phím <code>F12</code> (hoặc <code>Ctrl + Shift + I</code>) rồi chuyển sang tab <b>Console</b>.</div>
+              </div>
+              <div class="hgs-step-card">
+                <div class="hgs-step-num">03</div>
+                <div class="hgs-step-name">Chạy Script</div>
+                <div class="hgs-step-desc">Dán đoạn mã bên dưới vào Console và nhấn <b>Enter</b>. Token sẽ tự sao chép vào clipboard.</div>
+              </div>
+            </div>
+
+            <div class="hgs-script-box">
+              <div class="hgs-script-header">
+                <span class="hgs-script-tag">JavaScript Trích Xuất Token An Toàn</span>
+                <button type="button" class="hgs-copy-btn" onclick="copyTokenScript()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Sao Chép Script</span>
+                </button>
+              </div>
+              <pre class="hgs-script-code"><code>window.webpackChunkdiscord_app.push([[Math.random()],{},(e)=>{for(const n of Object.values(e.c)){try{const e=n?.exports?.default;if(e?.getToken){const t=e.getToken();copy(t);console.log("%c[SUCCESS] Token copied!","color:#22c55e;font-size:16px;font-weight:bold");return}}catch{}}}]);</code></pre>
+              <div class="hgs-script-footer">
+                <span>Sau khi copy token, nhấn vào đây để dán và kích hoạt tài khoản:</span>
+                <button type="button" class="hgs-action-btn" onclick="toggleAccountModal(true)">Mở Cài Đặt Tài Khoản</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -199,19 +241,19 @@
               </div>
               <div class="sf-row">
                 <label class="sf-label" for="input-activity-name">Tên Game / Ứng Dụng <span class="sf-required">*</span></label>
-                <input type="text" id="input-activity-name" class="sf-input" placeholder="Ví dụ: Minh đâyyy"
-                  value="Minh đâyyy" oninput="updateLivePreview()">
+                <input type="text" id="input-activity-name" class="sf-input" placeholder="Ví dụ: Visual Studio Code, Spotify, Valorant..."
+                  value="" oninput="updateLivePreview()">
               </div>
               <div class="sf-grid-2">
                 <div class="sf-row">
                   <label class="sf-label" for="input-details">Dòng Chi Tiết (Details)</label>
-                  <input type="text" id="input-details" class="sf-input" placeholder="cgi má"
-                    value="cgi má" oninput="updateLivePreview()">
+                  <input type="text" id="input-details" class="sf-input" placeholder="Dòng chi tiết hoạt động..."
+                    value="" oninput="updateLivePreview()">
                 </div>
                 <div class="sf-row">
                   <label class="sf-label" for="input-state">Dòng Trạng Thái (State)</label>
-                  <input type="text" id="input-state" class="sf-input" placeholder="dạ dạ"
-                    value="dạ dạ" oninput="updateLivePreview()">
+                  <input type="text" id="input-state" class="sf-input" placeholder="Dòng trạng thái presence..."
+                    value="" oninput="updateLivePreview()">
                 </div>
               </div>
               <div class="sf-toggle-row">
@@ -236,25 +278,25 @@
               <div class="sf-grid-2">
                 <div class="sf-row">
                   <label class="sf-label" for="input-btn1-label">Tên Nút 1</label>
-                  <input type="text" id="input-btn1-label" class="sf-input" placeholder="GitHub" value="GitHub"
+                  <input type="text" id="input-btn1-label" class="sf-input" placeholder="Ví dụ: GitHub" value=""
                     oninput="updateLivePreview()">
                 </div>
                 <div class="sf-row">
                   <label class="sf-label" for="input-btn1-url">URL Nút 1</label>
-                  <input type="url" id="input-btn1-url" class="sf-input" placeholder="https://..."
-                    value="https://github.com" oninput="updateLivePreview()">
+                  <input type="url" id="input-btn1-url" class="sf-input" placeholder="https://github.com/..."
+                    value="" oninput="updateLivePreview()">
                 </div>
               </div>
               <div class="sf-grid-2">
                 <div class="sf-row">
                   <label class="sf-label" for="input-btn2-label">Tên Nút 2</label>
-                  <input type="text" id="input-btn2-label" class="sf-input" placeholder="Discord Server"
-                    value="Discord Server" oninput="updateLivePreview()">
+                  <input type="text" id="input-btn2-label" class="sf-input" placeholder="Ví dụ: Discord Server"
+                    value="" oninput="updateLivePreview()">
                 </div>
                 <div class="sf-row">
                   <label class="sf-label" for="input-btn2-url">URL Nút 2</label>
-                  <input type="url" id="input-btn2-url" class="sf-input" placeholder="https://..."
-                    value="https://discord.gg" oninput="updateLivePreview()">
+                  <input type="url" id="input-btn2-url" class="sf-input" placeholder="https://discord.gg/..."
+                    value="" oninput="updateLivePreview()">
                 </div>
               </div>
               <div class="sf-toggle-row">
@@ -284,13 +326,11 @@
               <div class="sf-asset-row">
                 <div class="sf-asset-card">
                   <div class="sf-asset-preview-wrap">
-                    <img id="box-large-preview"
-                      src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=120&auto=format&fit=crop&q=80" alt=""
-                      class="sf-asset-preview-img">
+                    <img id="box-large-preview" src="" alt="" class="sf-asset-preview-img" style="display:none">
                   </div>
                   <div class="sf-asset-meta">
                     <div class="sf-asset-label">Ảnh Lớn (Large Image)</div>
-                    <div class="sf-asset-source-tag" id="lbl-large-source">Minh đâyyy Art</div>
+                    <div class="sf-asset-source-tag" id="lbl-large-source">Chưa chọn ảnh</div>
                     <div class="sf-asset-actions">
                       <button type="button" class="sf-asset-btn primary" onclick="useDevPortalAvatar()">Dùng Bot Avatar</button>
                       <button type="button" class="sf-asset-btn" onclick="triggerUpload('large')">Tải Lên</button>
@@ -298,7 +338,7 @@
                         title="Tải lên ảnh lớn" aria-label="Tải lên ảnh lớn" onchange="uploadImageFile(this, 'large')">
                     </div>
                     <input type="text" id="input-large-text" class="sf-input" placeholder="Tooltip ảnh lớn..."
-                      value="Minh đâyyy" oninput="updateLivePreview()">
+                      value="" oninput="updateLivePreview()">
                     <button type="button" class="sf-link-toggle" onclick="toggleManualInput('large')">Nhập link thủ công</button>
                     <div id="manual-large-wrap" class="sf-manual-link-wrap d-none">
                       <input type="url" id="input-large-img" class="sf-input" placeholder="https://..."
@@ -350,7 +390,19 @@
           </div>
 
           <!-- Cột Xem Trước Discord Profile Realtime -->
-          <div class="panel-preview-col">
+          <div class="panel-preview-col panel-form-relative">
+
+            <!-- LỚP PHỦ KHÓA CỘT XEM TRƯỚC KHI CHƯA LIÊN KẾT TOKEN -->
+            <div class="locked-section-overlay preview-locked {% if has_token %}d-none{% endif %}" id="rpc-preview-locked-overlay">
+              <div class="locked-overlay-content">
+                <div class="locked-icon-bubble sm">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div class="locked-overlay-title sm">Xem Trước Đang Khóa</div>
+                <div class="locked-overlay-desc sm">Cần liên kết Discord Token để nạp dữ liệu xem trước realtime.</div>
+              </div>
+            </div>
+
             <div class="preview-sticky">
               <div class="preview-header">
                 <span class="preview-title">Xem Trước Discord</span>
@@ -385,36 +437,41 @@
                   <div class="dpm-sep"></div>
 
                   <div class="dpm-activity-label" id="pv-activity-type-header">PLAYING A GAME</div>
-                  <div class="dpm-activity-card">
+
+                  <!-- Empty state khi chưa có hoạt động nào -->
+                  <div class="dpm-empty-activity" id="pv-empty-activity">Chưa thiết lập hoạt động presence</div>
+
+                  <!-- Thẻ hoạt động presence -->
+                  <div class="dpm-activity-card d-none" id="pv-activity-card">
                     <div class="dpm-act-row">
                       <div class="dpm-act-icons">
-                        <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=120&auto=format&fit=crop&q=80" alt=""
-                          class="dpm-act-large" id="pv-large-img">
+                        <img src="" alt="" class="dpm-act-large" id="pv-large-img" style="display:none">
                         <img src="" alt="" class="dpm-act-small" id="pv-small-img" style="display:none">
                       </div>
                       <div class="dpm-act-details">
-                        <div class="dpm-act-name" id="pv-activity-name">Minh đâyyy</div>
-                        <div class="dpm-act-detail" id="pv-details">cgi má</div>
-                        <div class="dpm-act-state" id="pv-state">dạ dạ</div>
-                        <div class="dpm-act-timer" id="pv-time"><span id="pv-timer-text">21:27:16 elapsed</span></div>
+                        <div class="dpm-act-name" id="pv-activity-name"></div>
+                        <div class="dpm-act-detail" id="pv-details"></div>
+                        <div class="dpm-act-state" id="pv-state"></div>
+                        <div class="dpm-act-timer" id="pv-time"><span id="pv-timer-text"></span></div>
                       </div>
                     </div>
-                    <div class="dpm-act-buttons">
-                      <a href="#" class="dpm-act-btn" id="pv-btn1">GitHub</a>
-                      <a href="#" class="dpm-act-btn" id="pv-btn2">Discord Server</a>
+                    <div class="dpm-act-buttons" id="pv-btn-group" style="display:none">
+                      <a href="#" class="dpm-act-btn" id="pv-btn1" style="display:none"></a>
+                      <a href="#" class="dpm-act-btn" id="pv-btn2" style="display:none"></a>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Terminal Console riêng của RPC -->
               <div class="preview-terminal">
                 <div class="pt-header">
                   <div class="pt-dots"><span class="ptd red"></span><span class="ptd yellow"></span><span class="ptd green"></span></div>
-                  <span class="pt-title">Nhật Ký DIPRE Engine</span>
-                  <button type="button" class="pt-clear" onclick="clearLogs()">Xóa</button>
+                  <span class="pt-title">Nhật Ký Discord RPC</span>
+                  <button type="button" class="pt-clear" onclick="clearRPCLog()">Xóa</button>
                 </div>
-                <div class="pt-screen" id="log-screen">
-                  <div class="log-line info"><span class="log-time">[HỆ THỐNG]</span> <span class="log-msg">DIPRE Studio v4.5 sẵn sàng hoạt động.</span></div>
+                <div class="pt-screen" id="rpc-log-screen">
+                  <div class="log-line info"><span class="log-time">[RPC]</span> <span class="log-msg">RPC Engine sẵn sàng hoạt động.</span></div>
                 </div>
               </div>
 
@@ -561,7 +618,19 @@
           </div>
 
           <!-- MÀN HÌNH KARAOKE & PREVIEW STATUS -->
-          <div class="panel-preview-col">
+          <div class="panel-preview-col panel-form-relative">
+
+            <!-- LỚP PHỦ KHÓA CỘT XEM TRƯỚC LYRIC KHI CHƯA LIÊN KẾT TOKEN -->
+            <div class="locked-section-overlay preview-locked {% if has_token %}d-none{% endif %}" id="lyric-preview-locked-overlay">
+              <div class="locked-overlay-content">
+                <div class="locked-icon-bubble sm">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div class="locked-overlay-title sm">Xem Trước Đang Khóa</div>
+                <div class="locked-overlay-desc sm">Cần liên kết Discord Token để đồng bộ trạng thái.</div>
+              </div>
+            </div>
+
             <div class="preview-sticky">
               <div class="preview-header">
                 <span class="preview-title">Xem Trước Trạng Thái</span>
@@ -588,13 +657,12 @@
                   </div>
                 </div>
                 <div class="lsc-status-display">
-                  <div class="lsc-emoji-big" id="lsc-emoji">🎵</div>
-                  <div class="lsc-lyric-active" id="lsc-lyric-current">Bấm Bắt Đầu Đồng Bộ để xem</div>
+                  <div class="lsc-lyric-active empty-state" id="lsc-lyric-current">Chưa có câu hát nào được đồng bộ</div>
                 </div>
                 <div class="lsc-progress-wrap">
                   <div class="lsc-time-row">
                     <span id="audio-time-current">00:00</span>
-                    <span id="audio-time-total">04:02</span>
+                    <span id="audio-time-total">00:00</span>
                   </div>
                   <div class="lsc-progress-bg">
                     <div class="lsc-progress-fill progress-fill-init" id="lsc-progress-fill"></div>
@@ -610,6 +678,18 @@
                 </div>
                 <div class="lkc-lines" id="lyric-lines-wrapper">
                   <div class="lyric-line active">Chọn bài hát và bấm Bắt Đầu để hát Karaoke...</div>
+                </div>
+              </div>
+
+              <!-- Terminal Console riêng của Lyric -->
+              <div class="preview-terminal mt-3">
+                <div class="pt-header">
+                  <div class="pt-dots"><span class="ptd red"></span><span class="ptd yellow"></span><span class="ptd green"></span></div>
+                  <span class="pt-title">Nhật Ký Đồng Bộ Lyric</span>
+                  <button type="button" class="pt-clear" onclick="clearLyricLog()">Xóa</button>
+                </div>
+                <div class="pt-screen" id="lyric-log-screen">
+                  <div class="log-line info"><span class="log-time">[LYRIC]</span> <span class="log-msg">Lyric Engine sẵn sàng đồng bộ.</span></div>
                 </div>
               </div>
 
@@ -673,12 +753,12 @@
           <div class="quest-console-panel">
             <div class="quest-console-head">
               <div class="pt-dots"><span class="ptd red"></span><span class="ptd yellow"></span><span class="ptd green"></span></div>
-              <span class="pt-title text-cyan">🌸 DIPRE Auto Quest Terminal — Minh</span>
+              <span class="pt-title text-cyan">Discord Quest Auto-Completer Terminal</span>
               <span class="pt-meta">Cooldown: 45s | Step: 5s/20s</span>
             </div>
             <div class="quest-console-screen" id="quest-log-screen">
               <div class="log-line info"><span class="log-time">[READY]</span> <span class="log-msg text-cyan">══════════════════════════════════════════════════</span></div>
-              <div class="log-line info"><span class="log-time">[READY]</span> <span class="log-msg text-cyan">🌸 DIPRE Auto Quest Completer — Minh (@minh3003a)</span></div>
+              <div class="log-line info"><span class="log-time">[READY]</span> <span class="log-msg text-cyan">Discord Quest Auto-Completer Engine v3.0</span></div>
               <div class="log-line info"><span class="log-time">[READY]</span> <span class="log-msg">Hệ thống cuốn chiếu chống 429 sẵn sàng. Bấm nút bên trên để khởi chạy.</span></div>
               <div class="log-line info"><span class="log-time">[READY]</span> <span class="log-msg text-cyan">══════════════════════════════════════════════════</span></div>
             </div>
@@ -731,8 +811,8 @@
     <div class="account-modal-dialog dipre-modal">
       <div class="modal-header-clean">
         <div class="modal-header-titles">
-          <div class="modal-title-text">Quản Lý Tài Khoản Discord</div>
-          <div class="modal-subtitle-text">Discord Token dùng chung cho cả ba tính năng: RPC, Lyric và Auto Quest</div>
+          <div class="modal-title-text">Cài Đặt Tài Khoản Discord</div>
+          <div class="modal-subtitle-text">Kết nối Discord User Token dùng chung cho RPC, Lyric Sync và Auto Quest</div>
         </div>
         <button type="button" class="modal-close-btn" onclick="toggleAccountModal(false)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -756,69 +836,68 @@
             <div class="acc-discord-name" id="account-view-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
             <div class="acc-discord-status-wrap">
               <span class="acc-status-pill {% if has_token %}linked{% else %}unlinked{% endif %}" id="account-view-status">
-                {% if has_token %}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                <span>Đã liên kết Discord</span>
-                {% else %}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <span>Chưa liên kết Discord Token</span>
-                {% endif %}
+                <span class="acc-status-dot {% if has_token %}green{% else %}amber{% endif %}"></span>
+                <span>{% if has_token %}Đã liên kết Discord{% else %}Chưa liên kết Discord Token{% endif %}</span>
               </span>
             </div>
           </div>
           <button type="button" class="rpc-btn rpc-btn-stop btn-account-unbind-sm {% if not has_token %}d-none{% endif %}" id="btn-account-unbind" onclick="handleUnbindToken()">Hủy Liên Kết</button>
         </div>
 
-        <div class="sf-row">
-          <div class="sf-label-row">
-            <label class="sf-label" for="input-token">Discord User Token</label>
-            <button type="button" class="sf-link-toggle" onclick="toggleTokenVisibility()">Hiện / Ẩn</button>
-          </div>
-          <div class="sf-input-with-btn">
-            <input type="password" id="input-token" class="sf-input" placeholder="Dán User Token Discord vào đây..."
-              autocomplete="off">
-            <button type="button" class="sf-addon-btn" onclick="copyTokenScript()">Copy Script</button>
-          </div>
-          <div class="sf-hint">Mở Discord Web > F12 (Console) > Dán script > Enter để lấy token tự động.</div>
-        </div>
-
-        <div class="sf-action-row">
-          <button type="button" class="rpc-btn rpc-btn-start" onclick="handleBindToken()">Xác Minh &amp; Lưu Token</button>
-          <button type="button" class="rpc-btn rpc-btn-save" onclick="handleSaveConfig()">Lưu Cấu Hình</button>
-        </div>
-
-        <div class="settings-divider settings-divider-space"></div>
-
-        <div class="sf-grid-2">
-          <div class="sf-row">
-            <label class="sf-label" for="select-user-status">Trạng Thái Presence</label>
-            <select id="select-user-status" class="sf-select" title="Chọn trạng thái presence"
-              aria-label="Trạng thái presence" onchange="updateLivePreview()">
-              <option value="online" selected>Trực tuyến (Online)</option>
-              <option value="idle">Chờ (Idle)</option>
-              <option value="dnd">Không Làm Phiền (DND)</option>
-            </select>
-          </div>
-          <div class="sf-row">
+        <div class="modal-section-box">
+          <div class="msb-title">Xác Thực Discord Token</div>
+          <div class="sf-row mb-0">
             <div class="sf-label-row">
-              <label class="sf-label" for="input-app-id">Application ID</label>
-              <button type="button" class="sf-link-toggle" onclick="scanPortalApps(false)">Quét Portal</button>
+              <label class="sf-label" for="input-token">Discord User Token</label>
+              <button type="button" class="sf-link-toggle" onclick="toggleTokenVisibility()">Hiện / Ẩn</button>
             </div>
-            <input type="text" id="input-app-id" class="sf-input" placeholder="Ví dụ: 1546849576986607657"
-              value="1546849576986607657">
+            <div class="sf-input-wrap">
+              <input type="password" id="input-token" class="sf-input" placeholder="Dán mã Discord User Token vào đây..."
+                autocomplete="off">
+            </div>
+          </div>
+          <div class="sf-action-row mt-3">
+            <button type="button" class="rpc-btn rpc-btn-start" onclick="handleBindToken()">Xác Minh &amp; Kết Nối</button>
           </div>
         </div>
 
-        <div class="sf-toggle-row">
-          <div class="sf-toggle-meta">
-            <div class="sf-toggle-title">Tự động nhận diện Application Portal</div>
-            <div class="sf-toggle-sub">Dùng app bạn sở hữu trên Dev Portal và trích xuất avatar anime</div>
+        <div class="modal-section-box mt-3">
+          <div class="msb-title">Cấu Hình Hoạt Động &amp; Portal</div>
+          <div class="sf-grid-2">
+            <div class="sf-row">
+              <label class="sf-label" for="select-user-status">Trạng Thái Presence</label>
+              <select id="select-user-status" class="sf-select" title="Chọn trạng thái presence"
+                aria-label="Trạng thái presence" onchange="updateLivePreview()">
+                <option value="online" selected>Trực tuyến (Online)</option>
+                <option value="idle">Chờ (Idle)</option>
+                <option value="dnd">Không Làm Phiền (DND)</option>
+              </select>
+            </div>
+            <div class="sf-row">
+              <div class="sf-label-row">
+                <label class="sf-label" for="input-app-id">Application ID</label>
+                <button type="button" class="sf-link-toggle" onclick="scanPortalApps(false)">Quét Portal</button>
+              </div>
+              <input type="text" id="input-app-id" class="sf-input" placeholder="Ví dụ: 1546849576986607657"
+                value="1546849576986607657">
+            </div>
           </div>
-          <label class="switch-pill" for="check-auto-app">
-            <input type="checkbox" id="check-auto-app" checked title="Bật tắt tự động nhận diện Application Portal"
-              aria-label="Tự động nhận diện Application Portal">
-            <span class="switch-pill-slider"></span>
-          </label>
+
+          <div class="sf-toggle-row mt-2">
+            <div class="sf-toggle-meta">
+              <div class="sf-toggle-title">Tự động nhận diện Application Portal</div>
+              <div class="sf-toggle-sub">Dùng app bạn sở hữu trên Dev Portal và trích xuất avatar</div>
+            </div>
+            <label class="switch-pill" for="check-auto-app">
+              <input type="checkbox" id="check-auto-app" checked title="Bật tắt tự động nhận diện Application Portal"
+                aria-label="Tự động nhận diện Application Portal">
+              <span class="switch-pill-slider"></span>
+            </label>
+          </div>
+
+          <div class="sf-action-row mt-3">
+            <button type="button" class="rpc-btn rpc-btn-save" onclick="handleSaveConfig()">Lưu Cấu Hình</button>
+          </div>
         </div>
       </div>
     </div>
