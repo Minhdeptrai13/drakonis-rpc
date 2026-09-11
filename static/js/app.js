@@ -95,6 +95,8 @@ function switchTab(tabId) {
   if (btn) btn.classList.add('active');
   if (tabId === 'tab-rpc') startLogPolling();
   else if (tabId === 'tab-quest') { loadAvailableQuests(); startLogPolling('quest'); }
+  else if (tabId === 'tab-inbox') { loadDiscordInbox(); }
+  else if (tabId === 'tab-accounts') { loadMultiAccounts(); }
 }
 
 // ============================================================
@@ -299,6 +301,16 @@ function updateAccountUI(data) {
       pvAvLocked.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
     }
   }
+
+  // 4.1. Cập nhật thẻ Profile Động ở Hero (Dashboard)
+  const heroName = document.getElementById('hero-profile-name');
+  const heroTag = document.getElementById('hero-profile-tag');
+  const heroAv = document.getElementById('hero-avatar-img');
+  const heroBanner = document.getElementById('hero-profile-banner');
+  if (heroName) heroName.textContent = isLinked ? username : 'Minh';
+  if (heroTag) heroTag.textContent = isLinked ? `@${username.toLowerCase().replace(/\s+/g, '')}` : '@minh3003a';
+  if (heroAv && avatar) heroAv.src = avatar;
+  if (heroBanner && data?.banner) heroBanner.style.backgroundImage = `url('${data.banner}')`;
 
   // 5. Toggle Locked Section Overlays (Form + Preview RPC & Lyric)
   const rpcOverlay = document.getElementById('rpc-locked-overlay');
@@ -1678,6 +1690,207 @@ async function loadSavedConfig() {
       updateLivePreview();
     }
   } catch (e) { }
+}
+
+// ============================================================
+// SOUNDCLOUD, YOUTUBE & SPOTIFY RPC HANDLERS
+// ============================================================
+
+function handleLoadSoundCloudTrack() {
+  const url = document.getElementById('sc-track-url')?.value.trim();
+  if (!url) return;
+  const parts = url.split('/').filter(Boolean);
+  if (parts.length >= 2) {
+    const artist = parts[parts.length - 2];
+    const track = parts[parts.length - 1].replace(/-/g, ' ');
+    if (document.getElementById('sc-artist-name')) document.getElementById('sc-artist-name').value = artist;
+    if (document.getElementById('sc-track-title')) document.getElementById('sc-track-title').value = track;
+    if (document.getElementById('sc-pv-title')) document.getElementById('sc-pv-title').textContent = track;
+    if (document.getElementById('sc-pv-artist')) document.getElementById('sc-pv-artist').textContent = `${artist} • SoundCloud`;
+    showToast('Đã nạp thông tin track SoundCloud!', 'success');
+  }
+}
+
+async function handleApplySoundCloudRPC() {
+  const title = document.getElementById('sc-track-title')?.value.trim() || 'SoundCloud Music';
+  const artist = document.getElementById('sc-artist-name')?.value.trim() || 'SoundCloud Artist';
+
+  document.getElementById('select-activity-type').value = 'listening';
+  document.getElementById('input-activity-name').value = 'SoundCloud';
+  document.getElementById('input-details').value = title;
+  document.getElementById('input-state').value = `by ${artist}`;
+  document.getElementById('input-large-text').value = 'SoundCloud Web Player';
+
+  updateLivePreview();
+  handleStartRPC();
+  showToast('Đã áp dụng SoundCloud RPC!', 'success');
+}
+
+async function handleFetchYouTubeMeta() {
+  const url = document.getElementById('yt-video-url')?.value.trim();
+  if (!url) {
+    showToast('Vui lòng dán link YouTube', 'error');
+    return;
+  }
+  showToast('Đang lấy dữ liệu video YouTube...', 'info', 2000);
+  try {
+    const res = await fetch(`/api/youtube/meta?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    if (data.success) {
+      if (document.getElementById('yt-video-title')) document.getElementById('yt-video-title').value = data.title;
+      if (document.getElementById('yt-pv-title')) document.getElementById('yt-pv-title').textContent = data.title;
+      if (document.getElementById('yt-pv-thumb')) document.getElementById('yt-pv-thumb').src = data.thumbnail;
+      showToast('Đã nhận diện video YouTube!', 'success');
+    } else {
+      showToast(data.message || 'Không thể lấy video', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối máy chủ', 'error');
+  }
+}
+
+async function handleApplyYouTubeRPC() {
+  const title = document.getElementById('yt-video-title')?.value.trim() || 'YouTube Video';
+  const channel = document.getElementById('yt-channel-name')?.value.trim() || 'YouTube Channel';
+  const action = document.getElementById('yt-action-label')?.value || 'Watching YouTube';
+  const thumb = document.getElementById('yt-pv-thumb')?.src || '';
+
+  document.getElementById('select-activity-type').value = action.includes('Live') ? 'streaming' : 'watching';
+  document.getElementById('input-activity-name').value = 'YouTube';
+  document.getElementById('input-details').value = title;
+  document.getElementById('input-state').value = channel;
+  if (thumb) {
+    currentLargeImageUrl = thumb;
+    document.getElementById('input-large-img').value = thumb;
+  }
+  updateLivePreview();
+  handleStartRPC();
+  showToast('Đã áp dụng YouTube RPC!', 'success');
+}
+
+async function handleApplySpotifyRPC() {
+  const title = document.getElementById('sp-track-name')?.value.trim() || 'Track';
+  const artist = document.getElementById('sp-artist-name')?.value.trim() || 'Artist';
+  const album = document.getElementById('sp-album-name')?.value.trim() || 'Album';
+  const art = document.getElementById('sp-album-art')?.value.trim() || '';
+
+  document.getElementById('select-activity-type').value = 'listening';
+  document.getElementById('input-activity-name').value = 'Spotify';
+  document.getElementById('input-details').value = title;
+  document.getElementById('input-state').value = `by ${artist}`;
+  if (art) {
+    currentLargeImageUrl = art;
+    document.getElementById('input-large-img').value = art;
+  }
+  updateLivePreview();
+  handleStartRPC();
+  showToast('Đã áp dụng Spotify RPC!', 'success');
+}
+
+// ============================================================
+// INBOX DISCORD HANDLER
+// ============================================================
+
+async function loadDiscordInbox() {
+  const container = document.getElementById('inbox-channels-list');
+  if (!container) return;
+  container.innerHTML = '<div class="inbox-loading">Đang tải hộp thư & tin nhắn...</div>';
+  try {
+    const res = await fetch('/api/discord/inbox');
+    const data = await res.json();
+    if (data.success && data.channels && data.channels.length > 0) {
+      container.innerHTML = data.channels.map(ch => `
+        <div class="inbox-channel-card">
+          <img src="${ch.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="inbox-avatar" alt="">
+          <div class="inbox-meta">
+            <div class="inbox-meta-name">${ch.name}</div>
+            <div class="inbox-meta-sub">ID: ${ch.id}</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="inbox-loading">Không có tin nhắn nào hoặc chưa liên kết Token.</div>';
+    }
+  } catch (e) {
+    container.innerHTML = '<div class="inbox-loading">Lỗi kết nối tải Inbox.</div>';
+  }
+}
+
+// ============================================================
+// MULTI-ACCOUNT SWITCHER HANDLER
+// ============================================================
+
+async function loadMultiAccounts() {
+  const container = document.getElementById('multi-accounts-grid');
+  if (!container) return;
+  container.innerHTML = '<div class="acc-grid-loading">Đang nạp danh sách tài khoản...</div>';
+  try {
+    const res = await fetch('/api/accounts/list');
+    const data = await res.json();
+    if (data.success && data.accounts && data.accounts.length > 0) {
+      container.innerHTML = data.accounts.map(acc => `
+        <div class="acc-token-card ${acc.is_active ? 'active' : ''}">
+          <div class="atc-left">
+            <img src="${acc.discord_avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="atc-avatar" alt="">
+            <div>
+              <div class="atc-name">${acc.discord_username || 'Discord User'}</div>
+              <div class="atc-tag">ID: ${acc.discord_id || 'N/A'} ${acc.is_active ? '• <span style="color:#22c55e;font-weight:bold;">Đang dùng</span>' : ''}</div>
+            </div>
+          </div>
+          <div class="atc-actions">
+            ${!acc.is_active ? `<button type="button" class="ssh-action" onclick="handleSwitchAccount(${acc.id})">Chọn Dùng</button>` : ''}
+            <button type="button" class="ssh-action danger" onclick="handleDeleteAccount(${acc.id})">Xóa</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<div class="acc-grid-loading">Chưa có tài khoản nào được lưu. Bấm "Thêm Token Mới" để liên kết.</div>';
+    }
+  } catch (e) {
+    container.innerHTML = '<div class="acc-grid-loading">Lỗi kết nối máy chủ.</div>';
+  }
+}
+
+async function handleSwitchAccount(accountId) {
+  showToast('Đang chuyển tài khoản...', 'info', 1500);
+  try {
+    const res = await fetch('/api/accounts/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: accountId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      updateAccountUI(data);
+      loadMultiAccounts();
+    } else {
+      showToast(data.message || 'Lỗi chuyển tài khoản', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối máy chủ', 'error');
+  }
+}
+
+async function handleDeleteAccount(accountId) {
+  if (!confirm('Bạn có chắc chắn muốn xóa token tài khoản này?')) return;
+  try {
+    const res = await fetch('/api/accounts/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: accountId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Đã xóa tài khoản!', 'info');
+      loadMultiAccounts();
+      fetchAccountInfo();
+    } else {
+      showToast(data.message || 'Lỗi xóa tài khoản', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối máy chủ', 'error');
+  }
 }
 
 function init3DCardTilt() {

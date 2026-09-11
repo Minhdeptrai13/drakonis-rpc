@@ -251,6 +251,22 @@ def init_db():
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS discord_accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                token TEXT NOT NULL,
+                discord_id TEXT DEFAULT '',
+                discord_username TEXT DEFAULT '',
+                discord_avatar TEXT DEFAULT '',
+                avatar_decoration TEXT DEFAULT '',
+                banner TEXT DEFAULT '',
+                custom_status TEXT DEFAULT '',
+                is_active INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ''')
         cursor.execute("PRAGMA table_info(users)")
         cols = [r['name'] for r in cursor.fetchall()]
         for col_name in ['discord_token', 'discord_id', 'discord_username', 'discord_avatar', 'config']:
@@ -259,6 +275,25 @@ def init_db():
                     cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} TEXT DEFAULT ''")
                 except Exception:
                     pass
+
+        cursor.execute("PRAGMA table_info(discord_accounts)")
+        d_cols = [r['name'] for r in cursor.fetchall()]
+        for col_name in ['avatar_decoration', 'banner', 'custom_status', 'is_active']:
+            if col_name not in d_cols:
+                try:
+                    cursor.execute(f"ALTER TABLE discord_accounts ADD COLUMN {col_name} TEXT DEFAULT ''")
+                except Exception:
+                    pass
+
+        # Tự động migrate token của user vào discord_accounts nếu chưa có
+        cursor.execute("SELECT id, discord_token, discord_id, discord_username, discord_avatar FROM users WHERE discord_token != '' AND discord_token IS NOT NULL")
+        for u in cursor.fetchall():
+            cursor.execute("SELECT id FROM discord_accounts WHERE user_id = ? AND token = ?", (u['id'], u['discord_token']))
+            if not cursor.fetchone():
+                cursor.execute('''
+                    INSERT INTO discord_accounts (user_id, token, discord_id, discord_username, discord_avatar, is_active)
+                    VALUES (?, ?, ?, ?, ?, 1)
+                ''', (u['id'], u['discord_token'], u['discord_id'], u['discord_username'], u['discord_avatar']))
         conn.commit()
 init_db()
 
@@ -1928,6 +1963,85 @@ def logout():
     flash('Đã đăng xuất thành công.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/api/account/quick_oauth', methods=['POST'])
+def api_account_quick_oauth():
+    """Đăng nhập tức thì bằng Discord Token hoặc Google Account không cần mật khẩu rườm rà"""
+    data = request.get_json() or {}
+    provider = data.get('provider')
+    username = data.get('username', '').strip()
+    
+    if not username:
+        username = 'User_' + uuid.uuid4().hex[:6]
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if provider == 'discord':
+            token = data.get('token', '').strip()
+            if not token:
+                return jsonify({'success': False, 'message': 'Thiếu Discord Token'}), 400
+            profile = fetch_discord_profile(token)
+            if not profile:
+                return jsonify({'success': False, 'message': 'Discord Token không hợp lệ hoặc đã hết hạn'}), 400
+            
+            d_name = profile['username']
+            # Tìm xem có user nào gắn discord_id này chưa
+            cursor.execute('SELECT * FROM users WHERE discord_id = ? OR username = ?', (profile['id'], username))
+            user = cursor.fetchone()
+            if not user:
+                # Tạo user mới
+                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+                cursor.execute('INSERT INTO users (username, password_hash, discord_token, discord_id, discord_username, discord_avatar) VALUES (?, ?, ?, ?, ?, ?)',
+                               (username, pwd_dummy, token, profile['id'], profile['username'], profile['avatar']))
+                user_id = cursor.lastrowid
+            else:
+                user_id = user['id']
+                cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
+                               (token, profile['id'], profile['username'], profile['avatar'], user_id))
+
+            # Update discord_accounts
+            cursor.execute('UPDATE discord_accounts SET is_active = 0 WHERE user_id = ?', (user_id,))
+            cursor.execute('SELECT id FROM discord_accounts WHERE user_id = ? AND token = ?', (user_id, token))
+            acc = cursor.fetchone()
+            if acc:
+                cursor.execute('UPDATE discord_accounts SET is_active = 1, discord_id = ?, discord_username = ?, discord_avatar = ?, avatar_decoration = ?, banner = ? WHERE id = ?',
+                               (profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner'], acc['id']))
+            else:
+                cursor.execute('INSERT INTO discord_accounts (user_id, token, discord_id, discord_username, discord_avatar, avatar_decoration, banner, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+                               (user_id, token, profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner']))
+            conn.commit()
+
+            session['user_id'] = user_id
+            session['username'] = username
+            session['discord_token'] = token
+            session['discord_username'] = profile['username']
+            session['discord_avatar'] = profile['avatar']
+            clear_failed_attempts(get_client_ip())
+            log_event(f'Đăng nhập thành công qua Discord: {profile["username"]}', 'success')
+            return jsonify({'success': True, 'message': f'Chào mừng {profile["username"]}!'})
+
+        elif provider == 'google':
+            email = data.get('email', '').strip()
+            if not email:
+                return jsonify({'success': False, 'message': 'Thiếu email Google'}), 400
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            user = cursor.fetchone()
+            if not user:
+                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+                cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, pwd_dummy))
+                user_id = cursor.lastrowid
+            else:
+                user_id = user['id']
+            conn.commit()
+
+            session['user_id'] = user_id
+            session['username'] = username
+            clear_failed_attempts(get_client_ip())
+            log_event(f'Đăng nhập thành công qua Google: {username} ({email})', 'success')
+            return jsonify({'success': True, 'message': f'Chào mừng {username}!'})
+
+        else:
+            return jsonify({'success': False, 'message': 'Phương thức đăng nhập không hợp lệ'}), 400
+
 @app.route('/api/account/info', methods=['GET'])
 @login_required
 def api_account_info():
@@ -1936,20 +2050,62 @@ def api_account_info():
         cursor = conn.cursor()
         cursor.execute('SELECT username, discord_token, discord_id, discord_username, discord_avatar FROM users WHERE id = ?', (user_id,))
         u = cursor.fetchone()
+        cursor.execute('SELECT * FROM discord_accounts WHERE user_id = ? ORDER BY is_active DESC, id DESC', (user_id,))
+        accounts = [dict(r) for r in cursor.fetchall()]
     if not u:
         return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản'}), 404
     token = u['discord_token'] or ''
     has_token = bool(token and len(token) > 20)
     masked = (token[:10] + '...' + token[-6:]) if has_token else ''
+
+    active_acc = next((a for a in accounts if a.get('is_active') == 1), None) or (accounts[0] if accounts else None)
+
     return jsonify({
         'success': True,
         'username': u['username'],
         'has_token': has_token,
-        'discord_id': u['discord_id'] or '',
-        'discord_username': u['discord_username'] or '',
-        'discord_avatar': u['discord_avatar'] or '',
-        'masked_token': masked
+        'discord_id': u['discord_id'] or (active_acc['discord_id'] if active_acc else ''),
+        'discord_username': u['discord_username'] or (active_acc['discord_username'] if active_acc else ''),
+        'discord_avatar': u['discord_avatar'] or (active_acc['discord_avatar'] if active_acc else ''),
+        'avatar_decoration': (active_acc.get('avatar_decoration') if active_acc else '') or '',
+        'banner': (active_acc.get('banner') if active_acc else '') or '',
+        'masked_token': masked,
+        'accounts': accounts
     })
+
+def fetch_discord_profile(token: str):
+    """Lấy toàn bộ thông tin profile Discord: Avatar, Decoration Asset, Banner, Username"""
+    headers = {
+        'Authorization': token,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    res = requests.get('https://discord.com/api/v9/users/@me', headers=headers, timeout=8)
+    if res.status_code != 200:
+        return None
+    data = res.json()
+    d_id = str(data.get('id', ''))
+    username = data.get('global_name') or data.get('username') or 'Discord User'
+    avatar_hash = data.get('avatar')
+    avatar_url = f"https://cdn.discordapp.com/avatars/{d_id}/{avatar_hash}.png?size=256" if avatar_hash else "https://cdn.discordapp.com/embed/avatars/0.png"
+    
+    # Avatar decoration
+    decor_data = data.get('avatar_decoration_data')
+    decor_url = ''
+    if decor_data and decor_data.get('asset'):
+        asset_id = decor_data['asset']
+        decor_url = f"https://cdn.discordapp.com/avatar-decoration-presets/{asset_id}.png?size=240&passthrough=true"
+
+    banner_hash = data.get('banner')
+    banner_url = f"https://cdn.discordapp.com/banners/{d_id}/{banner_hash}.png?size=600" if banner_hash else ''
+
+    return {
+        'id': d_id,
+        'username': username,
+        'tag': data.get('username', ''),
+        'avatar': avatar_url,
+        'decoration': decor_url,
+        'banner': banner_url
+    }
 
 @app.route('/api/account/bind_token', methods=['POST'])
 @login_required
@@ -1959,41 +2115,132 @@ def api_account_bind_token():
     if not token:
         return jsonify({'success': False, 'message': 'Vui lòng cung cấp Discord User Token'}), 400
     try:
-        headers = {
-            'Authorization': token,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        res = requests.get('https://discord.com/api/v9/users/@me', headers=headers, timeout=8)
-        if res.status_code != 200:
-            return jsonify({'success': False, 'message': f'Token Discord không hợp lệ hoặc đã hết hạn (Mã lỗi {res.status_code})'}), 400
-        user_info = res.json()
-        d_id = str(user_info.get('id', ''))
-        d_username = user_info.get('global_name') or user_info.get('username') or 'Discord User'
-        avatar_hash = user_info.get('avatar')
-        d_avatar = f"https://cdn.discordapp.com/avatars/{d_id}/{avatar_hash}.png?size=128" if avatar_hash else "https://cdn.discordapp.com/embed/avatars/0.png"
+        profile = fetch_discord_profile(token)
+        if not profile:
+            return jsonify({'success': False, 'message': 'Token Discord không hợp lệ hoặc đã hết hạn.'}), 400
 
         user_id = session['user_id']
         with get_db() as conn:
             cursor = conn.cursor()
+            # Update bảng users
             cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
-                           (token, d_id, d_username, d_avatar, user_id))
+                           (token, profile['id'], profile['username'], profile['avatar'], user_id))
+            
+            # Cập nhật hoặc chèn vào bảng discord_accounts
+            cursor.execute('UPDATE discord_accounts SET is_active = 0 WHERE user_id = ?', (user_id,))
+            cursor.execute('SELECT id FROM discord_accounts WHERE user_id = ? AND token = ?', (user_id, token))
+            existing = cursor.fetchone()
+            if existing:
+                cursor.execute('''
+                    UPDATE discord_accounts
+                    SET discord_id = ?, discord_username = ?, discord_avatar = ?, avatar_decoration = ?, banner = ?, is_active = 1
+                    WHERE id = ?
+                ''', (profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner'], existing['id']))
+            else:
+                cursor.execute('''
+                    INSERT INTO discord_accounts (user_id, token, discord_id, discord_username, discord_avatar, avatar_decoration, banner, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                ''', (user_id, token, profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner']))
             conn.commit()
 
         session['discord_token'] = token
-        session['discord_username'] = d_username
-        session['discord_avatar'] = d_avatar
-        log_event(f'Tài khoản {session.get("username")} đã liên kết Discord: {d_username} ({d_id})', 'success')
+        session['discord_username'] = profile['username']
+        session['discord_avatar'] = profile['avatar']
+        log_event(f'Tài khoản {session.get("username")} đã kết nối Discord: {profile["username"]} ({profile["id"]})', 'success')
         return jsonify({
             'success': True,
-            'message': f'Liên kết thành công với Discord: {d_username}!',
-            'username': d_username,
-            'avatar': d_avatar,
-            'discord_id': d_id,
-            'discord_username': d_username,
-            'discord_avatar': d_avatar
+            'message': f'Đã liên kết thành công với: {profile["username"]}!',
+            'username': profile['username'],
+            'avatar': profile['avatar'],
+            'discord_id': profile['id'],
+            'discord_username': profile['username'],
+            'discord_avatar': profile['avatar'],
+            'avatar_decoration': profile['decoration'],
+            'banner': profile['banner']
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi kết nối xác minh Discord: {str(e)}'}), 500
+
+@app.route('/api/accounts/list', methods=['GET'])
+@login_required
+def api_accounts_list():
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, discord_id, discord_username, discord_avatar, avatar_decoration, banner, is_active, created_at FROM discord_accounts WHERE user_id = ? ORDER BY is_active DESC, id DESC', (user_id,))
+        accounts = [dict(r) for r in cursor.fetchall()]
+    return jsonify({'success': True, 'accounts': accounts})
+
+@app.route('/api/accounts/switch', methods=['POST'])
+@login_required
+def api_accounts_switch():
+    user_id = session['user_id']
+    data = request.get_json() or {}
+    account_id = data.get('account_id')
+    if not account_id:
+        return jsonify({'success': False, 'message': 'Thiếu account_id'}), 400
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM discord_accounts WHERE id = ? AND user_id = ?', (account_id, user_id))
+        target = cursor.fetchone()
+        if not target:
+            return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản này'}), 404
+
+        cursor.execute('UPDATE discord_accounts SET is_active = 0 WHERE user_id = ?', (user_id,))
+        cursor.execute('UPDATE discord_accounts SET is_active = 1 WHERE id = ?', (account_id,))
+        cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
+                       (target['token'], target['discord_id'], target['discord_username'], target['discord_avatar'], user_id))
+        conn.commit()
+
+    session['discord_token'] = target['token']
+    session['discord_username'] = target['discord_username']
+    session['discord_avatar'] = target['discord_avatar']
+    log_event(f'Đã chuyển sang tài khoản Discord: {target["discord_username"]}', 'info')
+    return jsonify({
+        'success': True,
+        'message': f'Đã chuyển sang: {target["discord_username"]}',
+        'username': target['discord_username'],
+        'avatar': target['discord_avatar'],
+        'discord_id': target['discord_id'],
+        'discord_username': target['discord_username'],
+        'discord_avatar': target['discord_avatar'],
+        'avatar_decoration': target['avatar_decoration'],
+        'banner': target['banner']
+    })
+
+@app.route('/api/accounts/delete', methods=['POST'])
+@login_required
+def api_accounts_delete():
+    user_id = session['user_id']
+    data = request.get_json() or {}
+    account_id = data.get('account_id')
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT is_active FROM discord_accounts WHERE id = ? AND user_id = ?', (account_id, user_id))
+        row = cursor.fetchone()
+        if not row:
+            return jsonify({'success': False, 'message': 'Không tìm thấy tài khoản'}), 404
+        was_active = row['is_active'] == 1
+        cursor.execute('DELETE FROM discord_accounts WHERE id = ? AND user_id = ?', (account_id, user_id))
+        
+        # Nếu vừa xóa tài khoản đang active, chọn tài khoản khác nếu có
+        if was_active:
+            cursor.execute('SELECT * FROM discord_accounts WHERE user_id = ? ORDER BY id DESC LIMIT 1', (user_id,))
+            next_acc = cursor.fetchone()
+            if next_acc:
+                cursor.execute('UPDATE discord_accounts SET is_active = 1 WHERE id = ?', (next_acc['id'],))
+                cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
+                               (next_acc['token'], next_acc['discord_id'], next_acc['discord_username'], next_acc['discord_avatar'], user_id))
+                session['discord_token'] = next_acc['token']
+                session['discord_username'] = next_acc['discord_username']
+                session['discord_avatar'] = next_acc['discord_avatar']
+            else:
+                cursor.execute('UPDATE users SET discord_token = "", discord_id = "", discord_username = "", discord_avatar = "" WHERE id = ?', (user_id,))
+                session.pop('discord_token', None)
+                session.pop('discord_username', None)
+                session.pop('discord_avatar', None)
+        conn.commit()
+    return jsonify({'success': True, 'message': 'Đã xóa tài khoản khỏi danh sách'})
 
 @app.route('/api/account/unbind_token', methods=['POST'])
 @login_required
@@ -2002,12 +2249,89 @@ def api_account_unbind_token():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute('UPDATE users SET discord_token = "", discord_id = "", discord_username = "", discord_avatar = "" WHERE id = ?', (user_id,))
+        cursor.execute('UPDATE discord_accounts SET is_active = 0 WHERE user_id = ?', (user_id,))
         conn.commit()
     session.pop('discord_token', None)
     session.pop('discord_username', None)
     session.pop('discord_avatar', None)
     log_event(f'Đã hủy liên kết Discord Token cho tài khoản {session.get("username")}', 'info')
     return jsonify({'success': True, 'message': 'Đã hủy liên kết token thành công'})
+
+@app.route('/api/discord/inbox', methods=['GET'])
+@login_required
+def api_discord_inbox():
+    """Đọc hòm thư / tin nhắn chưa đọc & kênh gần nhất của token active"""
+    user_id = session['user_id']
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT discord_token FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+    token = (row['discord_token'] if row else '') or session.get('discord_token', '')
+    if not token:
+        return jsonify({'success': False, 'message': 'Chưa liên kết token Discord'}), 400
+    try:
+        headers = {
+            'Authorization': token,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        res = requests.get('https://discord.com/api/v9/users/@me/channels', headers=headers, timeout=8)
+        if res.status_code == 200:
+            channels = res.json()
+            formatted = []
+            for ch in channels[:15]:
+                recipients = ch.get('recipients', [])
+                name = ', '.join([r.get('global_name') or r.get('username', '') for r in recipients]) if recipients else 'Direct Message'
+                last_msg_id = ch.get('last_message_id')
+                avatar = ''
+                if recipients:
+                    r0 = recipients[0]
+                    av_hash = r0.get('avatar')
+                    avatar = f"https://cdn.discordapp.com/avatars/{r0['id']}/{av_hash}.png?size=64" if av_hash else "https://cdn.discordapp.com/embed/avatars/0.png"
+                formatted.append({
+                    'id': ch.get('id'),
+                    'name': name or 'DM',
+                    'avatar': avatar,
+                    'last_message_id': last_msg_id,
+                    'type': ch.get('type')
+                })
+            return jsonify({'success': True, 'channels': formatted})
+        else:
+            return jsonify({'success': False, 'message': f'Lỗi Discord API ({res.status_code})'}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/youtube/meta', methods=['GET'])
+@login_required
+def api_youtube_meta():
+    """Trích xuất ID, Thumbnail và Title của video YouTube từ link"""
+    url = request.args.get('url', '').strip()
+    if not url:
+        return jsonify({'success': False, 'message': 'Thiếu tham số url'}), 400
+    # regex extract video id
+    video_id = None
+    m = re.search(r'(?:v=|\/|youtu\.be\/)([0-9A-Za-z_-]{11})', url)
+    if m:
+        video_id = m.group(1)
+    if not video_id:
+        return jsonify({'success': False, 'message': 'Không nhận diện được ID video YouTube'}), 400
+
+    thumb = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+    # Lấy title qua oEmbed của YouTube (không cần API key)
+    title = f"YouTube Video ({video_id})"
+    try:
+        r = requests.get(f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json", timeout=5)
+        if r.status_code == 200:
+            title = r.json().get('title', title)
+    except Exception:
+        pass
+
+    return jsonify({
+        'success': True,
+        'video_id': video_id,
+        'title': title,
+        'thumbnail': thumb,
+        'watch_url': f"https://www.youtube.com/watch?v={video_id}"
+    })
 
 @app.route('/api/quests', methods=['GET'])
 @login_required

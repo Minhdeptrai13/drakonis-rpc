@@ -34,18 +34,62 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button type="button" class="sidebar-nav-item active" data-tab="tab-home" onclick="switchTab('tab-home')">
-          Trang Chủ
-        </button>
-        <button type="button" class="sidebar-nav-item" data-tab="tab-rpc" onclick="switchTab('tab-rpc')">
-          Discord RPC
-        </button>
-        <button type="button" class="sidebar-nav-item" data-tab="tab-lyric" onclick="switchTab('tab-lyric')">
-          Lyric Sync (NCT)
-        </button>
-        <button type="button" class="sidebar-nav-item" data-tab="tab-quest" onclick="switchTab('tab-quest')">
-          Auto Quest
-        </button>
+        <!-- MỤC LỚN: DASHBOARD -->
+        <div class="sidebar-group">
+          <div class="sidebar-group-title">DASHBOARD</div>
+          <div class="sidebar-group-items">
+            <button type="button" class="sidebar-nav-item active" data-tab="tab-home" onclick="switchTab('tab-home')">
+              <span class="sni-dot"></span>
+              <span>Dashboard</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- MỤC LỚN: DISCORD RPC -->
+        <div class="sidebar-group">
+          <div class="sidebar-group-title">DISCORD RPC</div>
+          <div class="sidebar-group-items">
+            <button type="button" class="sidebar-nav-item" data-tab="tab-rpc-soundcloud" onclick="switchTab('tab-rpc-soundcloud')">
+              <span class="sni-dot"></span>
+              <span>SoundCloud RPC</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-rpc-youtube" onclick="switchTab('tab-rpc-youtube')">
+              <span class="sni-dot"></span>
+              <span>YouTube RPC</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-rpc-spotify" onclick="switchTab('tab-rpc-spotify')">
+              <span class="sni-dot"></span>
+              <span>Spotify RPC</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-rpc" onclick="switchTab('tab-rpc')">
+              <span class="sni-dot"></span>
+              <span>Custom RPC</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- MỤC LỚN: TIỆN ÍCH -->
+        <div class="sidebar-group">
+          <div class="sidebar-group-title">TIỆN ÍCH</div>
+          <div class="sidebar-group-items">
+            <button type="button" class="sidebar-nav-item" data-tab="tab-quest" onclick="switchTab('tab-quest')">
+              <span class="sni-dot"></span>
+              <span>Auto Quest</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-lyric" onclick="switchTab('tab-lyric')">
+              <span class="sni-dot"></span>
+              <span>Lyric Sync (NCT)</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-inbox" onclick="switchTab('tab-inbox')">
+              <span class="sni-dot"></span>
+              <span>Inbox Discord</span>
+            </button>
+            <button type="button" class="sidebar-nav-item" data-tab="tab-accounts" onclick="switchTab('tab-accounts')">
+              <span class="sni-dot"></span>
+              <span>Quản Lý Đa Token</span>
+            </button>
+          </div>
+        </div>
       </nav>
 
       <div class="sidebar-bottom">
@@ -121,9 +165,101 @@
                   </div>
                 </div>
 
-                <!-- Thẻ Discord Popout phía trước của Minh -->
-                <div class="beyond-card-front">
-                  <img src="{{ url_for('static', filename='img/minh_discord_card_cropped.png') }}" alt="Discord Card" class="beyond-card-front-img">
+                <!-- Thẻ Discord Popout phía trước: RENDER ĐỘNG với Hiệu Ứng Avatar Decoration & Badges -->
+                <div class="beyond-card-front live-profile-popout">
+                  <div class="lpp-banner" id="hero-profile-banner"></div>
+                  
+                  <div class="lpp-avatar-row">
+                    <div class="lpp-avatar-wrapper">
+                      <!-- Vòng hiệu ứng Avatar Decoration động (Cá heo/anime phát sáng xoay chuyển) -->
+                      <div class="lpp-avatar-decoration-ring" id="hero-avatar-decoration">
+                        <svg class="decor-svg-fx" viewBox="0 0 120 120">
+                          <circle class="decor-orbit-1" cx="60" cy="60" r="54" fill="none" stroke="url(#decorGradient)" stroke-width="3" stroke-dasharray="8 6" />
+                          <circle class="decor-orbit-2" cx="60" cy="60" r="50" fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.8" />
+                          <defs>
+                            <linearGradient id="decorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stop-color="#818cf8" />
+                              <stop offset="50%" stop-color="#c084fc" />
+                              <stop offset="100%" stop-color="#38bdf8" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <span class="decor-sparkle-1">✨</span>
+                        <span class="decor-sparkle-2">🐬</span>
+                      </div>
+
+                      {% if has_token and discord_avatar %}
+                      <img src="{{ discord_avatar }}" alt="Avatar" class="lpp-avatar-img" id="hero-avatar-img">
+                      {% else %}
+                      <div class="lpp-avatar-placeholder" id="hero-avatar-placeholder">
+                        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Minh" class="lpp-avatar-img" id="hero-avatar-img">
+                      </div>
+                      {% endif %}
+                      <div class="lpp-status-dot online" id="hero-status-dot"></div>
+                    </div>
+
+                    <!-- Hàng Badges Discord -->
+                    <div class="lpp-badges-badge-row">
+                      <span class="d-badge hypesquad" title="HypeSquad Bravery">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#9b59b6"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5zm0 2.18l7 3.89v4.93c0 4.6-3.13 8.89-7 10-3.87-1.11-7-5.4-7-10V8.07l7-3.89z"/></svg>
+                      </span>
+                      <span class="d-badge activedev" title="Active Developer">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#23a55a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+                      </span>
+                      <span class="d-badge nitro" title="Nitro Subscriber">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#f43f5e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                      </span>
+                      <span class="d-badge founder" title="DIPRE Founder">⭐</span>
+                    </div>
+                  </div>
+
+                  <div class="lpp-content-box">
+                    <div class="lpp-user-header">
+                      <div class="lpp-global-name" id="hero-profile-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}Minh{% endif %}</div>
+                      <div class="lpp-sub-row">
+                        <span class="lpp-username" id="hero-profile-tag">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@minh3003a{% endif %}</span>
+                        <span class="lpp-pronouns">Workspace: DIPRE.io</span>
+                      </div>
+                    </div>
+
+                    <!-- Custom Status Bong Bóng Suy Nghĩ -->
+                    <div class="lpp-thought-bubble">
+                      <span class="bubble-icon">🎵</span>
+                      <span class="bubble-text" id="hero-custom-status-text">Sơn Tùng M-TP • Lạc Trôi (Synced)</span>
+                    </div>
+
+                    <div class="lpp-divider"></div>
+
+                    <!-- Rich Presence Embed Box -->
+                    <div class="lpp-rpc-box">
+                      <div class="lpp-rpc-label">PLAYING A GAME</div>
+                      <div class="lpp-rpc-inner">
+                        <div class="lpp-rpc-icon-wrap">
+                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" alt="App Icon" class="lpp-rpc-app-icon" id="hero-rpc-large-img">
+                          <span class="lpp-rpc-small-badge">⚡</span>
+                        </div>
+                        <div class="lpp-rpc-meta">
+                          <div class="lpp-rpc-title" id="hero-rpc-title">Visual Studio Code</div>
+                          <div class="lpp-rpc-details" id="hero-rpc-details">Developing DIPRE Studio MAC</div>
+                          <div class="lpp-rpc-state" id="hero-rpc-state">01:28:46 elapsed</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- About Me & Footer -->
+                    <div class="lpp-about-box">
+                      <div class="lpp-about-text">
+                        <b>https://discord.gg/dipre</b><br>
+                        Beyond the veil, control returns.<br>
+                        <span class="lpp-member-since">Member Since: Jan 1, 2020</span>
+                      </div>
+                      <div class="lpp-founder-pill">
+                        <span>Founder</span>
+                        <span class="fp-dot">👑</span>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
 
               </div>
@@ -799,6 +935,224 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      <!-- TAB: SOUNDCLOUD RPC -->
+      <section class="tab-panel" id="tab-rpc-soundcloud">
+        <div class="panel-2col-layout">
+          <div class="panel-form-col">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <div class="ssh-title">SoundCloud Rich Presence Suite</div>
+                <span class="ssh-badge">Preset Âm Nhạc</span>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="sc-track-url">SoundCloud Track URL</label>
+                <div class="sf-input-with-btn">
+                  <input type="url" id="sc-track-url" class="sf-input" placeholder="https://soundcloud.com/artist/track..." value="https://soundcloud.com/petitbiscuit/sunset-lover">
+                  <button type="button" class="sf-addon-btn primary" onclick="handleLoadSoundCloudTrack()">Nạp Track</button>
+                </div>
+              </div>
+              <div class="sf-grid-2">
+                <div class="sf-row">
+                  <label class="sf-label" for="sc-track-title">Tên Bài Hát</label>
+                  <input type="text" id="sc-track-title" class="sf-input" placeholder="Sunset Lover" value="Sunset Lover">
+                </div>
+                <div class="sf-row">
+                  <label class="sf-label" for="sc-artist-name">Nghệ Sĩ / Kênh</label>
+                  <input type="text" id="sc-artist-name" class="sf-input" placeholder="Petit Biscuit" value="Petit Biscuit">
+                </div>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="sc-waveform-style">Kiểu Dáng Sóng Nhạc</label>
+                <select id="sc-waveform-style" class="sf-select">
+                  <option value="orange" selected>Cam Hoàng Hôn (SoundCloud Classic)</option>
+                  <option value="neon">Neon Cyan Sáng</option>
+                  <option value="purple">Hồng Tím Cyber</option>
+                </select>
+              </div>
+              <div class="sf-action-row mt-3">
+                <button type="button" class="rpc-btn rpc-btn-start" onclick="handleApplySoundCloudRPC()">Áp Dụng Presence SoundCloud</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-preview-col">
+            <div class="preview-sticky">
+              <div class="preview-header">
+                <span class="preview-title">Xem Trước SoundCloud Presence</span>
+                <span class="preview-live-badge">REALTIME</span>
+              </div>
+              <div class="sc-mock-presence-card">
+                <div class="smp-header">
+                  <div class="smp-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#ff5500"><path d="M11.56 8.87V17h9.54c1.6 0 2.9-1.3 2.9-2.9 0-1.6-1.3-2.9-2.9-2.9h-.33c-.34-2.48-2.46-4.38-5.04-4.38-1.04 0-2.02.31-2.83.84-.36-.88-1.04-1.57-1.84-1.79zm-1.8 1.95v6.18h1.06V9.82c-.37.3-.73.65-1.06 1zm-1.8.84v5.34h1.06v-5.69c-.38.1-.73.22-1.06.35zm-1.8.61v4.73h1.06v-4.99c-.36.08-.72.17-1.06.26zm-1.8.53v4.2h1.06V13.2c-.35.19-.71.39-1.06.6zm-1.8.72v3.48h1.06v-3.72c-.36.06-.71.14-1.06.24zm-1.8.82v2.66h1.06v-2.8c-.35.03-.7.08-1.06.14z"/></svg>
+                  </div>
+                  <div class="smp-meta">
+                    <div class="smp-title" id="sc-pv-title">Sunset Lover</div>
+                    <div class="smp-artist" id="sc-pv-artist">Petit Biscuit • SoundCloud</div>
+                  </div>
+                </div>
+                <div class="sc-mock-waveform">
+                  <div class="sc-wave-bars">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: YOUTUBE RPC -->
+      <section class="tab-panel" id="tab-rpc-youtube">
+        <div class="panel-2col-layout">
+          <div class="panel-form-col">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <div class="ssh-title">YouTube Rich Presence Suite</div>
+                <span class="ssh-badge">Auto Fetch Thumbnail</span>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="yt-video-url">Đường Dẫn Video YouTube (Watch URL / Shorts)</label>
+                <div class="sf-input-with-btn">
+                  <input type="url" id="yt-video-url" class="sf-input" placeholder="https://www.youtube.com/watch?v=..." value="https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+                  <button type="button" class="sf-addon-btn primary" onclick="handleFetchYouTubeMeta()">Lấy Dữ Liệu</button>
+                </div>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="yt-video-title">Tiêu Đề Video</label>
+                <input type="text" id="yt-video-title" class="sf-input" placeholder="Rick Astley - Never Gonna Give You Up" value="Rick Astley - Never Gonna Give You Up">
+              </div>
+              <div class="sf-grid-2">
+                <div class="sf-row">
+                  <label class="sf-label" for="yt-channel-name">Tên Kênh (Channel)</label>
+                  <input type="text" id="yt-channel-name" class="sf-input" placeholder="Rick Astley" value="Rick Astley">
+                </div>
+                <div class="sf-row">
+                  <label class="sf-label" for="yt-action-label">Trạng Thái Xem</label>
+                  <select id="yt-action-label" class="sf-select">
+                    <option value="Watching YouTube" selected>Đang Xem (Watching)</option>
+                    <option value="Live Streaming">Phát Trực Tiếp (Live Stream)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="sf-action-row mt-3">
+                <button type="button" class="rpc-btn rpc-btn-start" onclick="handleApplyYouTubeRPC()">Áp Dụng Presence YouTube</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-preview-col">
+            <div class="preview-sticky">
+              <div class="preview-header">
+                <span class="preview-title">Xem Trước YouTube Presence</span>
+                <span class="preview-live-badge">REALTIME</span>
+              </div>
+              <div class="yt-mock-presence-card">
+                <div class="yt-thumb-wrap">
+                  <img id="yt-pv-thumb" src="https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg" alt="YouTube Thumbnail" class="yt-thumb-img">
+                  <div class="yt-play-badge">▶ YouTube</div>
+                </div>
+                <div class="yt-meta-box">
+                  <div class="yt-meta-title" id="yt-pv-title">Rick Astley - Never Gonna Give You Up</div>
+                  <div class="yt-meta-channel" id="yt-pv-channel">Rick Astley • Watching</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SPOTIFY RPC -->
+      <section class="tab-panel" id="tab-rpc-spotify">
+        <div class="panel-2col-layout">
+          <div class="panel-form-col">
+            <div class="settings-section">
+              <div class="settings-section-header">
+                <div class="ssh-title">Spotify Rich Presence Suite</div>
+                <span class="ssh-badge">Listening to Spotify</span>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="sp-track-name">Tên Bài Hát</label>
+                <input type="text" id="sp-track-name" class="sf-input" placeholder="Starboy" value="Starboy">
+              </div>
+              <div class="sf-grid-2">
+                <div class="sf-row">
+                  <label class="sf-label" for="sp-artist-name">Nghệ Sĩ</label>
+                  <input type="text" id="sp-artist-name" class="sf-input" placeholder="The Weeknd, Daft Punk" value="The Weeknd, Daft Punk">
+                </div>
+                <div class="sf-row">
+                  <label class="sf-label" for="sp-album-name">Album</label>
+                  <input type="text" id="sp-album-name" class="sf-input" placeholder="Starboy" value="Starboy">
+                </div>
+              </div>
+              <div class="sf-row">
+                <label class="sf-label" for="sp-album-art">URL Ảnh Album</label>
+                <input type="url" id="sp-album-art" class="sf-input" placeholder="https://..." value="https://i.scdn.co/image/ab67616d0000b2734718e2b124f79258be7bc452">
+              </div>
+              <div class="sf-action-row mt-3">
+                <button type="button" class="rpc-btn rpc-btn-start" onclick="handleApplySpotifyRPC()">Áp Dụng Presence Spotify</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel-preview-col">
+            <div class="preview-sticky">
+              <div class="preview-header">
+                <span class="preview-title">Xem Trước Spotify Presence</span>
+                <span class="preview-live-badge">REALTIME</span>
+              </div>
+              <div class="sp-mock-presence-card">
+                <div class="sp-card-row">
+                  <img id="sp-pv-art" src="https://i.scdn.co/image/ab67616d0000b2734718e2b124f79258be7bc452" alt="Spotify Art" class="sp-art-img">
+                  <div class="sp-meta-col">
+                    <div class="sp-type-lbl">LISTENING TO SPOTIFY</div>
+                    <div class="sp-title" id="sp-pv-title">Starboy</div>
+                    <div class="sp-artist" id="sp-pv-artist">by The Weeknd, Daft Punk</div>
+                    <div class="sp-album" id="sp-pv-album">on Starboy</div>
+                  </div>
+                </div>
+                <div class="sp-progress-rail">
+                  <div class="sp-progress-bar"></div>
+                </div>
+                <div class="sp-time-row">
+                  <span>01:24</span>
+                  <span>03:50</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: INBOX DISCORD -->
+      <section class="tab-panel" id="tab-inbox">
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="ssh-title">Hòm Thư &amp; Tin Nhắn Discord (Inbox)</div>
+              <div class="ssh-sub">Đọc thông báo, danh sách tin nhắn riêng (DM) và kênh gần đây của Token đang kết nối.</div>
+            </div>
+            <button type="button" class="ssh-action" onclick="loadDiscordInbox()">Làm Mới Inbox</button>
+          </div>
+          <div id="inbox-channels-list" class="inbox-channels-grid">
+            <div class="inbox-loading">Nhấn "Làm Mới Inbox" để tải tin nhắn của tài khoản Discord...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: QUẢN LÝ NHIỀU TÀI KHOẢN (MULTI-TOKEN SWITCHER) -->
+      <section class="tab-panel" id="tab-accounts">
+        <div class="settings-section">
+          <div class="settings-section-header">
+            <div>
+              <div class="ssh-title">Quản Lý Nhiều Tài Khoản Discord (Multi-Token Switcher)</div>
+              <div class="ssh-sub">Lưu trữ nhiều Discord User Token. Chuyển đổi 1-click tức thì không cần đăng nhập lại.</div>
+            </div>
+            <button type="button" class="rpc-btn rpc-btn-start" onclick="toggleAccountModal(true)">+ Thêm Token Mới</button>
+          </div>
+
+          <div id="multi-accounts-grid" class="accounts-cards-grid mt-3">
+            <div class="acc-grid-loading">Đang tải danh sách tài khoản đã lưu...</div>
           </div>
         </div>
       </section>
