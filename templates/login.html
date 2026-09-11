@@ -85,7 +85,7 @@
                 <span class="cbn-text" id="login-bot-notice-text">Phát hiện hành vi nghi vấn, vui lòng hoàn thành câu đố nâng cao:</span>
               </div>
 
-              <!-- CẤP 1: MẶC ĐỊNH MỘT CHẠM (TURNSTILE) -->
+              <!-- CẤP 1: MẶC ĐỊNH MỘT CHẠM (TURNSTILE GỌN GÀNG CHUẨN CLOUDFLARE) -->
               <div class="captcha-stage-tier active" id="login-tier-1">
                 <div class="turnstile-box" id="login-turnstile-box" onclick="handleTurnstileClick('login')">
                   <div class="turnstile-check-wrap">
@@ -95,10 +95,10 @@
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <span class="turnstile-label" id="login-turnstile-label">Tôi là con người (Click to verify)</span>
+                    <span class="turnstile-label" id="login-turnstile-label">Tôi là con người (Verify)</span>
                   </div>
                   <div class="turnstile-brand">
-                    <img src="{{ url_for('static', filename='img/dipre_icon_clyde_silk.png') }}" class="turnstile-logo-mini" alt="">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     <span>DIPRE Shield</span>
                   </div>
                 </div>
@@ -204,10 +204,10 @@
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </div>
-                    <span class="turnstile-label" id="register-turnstile-label">Tôi là con người (Click to verify)</span>
+                    <span class="turnstile-label" id="register-turnstile-label">Tôi là con người (Verify)</span>
                   </div>
                   <div class="turnstile-brand">
-                    <img src="{{ url_for('static', filename='img/dipre_icon_clyde_silk.png') }}" class="turnstile-logo-mini" alt="">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                     <span>DIPRE Shield</span>
                   </div>
                 </div>
@@ -299,15 +299,15 @@
           Tùy biến Rich Presence sống động, đồng bộ câu hát từng mili-giây từ NhacCuaTui và hoàn thành Auto Quest tự động mà không bao giờ lo bị Rate Limit.
         </p>
 
-        <!-- KHUNG SHOWCASE PROFILE DISCORD 3D CỦA MINH (LẤY TỪ ẢNH GỐC) -->
+        <!-- KHUNG SHOWCASE GIAO DIỆN BEYOND THE VEIL ĐẲNG CẤP (ẨN DANH HOÀN TOÀN) -->
         <div class="auth-profile-card-wrap">
           <div class="auth-profile-card-3d">
             <div class="apc-glow-back"></div>
-            <img src="{{ url_for('static', filename='img/discord_afterlife_ref.png') }}" alt="Minh Discord Profile Showcase" class="auth-profile-screenshot-img">
+            <img src="{{ url_for('static', filename='img/discord_profile_showcase.png') }}" alt="Beyond The Veil Showcase" class="auth-profile-screenshot-img">
             
             <div class="apc-floating-tag">
               <span class="tag-crown">👑</span>
-              <span class="tag-title">Verified Profile: Minh (@minh3003a)</span>
+              <span class="tag-title">DIPRE Master Studio • Verified RPC</span>
             </div>
           </div>
         </div>

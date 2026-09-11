@@ -6059,55 +6059,101 @@ transition: all var(--trans-fast);
 
 /* Level 1: Turnstile */
 .turnstile-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1.2rem;
-  background: rgba(15, 23, 42, 0.8);
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 1.1rem !important;
+  height: 56px !important;
+  min-height: 56px !important;
+  max-height: 56px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
 
 .turnstile-box:hover {
   border-color: rgba(99, 102, 241, 0.4);
-  background: rgba(20, 29, 52, 0.9);
+  background: rgba(20, 29, 52, 0.95);
 }
 
-.turnstile-left {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
+.turnstile-check-wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  flex: 1;
 }
 
 .turnstile-checkbox {
-  width: 24px;
-  height: 24px;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
   border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   transition: all 0.2s ease;
+  background: rgba(0, 0, 0, 0.2);
+  position: relative;
 }
 
 .turnstile-box.verified .turnstile-checkbox {
-  background: #22c55e;
-  border-color: #22c55e;
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.turnstile-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.turnstile-checkbox.loading .turnstile-spinner {
+  display: block;
+}
+
+.turnstile-check-svg {
+  width: 16px;
+  height: 16px;
+  stroke: #ffffff;
+  display: none;
+}
+
+.turnstile-checkbox.checked .turnstile-check-svg {
+  display: block;
 }
 
 .turnstile-label {
   font-size: 0.88rem;
   font-weight: 600;
   color: #e2e8f0;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .turnstile-brand {
-  font-size: 0.7rem;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.4rem !important;
+  font-size: 0.72rem;
   color: #64748b;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 /* Level 2: Slide Cutout */
