@@ -4,40 +4,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Đăng Nhập | Drakonis RPC</title>
+  <title>Đăng Nhập | DIPRE - Discord Meets Premium</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-  <link rel="icon" href="https://cdn.discordapp.com/emojis/1054366629930778644.webp" type="image/webp">
+  <link rel="icon" href="{{ url_for('static', filename='img/dipre_logo.png') }}" type="image/png">
 </head>
 
-<body class="auth-page-body">
+<body class="auth-page-body dipre-theme">
 
   <div class="auth-center-container">
-    <div class="auth-card-rounded">
+    <div class="auth-card-rounded dipre-glass-card">
 
       <div class="auth-brand-header">
-        <div class="brand-logo-wrap mb-2 auth-brand-logo-wrap">
-          <svg class="brand-logo-svg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="drakonis-auth-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#818cf8" />
-                <stop offset="50%" stop-color="#6366f1" />
-                <stop offset="100%" stop-color="#06b6d4" />
-              </linearGradient>
-              <filter id="authLogoGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="2.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <polygon points="22,3 38,10 41,25 32,38 22,42 12,38 3,25 6,10" fill="url(#drakonis-auth-grad)"
-              fill-opacity="0.18" stroke="url(#drakonis-auth-grad)" stroke-width="1.8" stroke-linejoin="round" />
-            <path d="M22 8L31 15L33 26L27 34L22 38L17 34L11 26L13 15Z" fill="url(#drakonis-auth-grad)"
-              fill-opacity="0.32" stroke="#a5b4fc" stroke-width="1.4" stroke-linejoin="round" />
-            <polygon points="22,14 28,23 22,31 16,23" fill="#ffffff" filter="url(#authLogoGlow)" opacity="0.95" />
-            <circle cx="22" cy="23" r="2.5" fill="#06b6d4" />
-          </svg>
+        <div class="dipre-logo-showcase mb-3">
+          <div class="dipre-logo-glow-ring">
+            <img src="{{ url_for('static', filename='img/dipre_logo.png') }}" alt="DIPRE Brand Logo" class="dipre-brand-logo-img">
+          </div>
         </div>
-        <h1 class="auth-heading"><span>Drakonis</span> <span class="brand-name-highlight">RPC</span></h1>
-        <p class="auth-subtext">Discord Rich Presence Studio v2.5</p>
+        <h1 class="auth-heading"><span class="dipre-text-gradient">DIPRE</span> <span class="brand-name-sub">STUDIO</span></h1>
+        <p class="auth-subtext">Discord Meets Premium • The New Era</p>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -61,11 +45,12 @@
         </button>
       </div>
 
+      <!-- FORM ĐĂNG NHẬP -->
       <form id="form-login" method="POST" action="{{ url_for('login') }}">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-username">Tên tài khoản</label>
           <input type="text" id="login-username" name="username" class="input-rounded"
-            placeholder="Nhập tên đăng nhập..." required autofocus autocomplete="username">
+            placeholder="Nhập tên tài khoản..." required autofocus autocomplete="username">
         </div>
 
         <div class="form-row mb-3">
@@ -74,34 +59,104 @@
             placeholder="Nhập mật khẩu..." required autocomplete="current-password">
         </div>
 
+        <!-- BỘ CAPTCHA ĐA TẦNG (3 CẤP ĐỘ NGHI NGỜ BOT) -->
         <div class="form-row mb-3">
-          <div class="slide-captcha-container">
-            <div class="slide-captcha-header">
-              <span>Xác thực chống Bot kiểu TikTok</span>
-              <button type="button" class="btn-captcha-refresh" onclick="reloadSlideCaptcha('login')">Đổi ảnh</button>
-            </div>
-            <div class="slide-captcha-stage" id="login-stage">
-              <img class="slide-captcha-bg" id="login-captcha-bg" alt="Captcha Background" src="">
-              <img class="slide-captcha-piece" id="login-captcha-piece" alt="Puzzle Piece" src="">
-            </div>
-            <div class="slide-captcha-track-box" id="login-track">
-              <div class="slide-captcha-fill" id="login-fill"></div>
-              <div class="slide-captcha-hint-text" id="login-hint">Kéo thanh trượt để ghép hình ảnh</div>
-              <div class="slide-captcha-thumb" id="login-thumb">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
+          <div class="multitier-captcha-wrap" id="login-captcha-wrap">
+            <div class="captcha-tier-selector">
+              <div class="cts-label">
+                <span class="shield-icon">🛡️</span>
+                <span class="cts-title">Xác thực bảo mật DIPRE Shield</span>
+              </div>
+              <div class="cts-tiers">
+                <button type="button" class="tier-pill active" data-level="1" onclick="switchCaptchaTier('login', 1)">Cấp 1</button>
+                <button type="button" class="tier-pill" data-level="2" onclick="switchCaptchaTier('login', 2)">Cấp 2</button>
+                <button type="button" class="tier-pill" data-level="3" onclick="switchCaptchaTier('login', 3)">Cấp 3</button>
               </div>
             </div>
-            <div class="slide-captcha-status" id="login-status"></div>
+
+            <!-- CẤP 1: MỘT CHẠM (CLOUDFLARE TURNSTILE STYLE) -->
+            <div class="captcha-stage-tier active" id="login-tier-1">
+              <div class="turnstile-box" id="login-turnstile-box" onclick="handleTurnstileClick('login')">
+                <div class="turnstile-check-wrap">
+                  <div class="turnstile-checkbox" id="login-turnstile-checkbox">
+                    <div class="turnstile-spinner" id="login-turnstile-spinner"></div>
+                    <svg class="turnstile-check-svg" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <span class="turnstile-label" id="login-turnstile-label">Tôi là con người (Verify)</span>
+                </div>
+                <div class="turnstile-brand">
+                  <div class="turnstile-logo-mini"></div>
+                  <span>DIPRE Shield</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- CẤP 2: KÉO TRƯỢT PUZZLE (TIKTOK STYLE) -->
+            <div class="captcha-stage-tier d-none" id="login-tier-2">
+              <div class="slide-captcha-container">
+                <div class="slide-captcha-header">
+                  <span id="login-slide-title">Ghép mảnh khuyết puzzle</span>
+                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('login', 2)">Đổi ảnh</button>
+                </div>
+                <div class="slide-captcha-stage" id="login-stage">
+                  <img class="slide-captcha-bg" id="login-captcha-bg" alt="Puzzle Background" src="">
+                  <img class="slide-captcha-piece" id="login-captcha-piece" alt="Puzzle Piece" src="">
+                </div>
+                <div class="slide-captcha-track-box" id="login-track">
+                  <div class="slide-captcha-fill" id="login-fill"></div>
+                  <div class="slide-captcha-hint-text" id="login-hint">Kéo thanh trượt để khớp hình ảnh</div>
+                  <div class="slide-captcha-thumb" id="login-thumb">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CẤP 3: XOAY VÒNG TRÒN ĐỒNG TÂM KHỚP ẢNH (ARKOSE LABS / TIKTOK STYLE) -->
+            <div class="captcha-stage-tier d-none" id="login-tier-3">
+              <div class="circle-rotation-container">
+                <div class="slide-captcha-header">
+                  <span>Xoay vòng tròn khớp ảnh</span>
+                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('login', 3)">Đổi ảnh</button>
+                </div>
+                <div class="circle-stage-wrap">
+                  <div class="circle-viewport" id="login-circle-viewport">
+                    <img class="circle-outer-img" id="login-circle-outer" alt="Outer Ring" src="">
+                    <div class="circle-inner-rotator" id="login-circle-rotator">
+                      <img class="circle-inner-img" id="login-circle-inner" alt="Inner Circle" src="">
+                    </div>
+                    <div class="circle-guide-ring"></div>
+                  </div>
+                </div>
+                <div class="circle-slider-wrap">
+                  <div class="circle-slider-track" id="login-circle-track">
+                    <div class="circle-slider-fill" id="login-circle-fill"></div>
+                    <div class="slide-captcha-hint-text" id="login-circle-hint">Xoay thanh trượt đến góc 0° để khớp tranh</div>
+                    <div class="circle-slider-thumb" id="login-circle-thumb">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DÒNG TRẠNG THÁI CAPTCHA CHUNG -->
+            <div class="captcha-status-bar" id="login-status-bar"></div>
           </div>
         </div>
 
-        <button type="submit" id="btn-login-submit" class="action-btn action-start w-100 py-3 mb-3" disabled>
+        <button type="submit" id="btn-login-submit" class="action-btn action-start w-100 py-3 mb-3 dipre-btn-primary" disabled>
           Đăng Nhập Ngay
         </button>
       </form>
 
+      <!-- FORM ĐĂNG KÝ MỚI -->
       <form id="form-register" method="POST" action="{{ url_for('register') }}" class="d-none">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="register-username">Tên tài khoản mới</label>
@@ -121,208 +176,111 @@
             placeholder="Nhập lại mật khẩu..." required minlength="4" autocomplete="new-password">
         </div>
 
+        <!-- CAPTCHA REGISTER (CÙNG ENGINE) -->
         <div class="form-row mb-3">
-          <div class="slide-captcha-container">
-            <div class="slide-captcha-header">
-              <span>Xác thực chống Bot kiểu TikTok</span>
-              <button type="button" class="btn-captcha-refresh" onclick="reloadSlideCaptcha('register')">Đổi
-                ảnh</button>
-            </div>
-            <div class="slide-captcha-stage" id="register-stage">
-              <img class="slide-captcha-bg" id="register-captcha-bg" alt="Captcha Background" src="">
-              <img class="slide-captcha-piece" id="register-captcha-piece" alt="Puzzle Piece" src="">
-            </div>
-            <div class="slide-captcha-track-box" id="register-track">
-              <div class="slide-captcha-fill" id="register-fill"></div>
-              <div class="slide-captcha-hint-text" id="register-hint">Kéo thanh trượt để ghép hình ảnh</div>
-              <div class="slide-captcha-thumb" id="register-thumb">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
+          <div class="multitier-captcha-wrap" id="register-captcha-wrap">
+            <div class="captcha-tier-selector">
+              <div class="cts-label">
+                <span class="shield-icon">🛡️</span>
+                <span class="cts-title">Xác thực bảo mật DIPRE Shield</span>
+              </div>
+              <div class="cts-tiers">
+                <button type="button" class="tier-pill active" data-level="1" onclick="switchCaptchaTier('register', 1)">Cấp 1</button>
+                <button type="button" class="tier-pill" data-level="2" onclick="switchCaptchaTier('register', 2)">Cấp 2</button>
+                <button type="button" class="tier-pill" data-level="3" onclick="switchCaptchaTier('register', 3)">Cấp 3</button>
               </div>
             </div>
-            <div class="slide-captcha-status" id="register-status"></div>
+
+            <div class="captcha-stage-tier active" id="register-tier-1">
+              <div class="turnstile-box" id="register-turnstile-box" onclick="handleTurnstileClick('register')">
+                <div class="turnstile-check-wrap">
+                  <div class="turnstile-checkbox" id="register-turnstile-checkbox">
+                    <div class="turnstile-spinner" id="register-turnstile-spinner"></div>
+                    <svg class="turnstile-check-svg" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <span class="turnstile-label" id="register-turnstile-label">Tôi là con người (Verify)</span>
+                </div>
+                <div class="turnstile-brand">
+                  <div class="turnstile-logo-mini"></div>
+                  <span>DIPRE Shield</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="captcha-stage-tier d-none" id="register-tier-2">
+              <div class="slide-captcha-container">
+                <div class="slide-captcha-header">
+                  <span>Ghép mảnh khuyết puzzle</span>
+                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('register', 2)">Đổi ảnh</button>
+                </div>
+                <div class="slide-captcha-stage" id="register-stage">
+                  <img class="slide-captcha-bg" id="register-captcha-bg" alt="Puzzle Background" src="">
+                  <img class="slide-captcha-piece" id="register-captcha-piece" alt="Puzzle Piece" src="">
+                </div>
+                <div class="slide-captcha-track-box" id="register-track">
+                  <div class="slide-captcha-fill" id="register-fill"></div>
+                  <div class="slide-captcha-hint-text" id="register-hint">Kéo thanh trượt để khớp hình ảnh</div>
+                  <div class="slide-captcha-thumb" id="register-thumb">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="captcha-stage-tier d-none" id="register-tier-3">
+              <div class="circle-rotation-container">
+                <div class="slide-captcha-header">
+                  <span>Xoay vòng tròn khớp ảnh</span>
+                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('register', 3)">Đổi ảnh</button>
+                </div>
+                <div class="circle-stage-wrap">
+                  <div class="circle-viewport" id="register-circle-viewport">
+                    <img class="circle-outer-img" id="register-circle-outer" alt="Outer Ring" src="">
+                    <div class="circle-inner-rotator" id="register-circle-rotator">
+                      <img class="circle-inner-img" id="register-circle-inner" alt="Inner Circle" src="">
+                    </div>
+                    <div class="circle-guide-ring"></div>
+                  </div>
+                </div>
+                <div class="circle-slider-wrap">
+                  <div class="circle-slider-track" id="register-circle-track">
+                    <div class="circle-slider-fill" id="register-circle-fill"></div>
+                    <div class="slide-captcha-hint-text" id="register-circle-hint">Xoay thanh trượt đến góc 0° để khớp tranh</div>
+                    <div class="circle-slider-thumb" id="register-circle-thumb">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="captcha-status-bar" id="register-status-bar"></div>
           </div>
         </div>
 
-        <button type="submit" id="btn-register-submit" class="action-btn action-start w-100 py-3 mb-3" disabled>
+        <button type="submit" id="btn-register-submit" class="action-btn action-start w-100 py-3 mb-3 dipre-btn-primary" disabled>
           Tạo Tài Khoản
         </button>
       </form>
 
       <div class="auth-security-note">
-        Cơ sở dữ liệu cục bộ SQLite an toàn &amp; mã hóa mật khẩu chuẩn công nghiệp.
+        DIPRE Encrypted Sandbox • Chuẩn bảo mật Token Discord đa tầng.
       </div>
 
     </div>
   </div>
 
   <script>
-    const captchaState = {
-      login: { data: null, verified: false, dragging: false, startX: 0, currentX: 0 },
-      register: { data: null, verified: false, dragging: false, startX: 0, currentX: 0 }
+    const appCaptcha = {
+      login: { level: 1, verified: false, data: null, currentX: 0, currentAngle: 0, dragging: false, startX: 0 },
+      register: { level: 1, verified: false, data: null, currentX: 0, currentAngle: 0, dragging: false, startX: 0 }
     };
-
-    async function reloadSlideCaptcha(type) {
-      const statusEl = document.getElementById(`${type}-status`);
-      const hintEl = document.getElementById(`${type}-hint`);
-      const submitBtn = document.getElementById(`btn-${type}-submit`);
-      const pieceEl = document.getElementById(`${type}-captcha-piece`);
-      const bgEl = document.getElementById(`${type}-captcha-bg`);
-      const thumbEl = document.getElementById(`${type}-thumb`);
-      const fillEl = document.getElementById(`${type}-fill`);
-
-      captchaState[type].verified = false;
-      captchaState[type].currentX = 0;
-      if (submitBtn) submitBtn.disabled = true;
-      if (statusEl) {
-        statusEl.className = 'slide-captcha-status';
-        statusEl.textContent = 'Đang tạo puzzle mới...';
-      }
-      if (thumbEl) thumbEl.style.transform = 'translateX(0px)';
-      if (pieceEl) pieceEl.style.transform = 'translateX(0px)';
-      if (fillEl) fillEl.style.width = '0px';
-
-      try {
-        const res = await fetch('/api/captcha?r=' + Math.random());
-        const data = await res.json();
-        if (data && data.success) {
-          captchaState[type].data = data;
-          if (bgEl) bgEl.src = data.bg_image;
-          if (pieceEl) {
-            pieceEl.src = data.piece_image;
-            pieceEl.style.top = data.target_y + 'px';
-            pieceEl.style.width = data.piece_width + 'px';
-            pieceEl.style.height = data.piece_height + 'px';
-          }
-          if (statusEl) statusEl.textContent = '';
-          if (hintEl) hintEl.textContent = 'Kéo thanh trượt để ghép hình ảnh';
-        }
-      } catch (err) {
-        if (statusEl) {
-          statusEl.className = 'slide-captcha-status error';
-          statusEl.textContent = 'Lỗi tải captcha, hãy bấm đổi ảnh!';
-        }
-      }
-    }
-
-    function initSlideController(type) {
-      const track = document.getElementById(`${type}-track`);
-      const thumb = document.getElementById(`${type}-thumb`);
-      const piece = document.getElementById(`${type}-captcha-piece`);
-      const fill = document.getElementById(`${type}-fill`);
-      const statusEl = document.getElementById(`${type}-status`);
-      const submitBtn = document.getElementById(`btn-${type}-submit`);
-      const hint = document.getElementById(`${type}-hint`);
-
-      if (!track || !thumb || !piece) return;
-
-      const getMaxSlide = () => {
-        const trackWidth = track.clientWidth || 320;
-        const thumbWidth = thumb.clientWidth || 40;
-        return trackWidth - thumbWidth - 4;
-      };
-
-      const getStageScale = () => {
-        const stage = document.getElementById(`${type}-stage`);
-        const renderedWidth = stage.clientWidth || 320;
-        const naturalWidth = (captchaState[type].data && captchaState[type].data.bg_width) || 320;
-        return renderedWidth / naturalWidth;
-      };
-
-      const onStart = (clientX) => {
-        if (captchaState[type].verified) return;
-        captchaState[type].dragging = true;
-        captchaState[type].startX = clientX;
-        if (hint) hint.style.opacity = '0';
-      };
-
-      const onMove = (clientX) => {
-        if (!captchaState[type].dragging || captchaState[type].verified) return;
-        const delta = clientX - captchaState[type].startX;
-        const maxSlide = getMaxSlide();
-        const clamped = Math.max(0, Math.min(delta, maxSlide));
-        captchaState[type].currentX = clamped;
-
-        thumb.style.transform = `translateX(${clamped}px)`;
-        fill.style.width = `${clamped + 20}px`;
-
-        // Tỉ lệ scale giữa thanh trượt và hình ảnh puzzle
-        const stage = document.getElementById(`${type}-stage`);
-        const stageWidth = stage.clientWidth || 320;
-        const pieceWidth = (captchaState[type].data && captchaState[type].data.piece_width) || 44;
-        const maxPieceSlide = stageWidth - pieceWidth;
-        const piecePos = (clamped / maxSlide) * maxPieceSlide;
-
-        piece.style.transform = `translateX(${piecePos}px)`;
-      };
-
-      const onEnd = async () => {
-        if (!captchaState[type].dragging || captchaState[type].verified) return;
-        captchaState[type].dragging = false;
-
-        const maxSlide = getMaxSlide();
-        const stage = document.getElementById(`${type}-stage`);
-        const stageWidth = stage.clientWidth || 320;
-        const naturalWidth = (captchaState[type].data && captchaState[type].data.bg_width) || 320;
-        const pieceWidth = (captchaState[type].data && captchaState[type].data.piece_width) || 44;
-        const maxPieceSlide = stageWidth - pieceWidth;
-        const piecePos = (captchaState[type].currentX / maxSlide) * maxPieceSlide;
-
-        // Quy đổi tọa độ hiển thị sang tọa độ gốc trên ảnh
-        const scale = stageWidth / naturalWidth;
-        const originalX = piecePos / scale;
-
-        if (statusEl) {
-          statusEl.className = 'slide-captcha-status';
-          statusEl.textContent = 'Đang kiểm tra vị trí ghép...';
-        }
-
-        try {
-          const res = await fetch('/api/captcha/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ x: originalX })
-          });
-          const result = await res.json();
-          if (result && result.success) {
-            captchaState[type].verified = true;
-            if (statusEl) {
-              statusEl.className = 'slide-captcha-status success';
-              statusEl.textContent = '✓ Ghép chuẩn xác! Đã mở khóa đăng nhập.';
-            }
-            if (submitBtn) submitBtn.disabled = false;
-            thumb.style.background = '#10b981';
-            fill.style.background = 'rgba(16, 185, 129, 0.35)';
-          } else {
-            throw new Error(result.message || 'Chưa đúng vị trí');
-          }
-        } catch (err) {
-          if (statusEl) {
-            statusEl.className = 'slide-captcha-status error';
-            statusEl.textContent = '✕ Chưa khớp vị trí! Hãy thử lại.';
-          }
-          // Reset slider về vị trí ban đầu
-          setTimeout(() => {
-            thumb.style.transform = 'translateX(0px)';
-            piece.style.transform = 'translateX(0px)';
-            fill.style.width = '0px';
-            if (hint) hint.style.opacity = '1';
-            reloadSlideCaptcha(type);
-          }, 700);
-        }
-      };
-
-      // Chuột (Desktop)
-      thumb.addEventListener('mousedown', (e) => { onStart(e.clientX); e.preventDefault(); });
-      window.addEventListener('mousemove', (e) => { onMove(e.clientX); });
-      window.addEventListener('mouseup', () => { onEnd(); });
-
-      // Cảm ứng (Mobile / Tablet)
-      thumb.addEventListener('touchstart', (e) => { if (e.touches.length > 0) onStart(e.touches[0].clientX); }, { passive: true });
-      window.addEventListener('touchmove', (e) => { if (e.touches.length > 0) onMove(e.touches[0].clientX); }, { passive: true });
-      window.addEventListener('touchend', () => { onEnd(); });
-    }
 
     function switchAuthMode(mode) {
       const btnLogin = document.getElementById('btn-tab-login');
@@ -335,20 +293,333 @@
         btnRegister.classList.remove('active');
         formLogin.classList.remove('d-none');
         formRegister.classList.add('d-none');
-        reloadSlideCaptcha('login');
+        reloadCaptcha('login', appCaptcha.login.level);
       } else {
         btnRegister.classList.add('active');
         btnLogin.classList.remove('active');
         formRegister.classList.remove('d-none');
         formLogin.classList.add('d-none');
-        reloadSlideCaptcha('register');
+        reloadCaptcha('register', appCaptcha.register.level);
       }
     }
 
+    function switchCaptchaTier(formType, level) {
+      appCaptcha[formType].level = level;
+      appCaptcha[formType].verified = false;
+      const wrap = document.getElementById(`${formType}-captcha-wrap`);
+      const pills = wrap.querySelectorAll('.tier-pill');
+      pills.forEach(p => {
+        p.classList.toggle('active', parseInt(p.dataset.level) === level);
+      });
+
+      for (let i = 1; i <= 3; i++) {
+        const stage = document.getElementById(`${formType}-tier-${i}`);
+        if (stage) stage.classList.toggle('d-none', i !== level);
+      }
+      reloadCaptcha(formType, level);
+    }
+
+    async function reloadCaptcha(formType, level) {
+      const state = appCaptcha[formType];
+      state.verified = false;
+      state.currentX = 0;
+      state.currentAngle = 0;
+
+      const submitBtn = document.getElementById(`btn-${formType}-submit`);
+      if (submitBtn) submitBtn.disabled = true;
+
+      const statusBar = document.getElementById(`${formType}-status-bar`);
+      if (statusBar) {
+        statusBar.className = 'captcha-status-bar loading';
+        statusBar.textContent = 'Đang thiết lập thử thách bảo mật...';
+      }
+
+      try {
+        const res = await fetch(`/api/captcha?level=${level}&r=${Math.random()}`);
+        const result = await res.json();
+        if (!result || !result.success) throw new Error('Không thể tải captcha');
+
+        const data = result.captcha;
+        state.data = data;
+
+        if (level === 1) {
+          // Reset turnstile
+          const box = document.getElementById(`${formType}-turnstile-box`);
+          const cb = document.getElementById(`${formType}-turnstile-checkbox`);
+          const label = document.getElementById(`${formType}-turnstile-label`);
+          if (box) box.classList.remove('verified', 'verifying');
+          if (cb) cb.classList.remove('checked', 'loading');
+          if (label) label.textContent = 'Tôi là con người (Click to verify)';
+          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
+        }
+        else if (level === 2) {
+          // Slide puzzle
+          const bg = document.getElementById(`${formType}-captcha-bg`);
+          const piece = document.getElementById(`${formType}-captcha-piece`);
+          const thumb = document.getElementById(`${formType}-thumb`);
+          const fill = document.getElementById(`${formType}-fill`);
+          const hint = document.getElementById(`${formType}-hint`);
+
+          if (bg) bg.src = data.bg_image;
+          if (piece) {
+            piece.src = data.piece_image;
+            piece.style.top = `${data.target_y}px`;
+            piece.style.width = `${data.piece_width}px`;
+            piece.style.height = `${data.piece_height}px`;
+            piece.style.transform = 'translateX(0px)';
+          }
+          if (thumb) thumb.style.transform = 'translateX(0px)';
+          if (fill) fill.style.width = '0px';
+          if (hint) { hint.style.opacity = '1'; hint.textContent = 'Kéo thanh trượt để khớp mảnh ghép puzzle'; }
+          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
+        }
+        else if (level === 3) {
+          // Circle rotation
+          const outer = document.getElementById(`${formType}-circle-outer`);
+          const inner = document.getElementById(`${formType}-circle-inner`);
+          const rotator = document.getElementById(`${formType}-circle-rotator`);
+          const thumb = document.getElementById(`${formType}-circle-thumb`);
+          const fill = document.getElementById(`${formType}-circle-fill`);
+          const hint = document.getElementById(`${formType}-circle-hint`);
+
+          if (outer) outer.src = data.outer_image;
+          if (inner) inner.src = data.inner_image;
+          if (rotator) rotator.style.transform = 'rotate(0deg)';
+          if (thumb) thumb.style.transform = 'translateX(0px)';
+          if (fill) fill.style.width = '0px';
+          if (hint) { hint.style.opacity = '1'; hint.textContent = 'Kéo thanh trượt để xoay vòng tròn khớp tranh'; }
+          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
+        }
+      } catch (e) {
+        if (statusBar) {
+          statusBar.className = 'captcha-status-bar error';
+          statusBar.textContent = 'Lỗi kết nối bảo mật. Bấm để thử lại!';
+        }
+      }
+    }
+
+    async function handleTurnstileClick(formType) {
+      const state = appCaptcha[formType];
+      if (state.verified) return;
+
+      const box = document.getElementById(`${formType}-turnstile-box`);
+      const cb = document.getElementById(`${formType}-turnstile-checkbox`);
+      const label = document.getElementById(`${formType}-turnstile-label`);
+      const statusBar = document.getElementById(`${formType}-status-bar`);
+      const submitBtn = document.getElementById(`btn-${formType}-submit`);
+
+      box.classList.add('verifying');
+      cb.classList.add('loading');
+      label.textContent = 'Đang phân tích bảo mật...';
+
+      setTimeout(async () => {
+        try {
+          const res = await fetch('/api/captcha/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              level: 1,
+              token: state.data ? state.data.challenge : ''
+            })
+          });
+          const json = await res.json();
+          if (json && json.success) {
+            state.verified = true;
+            cb.classList.remove('loading');
+            cb.classList.add('checked');
+            box.classList.remove('verifying');
+            box.classList.add('verified');
+            label.textContent = 'Xác thực con người hoàn tất ✓';
+            if (statusBar) {
+              statusBar.className = 'captcha-status-bar success';
+              statusBar.textContent = '✓ DIPRE Shield: Đã mở khóa biểu mẫu!';
+            }
+            if (submitBtn) submitBtn.disabled = false;
+          } else {
+            throw new Error(json.message || 'Xác thực thất bại');
+          }
+        } catch (err) {
+          cb.classList.remove('loading');
+          box.classList.remove('verifying');
+          label.textContent = 'Nghi ngờ Bot! Đang nâng cấp độ...';
+          if (statusBar) {
+            statusBar.className = 'captcha-status-bar error';
+            statusBar.textContent = '✕ Chuyển sang thử thách Cấp 2!';
+          }
+          setTimeout(() => { switchCaptchaTier(formType, 2); }, 900);
+        }
+      }, 750);
+    }
+
+    function initSliderControllers() {
+      ['login', 'register'].forEach(formType => {
+        // Init Level 2 (Slide)
+        const track = document.getElementById(`${formType}-track`);
+        const thumb = document.getElementById(`${formType}-thumb`);
+        const piece = document.getElementById(`${formType}-captcha-piece`);
+        const fill = document.getElementById(`${formType}-fill`);
+        const hint = document.getElementById(`${formType}-hint`);
+
+        if (track && thumb && piece) {
+          const onSlideStart = (x) => {
+            if (appCaptcha[formType].verified) return;
+            appCaptcha[formType].dragging = true;
+            appCaptcha[formType].startX = x;
+            if (hint) hint.style.opacity = '0';
+          };
+          const onSlideMove = (x) => {
+            if (!appCaptcha[formType].dragging || appCaptcha[formType].verified) return;
+            const delta = x - appCaptcha[formType].startX;
+            const maxSlide = (track.clientWidth || 320) - (thumb.clientWidth || 40) - 4;
+            const clamped = Math.max(0, Math.min(delta, maxSlide));
+            appCaptcha[formType].currentX = clamped;
+
+            thumb.style.transform = `translateX(${clamped}px)`;
+            fill.style.width = `${clamped + 20}px`;
+
+            const stage = document.getElementById(`${formType}-stage`);
+            const maxPiece = (stage.clientWidth || 320) - ((appCaptcha[formType].data?.piece_width) || 46);
+            const pieceX = (clamped / maxSlide) * maxPiece;
+            piece.style.transform = `translateX(${pieceX}px)`;
+          };
+          const onSlideEnd = async () => {
+            if (!appCaptcha[formType].dragging || appCaptcha[formType].verified) return;
+            appCaptcha[formType].dragging = false;
+
+            const stage = document.getElementById(`${formType}-stage`);
+            const stageW = stage.clientWidth || 320;
+            const origW = appCaptcha[formType].data?.bg_width || 320;
+            const maxSlide = (track.clientWidth || 320) - (thumb.clientWidth || 40) - 4;
+            const pieceW = appCaptcha[formType].data?.piece_width || 46;
+            const pieceX = (appCaptcha[formType].currentX / maxSlide) * (stageW - pieceW);
+            const originalX = pieceX / (stageW / origW);
+
+            const statusBar = document.getElementById(`${formType}-status-bar`);
+            const submitBtn = document.getElementById(`btn-${formType}-submit`);
+
+            try {
+              const res = await fetch('/api/captcha/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ level: 2, x: originalX })
+              });
+              const json = await res.json();
+              if (json && json.success) {
+                appCaptcha[formType].verified = true;
+                if (statusBar) {
+                  statusBar.className = 'captcha-status-bar success';
+                  statusBar.textContent = '✓ Mảnh ghép chính xác! Đã mở khóa đăng nhập.';
+                }
+                if (submitBtn) submitBtn.disabled = false;
+                thumb.style.background = '#10b981';
+                fill.style.background = 'rgba(16, 185, 129, 0.4)';
+              } else throw new Error();
+            } catch (err) {
+              if (statusBar) {
+                statusBar.className = 'captcha-status-bar error';
+                statusBar.textContent = '✕ Chưa khớp! Hãy thử lại.';
+              }
+              setTimeout(() => {
+                thumb.style.transform = 'translateX(0px)';
+                piece.style.transform = 'translateX(0px)';
+                fill.style.width = '0px';
+                reloadCaptcha(formType, 2);
+              }, 700);
+            }
+          };
+
+          thumb.addEventListener('mousedown', e => { onSlideStart(e.clientX); e.preventDefault(); });
+          window.addEventListener('mousemove', e => onSlideMove(e.clientX));
+          window.addEventListener('mouseup', onSlideEnd);
+
+          thumb.addEventListener('touchstart', e => { if (e.touches.length) onSlideStart(e.touches[0].clientX); }, { passive: true });
+          window.addEventListener('touchmove', e => { if (e.touches.length) onSlideMove(e.touches[0].clientX); }, { passive: true });
+          window.addEventListener('touchend', onSlideEnd);
+        }
+
+        // Init Level 3 (Circle Rotation)
+        const cTrack = document.getElementById(`${formType}-circle-track`);
+        const cThumb = document.getElementById(`${formType}-circle-thumb`);
+        const cFill = document.getElementById(`${formType}-circle-fill`);
+        const cRotator = document.getElementById(`${formType}-circle-rotator`);
+        const cHint = document.getElementById(`${formType}-circle-hint`);
+
+        if (cTrack && cThumb && cRotator) {
+          let cDragging = false;
+          let cStartPos = 0;
+
+          const onCircleStart = (x) => {
+            if (appCaptcha[formType].verified) return;
+            cDragging = true;
+            cStartPos = x;
+            if (cHint) cHint.style.opacity = '0';
+          };
+          const onCircleMove = (x) => {
+            if (!cDragging || appCaptcha[formType].verified) return;
+            const delta = x - cStartPos;
+            const maxTrack = (cTrack.clientWidth || 320) - (cThumb.clientWidth || 40) - 4;
+            const clamped = Math.max(0, Math.min(delta, maxTrack));
+
+            cThumb.style.transform = `translateX(${clamped}px)`;
+            cFill.style.width = `${clamped + 20}px`;
+
+            // Xoay 360 độ theo tỉ lệ thanh trượt
+            const angle = (clamped / maxTrack) * 360;
+            appCaptcha[formType].currentAngle = angle;
+            cRotator.style.transform = `rotate(${angle}deg)`;
+          };
+          const onCircleEnd = async () => {
+            if (!cDragging || appCaptcha[formType].verified) return;
+            cDragging = false;
+
+            const statusBar = document.getElementById(`${formType}-status-bar`);
+            const submitBtn = document.getElementById(`btn-${formType}-submit`);
+
+            try {
+              const res = await fetch('/api/captcha/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ level: 3, angle: appCaptcha[formType].currentAngle })
+              });
+              const json = await res.json();
+              if (json && json.success) {
+                appCaptcha[formType].verified = true;
+                if (statusBar) {
+                  statusBar.className = 'captcha-status-bar success';
+                  statusBar.textContent = '✓ Khớp tranh 100%! Xác thực đẳng cấp hoàn tất.';
+                }
+                if (submitBtn) submitBtn.disabled = false;
+                cThumb.style.background = '#10b981';
+                cFill.style.background = 'rgba(16, 185, 129, 0.4)';
+              } else throw new Error(json.message);
+            } catch (err) {
+              if (statusBar) {
+                statusBar.className = 'captcha-status-bar error';
+                statusBar.textContent = err.message || '✕ Chưa khớp hình tròn! Hãy xoay lại.';
+              }
+              setTimeout(() => {
+                cThumb.style.transform = 'translateX(0px)';
+                cFill.style.width = '0px';
+                cRotator.style.transform = 'rotate(0deg)';
+                reloadCaptcha(formType, 3);
+              }, 900);
+            }
+          };
+
+          cThumb.addEventListener('mousedown', e => { onCircleStart(e.clientX); e.preventDefault(); });
+          window.addEventListener('mousemove', e => onCircleMove(e.clientX));
+          window.addEventListener('mouseup', onCircleEnd);
+
+          cThumb.addEventListener('touchstart', e => { if (e.touches.length) onCircleStart(e.touches[0].clientX); }, { passive: true });
+          window.addEventListener('touchmove', e => { if (e.touches.length) onCircleMove(e.touches[0].clientX); }, { passive: true });
+          window.addEventListener('touchend', onCircleEnd);
+        }
+      });
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
-      initSlideController('login');
-      initSlideController('register');
-      reloadSlideCaptcha('login');
+      initSliderControllers();
+      reloadCaptcha('login', 1);
       {% if mode == 'register' %}
       switchAuthMode('register');
       {% endif %}

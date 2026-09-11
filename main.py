@@ -12,6 +12,7 @@ import random
 import re
 import base64
 import io
+import math
 from functools import wraps
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Union, Any
@@ -93,9 +94,136 @@ def quest_log(message: str, level: str = 'info'):
 
 log_event('Hệ thống Discord RPC Master v2.2 đã sẵn sàng hoạt động.', 'info')
 
+# ==============================================================================
+# DIPRE CYBER SHIELD: MULTI-LAYER ANTI-DDOS & BRUTE-FORCE PROTECTION
+# ==============================================================================
+IP_REQUEST_HISTORY: Dict[str, List[float]] = {}
+IP_FAILED_ATTEMPTS: Dict[str, List[float]] = {}
+IP_BLACKLIST: Dict[str, float] = {}  # ip -> ban_until timestamp
+SECURITY_LOCK = threading.Lock()
+
+RATE_LIMIT_GLOBAL = 100        # max requests per 10s window
+RATE_LIMIT_SENSITIVE = 20      # max requests per 10s window for auth/captcha
+MAX_FAILED_ATTEMPTS = 6        # max failed logins/captchas before jail
+JAIL_DURATION_SECONDS = 180    # 3 minutes temporary jail
+
+def get_client_ip() -> str:
+    """Trích xuất IP thực tế của client (hỗ trợ reverse proxy Render / Cloudflare)"""
+    x_forwarded = request.headers.get('X-Forwarded-For')
+    if x_forwarded:
+        return x_forwarded.split(',')[0].strip()
+    return request.remote_addr or '127.0.0.1'
+
+def is_ip_jailed(ip: str) -> bool:
+    now = time.time()
+    with SECURITY_LOCK:
+        if ip in IP_BLACKLIST:
+            if now < IP_BLACKLIST[ip]:
+                return True
+            else:
+                del IP_BLACKLIST[ip]
+    return False
+
+def record_failed_attempt(ip: str):
+    now = time.time()
+    with SECURITY_LOCK:
+        history = IP_FAILED_ATTEMPTS.get(ip, [])
+        history = [t for t in history if now - t < 120]  # giữ trong 2 phút
+        history.append(now)
+        IP_FAILED_ATTEMPTS[ip] = history
+        if len(history) >= MAX_FAILED_ATTEMPTS:
+            IP_BLACKLIST[ip] = now + JAIL_DURATION_SECONDS
+            log_event(f"🚨 [DIPRE Shield] IP {ip} bị tạm khóa {JAIL_DURATION_SECONDS}s do thất bại liên tiếp {len(history)} lần!", "warning")
+
+def clear_failed_attempts(ip: str):
+    with SECURITY_LOCK:
+        if ip in IP_FAILED_ATTEMPTS:
+            del IP_FAILED_ATTEMPTS[ip]
+
+@app.before_request
+def dipre_security_firewall():
+    """Lớp chắn bảo mật Anti-DDoS & Kiểm tra tính toàn vẹn của Session trước mỗi request"""
+    ip = get_client_ip()
+    now = time.time()
+
+    # 1. Kiểm tra danh sách tạm giam (Jail)
+    if is_ip_jailed(ip):
+        ban_remain = int(IP_BLACKLIST.get(ip, now) - now)
+        if request.path.startswith('/api/'):
+            return jsonify({
+                'success': False,
+                'error': 'DIPRE_SHIELD_BLOCKED',
+                'message': f'IP của bạn bị tạm khóa do nghi vấn spam/brute-force. Thử lại sau {ban_remain}s.'
+            }), 429
+        return f"""
+        <html><body style="background:#0b0e17;color:#f43f5e;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+        <div style="text-align:center;padding:2rem;background:#111214;border:1px solid #f43f5e;border-radius:16px;box-shadow:0 0 30px rgba(244,63,94,0.3);">
+            <h1>🚨 DIPRE CYBER SHIELD</h1>
+            <p>Hệ thống phát hiện hoạt động bất thường từ địa chỉ IP của bạn.</p>
+            <p>Tạm khóa yêu cầu trong: <b>{ban_remain} giây</b></p>
+        </div>
+        </body></html>
+        """, 429
+
+    # 2. In-Memory Sliding Window Rate Limiter
+    is_sensitive = request.path in ['/login', '/register'] or request.path.startswith('/api/captcha')
+    limit = RATE_LIMIT_SENSITIVE if is_sensitive else RATE_LIMIT_GLOBAL
+
+    with SECURITY_LOCK:
+        history = IP_REQUEST_HISTORY.get(ip, [])
+        history = [t for t in history if now - t < 10.0]
+        if len(history) >= limit:
+            return jsonify({
+                'success': False,
+                'error': 'RATE_LIMIT_EXCEEDED',
+                'message': 'Thao tác quá dồn dập. Vui lòng chậm lại!'
+            }), 429
+        history.append(now)
+        IP_REQUEST_HISTORY[ip] = history
+
+    # 3. KIỂM TRA TÍNH TOÀN VẸN CỦA TÀI KHOẢN TRONG DATABASE
+    # Giải quyết triệt để lỗi khi xóa DB hoặc deploy lại Render làm mất dữ liệu:
+    if 'user_id' in session:
+        user_exists = False
+        try:
+            with get_db() as conn:
+                cursor = conn.cursor()
+                cursor.execute('SELECT id, username, discord_token FROM users WHERE id = ?', (session['user_id'],))
+                u = cursor.fetchone()
+                if u:
+                    user_exists = True
+        except Exception:
+            user_exists = False
+
+        if not user_exists:
+            # Dữ liệu tài khoản trong DB đã không còn (do xóa database.db hoặc render reset)
+            # Ngay lập tức xóa sạch session mồ côi
+            session.clear()
+            if request.path.startswith('/api/'):
+                return jsonify({
+                    'success': False,
+                    'session_expired': True,
+                    'message': 'Cơ sở dữ liệu đã được làm mới. Vui lòng đăng nhập lại.'
+                }), 401
+            elif request.path not in ['/login', '/register', '/static/']:
+                flash('Cơ sở dữ liệu đã được cập nhật hoặc phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'warning')
+                return redirect(url_for('login'))
+
+@app.after_request
+def dipre_security_headers(response):
+    """Gắn các Security Headers chuẩn OWASP chống XSS, Clickjacking, MIME sniffing"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
+    # Kích hoạt WAL mode để tối ưu hiệu năng ghi đọc, không bị lock database trên Render
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
     return conn
 
 def init_db():
@@ -134,12 +262,27 @@ def init_db():
         conn.commit()
 init_db()
 
-def generate_slide_captcha():
-    """Tạo captcha trượt TikTok-style siêu xịn từ hình nền ngẫu nhiên và cắt khối puzzle ghép"""
-    width, height = 320, 160
-    piece_w, piece_h = 44, 44
 
-    # Thử lấy ảnh đẹp từ picsum hoặc internet, fallback sang gradient canvas cực đẹp
+def generate_turnstile_captcha():
+    """Cấp 1: Captcha một chạm thông minh phong cách Cloudflare Turnstile"""
+    challenge_token = hashlib.sha256(f"{uuid.uuid4()}-{time.time()}-DIPRE".encode()).hexdigest()[:32]
+    session['turnstile_token'] = challenge_token
+    session['turnstile_issued_at'] = time.time()
+    session['captcha_level'] = 1
+    session['captcha_verified'] = False
+    return {
+        'level': 1,
+        'type': 'turnstile',
+        'challenge': challenge_token,
+        'title': 'Xác thực một chạm bảo mật DIPRE Shield',
+        'prompt': 'Tôi là con người'
+    }
+
+def generate_slide_captcha():
+    """Cấp 2: Captcha trượt TikTok-style mảnh ghép puzzle khuyết"""
+    width, height = 320, 160
+    piece_w, piece_h = 46, 46
+
     bg_img = None
     try:
         urls = [
@@ -156,58 +299,49 @@ def generate_slide_captcha():
         bg_img = None
 
     if bg_img is None:
-        # Fallback render canvas cyberpunk/cyber neon siêu đẹp nếu không có mạng
-        bg_img = Image.new('RGBA', (width, height), (15, 23, 42, 255))
+        bg_img = Image.new('RGBA', (width, height), (10, 12, 20, 255))
         draw = ImageDraw.Draw(bg_img)
-        # Gradient background
         for y in range(height):
-            r = int(15 + (45 - 15) * (y / height))
-            g = int(23 + (15 - 23) * (y / height))
-            b = int(42 + (90 - 42) * (y / height))
+            r = int(12 + (30 - 12) * (y / height))
+            g = int(15 + (20 - 15) * (y / height))
+            b = int(28 + (65 - 28) * (y / height))
             draw.line([(0, y), (width, y)], fill=(r, g, b, 255))
-        # Grid lines
         for i in range(0, width, 24):
-            draw.line([(i, 0), (i, height)], fill=(99, 102, 241, 40), width=1)
+            draw.line([(i, 0), (i, height)], fill=(99, 102, 241, 35), width=1)
         for j in range(0, height, 20):
-            draw.line([(0, j), (width, j)], fill=(6, 182, 212, 40), width=1)
-        # Random cyber decorative circles/arcs
-        for _ in range(8):
-            cx = random.randint(20, width - 20)
+            draw.line([(0, j), (width, j)], fill=(6, 182, 212, 35), width=1)
+        for _ in range(7):
+            cx = random.randint(30, width - 30)
             cy = random.randint(20, height - 20)
-            rad = random.randint(15, 45)
-            draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], outline=(129, 140, 248, 80), width=2)
-            draw.text((cx - 10, cy - 8), "#RPC", fill=(56, 189, 248, 120))
+            rad = random.randint(20, 40)
+            draw.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], outline=(147, 51, 234, 90), width=2)
+            draw.text((cx - 15, cy - 8), "DIPRE", fill=(56, 189, 248, 140))
 
-    # Tọa độ khối ghép mục tiêu (Target X, Y)
-    target_x = random.randint(80, width - piece_w - 20)
+    target_x = random.randint(85, width - piece_w - 20)
     target_y = random.randint(15, height - piece_h - 15)
 
-    # Lưu đáp án chính xác vào session
     session['slide_target_x'] = target_x
     session['slide_target_y'] = target_y
+    session['captcha_level'] = 2
+    session['captcha_verified'] = False
     session['slide_verified'] = False
 
-    # Tạo mask bo góc cho mảnh ghép (puzzle shape)
     mask = Image.new('L', (piece_w, piece_h), 0)
     m_draw = ImageDraw.Draw(mask)
-    m_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, fill=255)
+    m_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=8, fill=255)
 
-    # Cắt mảnh ghép từ ảnh nền
     crop = bg_img.crop((target_x, target_y, target_x + piece_w, target_y + piece_h))
     piece_img = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 0))
     piece_img.paste(crop, (0, 0), mask)
 
-    # Viền phát sáng cho mảnh ghép
     p_draw = ImageDraw.Draw(piece_img)
-    p_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=7, outline=(99, 102, 241, 255), width=2)
+    p_draw.rounded_rectangle([0, 0, piece_w - 1, piece_h - 1], radius=8, outline=(129, 140, 248, 255), width=2)
 
-    # Đục lỗ (khuyết) trên ảnh nền chính
-    hole = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 215))
+    hole = Image.new('RGBA', (piece_w, piece_h), (0, 0, 0, 220))
     bg_img.paste(hole, (target_x, target_y), mask)
     bg_draw = ImageDraw.Draw(bg_img)
-    bg_draw.rounded_rectangle([target_x, target_y, target_x + piece_w - 1, target_y + piece_h - 1], radius=7, outline=(255, 255, 255, 180), width=2)
+    bg_draw.rounded_rectangle([target_x, target_y, target_x + piece_w - 1, target_y + piece_h - 1], radius=8, outline=(255, 255, 255, 190), width=2)
 
-    # Chuyển đổi sang base64 PNG
     bg_buffer = io.BytesIO()
     bg_img.convert('RGB').save(bg_buffer, format='JPEG', quality=88)
     bg_base64 = base64.b64encode(bg_buffer.getvalue()).decode('utf-8')
@@ -217,20 +351,100 @@ def generate_slide_captcha():
     piece_base64 = base64.b64encode(piece_buffer.getvalue()).decode('utf-8')
 
     return {
+        'level': 2,
+        'type': 'slide',
         'bg_image': f"data:image/jpeg;base64,{bg_base64}",
         'piece_image': f"data:image/png;base64,{piece_base64}",
         'target_y': target_y,
         'piece_width': piece_w,
         'piece_height': piece_h,
         'bg_width': width,
-        'bg_height': height
+        'bg_height': height,
+        'prompt': 'Kéo thanh trượt để khớp mảnh ghép puzzle'
+    }
+
+def generate_circle_rotation_captcha():
+    """Cấp 3: Captcha xoay vòng tròn đồng tâm khớp hình phong cách TikTok / Arkose Labs"""
+    size = 260
+    center = size // 2
+    inner_radius = 70
+    outer_radius = 120
+
+    base_img = None
+    try:
+        url = 'https://picsum.photos/260/260?random=' + str(random.randint(1000, 9999))
+        res = requests.get(url, timeout=2.5)
+        if res.status_code == 200:
+            base_img = Image.open(io.BytesIO(res.content)).convert('RGBA')
+            if base_img.size != (size, size):
+                base_img = base_img.resize((size, size), Image.Resampling.LANCZOS)
+    except Exception:
+        base_img = None
+
+    if base_img is None:
+        base_img = Image.new('RGBA', (size, size), (8, 10, 18, 255))
+        draw = ImageDraw.Draw(base_img)
+        for r in range(outer_radius, 20, -15):
+            col = (int(90 + 160 * (r / outer_radius)), int(40 + 80 * (r / outer_radius)), 245, 255)
+            draw.ellipse([center - r, center - r, center + r, center + r], outline=col, width=3)
+        for angle in [0, 45, 90, 135, 180, 225, 270, 315]:
+            rad = math.radians(angle)
+            x2 = center + int(outer_radius * math.cos(rad))
+            y2 = center + int(outer_radius * math.sin(rad))
+            draw.line([(center, center), (x2, y2)], fill=(56, 189, 248, 220), width=4)
+        draw.regular_polygon((center, center, 42), 6, fill=(147, 51, 234, 210), outline=(255, 255, 255, 255))
+        draw.text((center - 25, center - 8), "DIPRE", fill=(255, 255, 255, 255))
+
+    # Góc xoay bí mật: từ 45 độ đến 315 độ
+    secret_angle = random.choice([50, 75, 90, 120, 145, 180, 210, 240, 270, 295])
+    session['rotate_target_angle'] = secret_angle
+    session['captcha_level'] = 3
+    session['captcha_verified'] = False
+
+    inner_mask = Image.new('L', (size, size), 0)
+    m_draw = ImageDraw.Draw(inner_mask)
+    m_draw.ellipse([center - inner_radius, center - inner_radius, center + inner_radius, center + inner_radius], fill=255)
+
+    inner_crop = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    inner_crop.paste(base_img, (0, 0), inner_mask)
+
+    # Xoay vòng tròn nhỏ theo góc ban đầu
+    initial_rotated_inner = inner_crop.rotate(secret_angle, resample=Image.Resampling.BICUBIC, center=(center, center))
+
+    outer_img = base_img.copy()
+    o_draw = ImageDraw.Draw(outer_img)
+    o_draw.ellipse([center - inner_radius, center - inner_radius, center + inner_radius, center + inner_radius], outline=(147, 51, 234, 255), width=3)
+    o_draw.ellipse([center - outer_radius, center - outer_radius, center + outer_radius, center + outer_radius], outline=(6, 182, 212, 255), width=2)
+
+    outer_mask = Image.eval(inner_mask, lambda a: 255 - a)
+    outer_final = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    outer_final.paste(outer_img, (0, 0), outer_mask)
+
+    buf_outer = io.BytesIO()
+    outer_final.save(buf_outer, format='PNG')
+    outer_b64 = base64.b64encode(buf_outer.getvalue()).decode('utf-8')
+
+    buf_inner = io.BytesIO()
+    initial_rotated_inner.save(buf_inner, format='PNG')
+    inner_b64 = base64.b64encode(buf_inner.getvalue()).decode('utf-8')
+
+    return {
+        'level': 3,
+        'type': 'rotate',
+        'outer_image': f"data:image/png;base64,{outer_b64}",
+        'inner_image': f"data:image/png;base64,{inner_b64}",
+        'initial_angle': secret_angle,
+        'size': size,
+        'inner_radius': inner_radius,
+        'prompt': 'Xoay vòng tròn đồng tâm sao cho hình ảnh khớp hoàn toàn'
     }
 
 def login_required(f):
-
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
+            if request.path.startswith('/api/'):
+                return jsonify({'success': False, 'session_expired': True, 'message': 'Vui lòng đăng nhập để tiếp tục.'}), 401
             flash('Vui lòng đăng nhập để tiếp tục.', 'warning')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
@@ -1172,163 +1386,19 @@ class DiscordUserQuestRunner:
         quest_log(f"Hoàn thành: {name}", "success")
 
     def _run_auto_quest_loop(self, token: str):
-        quest_log("==================================================", "info")
-        quest_log("KHOI DONG AUTO QUEST COMPLETER - Minh", "success")
-        quest_log("Co che cuon chieu: Cay sach quest da nhan -> Nhan 1 cay 1", "info")
-        quest_log("==================================================", "info")
+        """Vòng lặp tự phát hiện, tự nhận và hoàn thành toàn bộ quest — DIPRE Engine cho Minh"""
+        quest_log("══════════════════════════════════════════════════", "info")
+        quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER — MINH", "success")
+        quest_log("Tự động quét Discord, cày dứt điểm quest đã nhận & nhận 1 cày 1 an toàn!", "info")
+        quest_log("══════════════════════════════════════════════════", "info")
 
         completed_ids = set()
+        failed_enrollment_ids = set()
         cycle = 0
 
         while not self.stop_flag.is_set():
             cycle += 1
-            quest_log(f"--- Quet nhiem vu lan #{cycle} ---", "info")
-            raw_quests = self._fetch_quests(token)
-
-            if not raw_quests:
-                quest_log("Không tìm thấy nhiệm vụ nào từ Discord.", "warning")
-            else:
-                total = len(raw_quests)
-                valid_quests = [q for q in raw_quests if is_completable(q)]
-                enrolled_count = sum(1 for q in valid_quests if is_enrolled(q))
-                completed_count = sum(1 for q in valid_quests if is_completed(q))
-                unaccepted_count = sum(1 for q in valid_quests if not is_enrolled(q) and not is_completed(q))
-
-                quest_log(
-                    f"[THONG KE] Discord co: {total} quest ({len(valid_quests)} ho tro) | "
-                    f"Da nhan: {enrolled_count} | Da xong: {completed_count} | Chua nhan: {unaccepted_count}",
-                    "info"
-                )
-
-                for q in valid_quests:
-                    name = get_quest_name(q)
-                    task = get_task_type(q)
-                    if is_completed(q):
-                        tag = "[DA XONG]"
-                    elif is_enrolled(q):
-                        tag = "[DA NHAN]"
-                    else:
-                        tag = "[CHUA NHAN]"
-                    quest_log(f"  {tag} {name} [{task}]", "info")
-
-                actionable = [
-                    q for q in raw_quests
-                    if is_enrolled(q) and not is_completed(q) and is_completable(q) and q.get("id") not in completed_ids
-                ]
-
-                if not actionable:
-                    unaccepted = [
-                        q for q in raw_quests
-                        if not is_enrolled(q) and not is_completed(q) and is_completable(q) and q.get("id") not in completed_ids
-                    ]
-                    for q in unaccepted:
-                        if self.stop_flag.is_set():
-                            break
-                        if self.enroll(token, q):
-                            actionable.append(q)
-                            time.sleep(2)
-                            break
-                        else:
-                            time.sleep(1)
-
-                if not actionable:
-                    quest_log("Không có nhiệm vụ nào đủ điều kiện cần cày lúc này.", "info")
-                else:
-                    for q in actionable:
-                        if self.stop_flag.is_set():
-                            break
-                        qid = q.get("id")
-                        name = get_quest_name(q)
-                        task_type = get_task_type(q)
-                        seconds_needed = get_seconds_needed(q)
-                        seconds_done = get_seconds_done(q)
-
-                        with self.lock:
-                            self.current_quest_id = qid
-                            self.current_quest_name = name
-                            self.task_type = task_type
-                            self.target_seconds = seconds_needed
-                            self.elapsed_seconds = int(seconds_done)
-                            self.progress_pct = min(100, int((seconds_done / seconds_needed) * 100)) if seconds_needed else 0
-
-                        quest_log(f"--- Bat dau cay: {name} [{task_type}] ---", "success")
-
-                        us = _quest_get(q, "userStatus", "user_status") or {}
-                        enrolled_str = _quest_get(us, "enrolledAt", "enrolled_at")
-                        enrolled_ts = time.time()
-                        if enrolled_str:
-                            try:
-                                enrolled_ts = datetime.fromisoformat(enrolled_str.replace("Z", "+00:00")).timestamp()
-                            except Exception:
-                                pass
-
-                        if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
-                            self._complete_video(token, qid, name, seconds_needed, seconds_done, enrolled_ts)
-                        elif task_type in ("PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP"):
-                            self._complete_heartbeat(token, qid, name, task_type, seconds_needed, seconds_done)
-                        elif task_type == "PLAY_ACTIVITY":
-                            self._complete_activity(token, qid, name, seconds_needed, seconds_done)
-
-                        completed_ids.add(qid)
-                        time.sleep(2)
-
-            quest_log("Chờ 30s để kiểm tra đợt nhiệm vụ tiếp theo...", "info")
-            for _ in range(30):
-                if self.stop_flag.is_set():
-                    break
-                time.sleep(1)
-
-        with self.lock:
-            self.status = 'stopped'
-            quest_log("Đã dừng Auto Quest Completer.", "warning")
-
-    def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
-        quest_log("--- BAT DAU AUTO QUEST ---", "info")
-        quest_log(f"Nhiệm vụ: {quest_name} [{task_type}] - Cần {target_seconds}s", "info")
-
-        raw_quests = self._fetch_quests(token)
-        target_quest = next((q for q in raw_quests if str(q.get("id")) == str(quest_id)), None)
-
-        if target_quest and not is_enrolled(target_quest):
-            self.enroll(token, target_quest)
-            time.sleep(2)
-
-        enrolled_ts = time.time()
-        if target_quest:
-            us = _quest_get(target_quest, "userStatus", "user_status") or {}
-            enrolled_str = _quest_get(us, "enrolledAt", "enrolled_at")
-            if enrolled_str:
-                try:
-                    enrolled_ts = datetime.fromisoformat(enrolled_str.replace("Z", "+00:00")).timestamp()
-                except Exception:
-                    pass
-
-        seconds_done = get_seconds_done(target_quest) if target_quest else 0
-
-        if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
-            self._complete_video(token, quest_id, quest_name, target_seconds, seconds_done, enrolled_ts)
-        elif task_type in ("PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP"):
-            self._complete_heartbeat(token, quest_id, quest_name, task_type, target_seconds, seconds_done)
-        elif task_type == "PLAY_ACTIVITY":
-            self._complete_activity(token, quest_id, quest_name, target_seconds, seconds_done)
-
-        with self.lock:
-            self.status = 'completed' if not self.stop_flag.is_set() else 'stopped'
-            self.progress_pct = 100 if self.status == 'completed' else self.progress_pct
-
-    def _run_auto_quest_loop(self, token: str):
-        """Vòng lặp tự phát hiện, tự nhận và hoàn thành toàn bộ quest (chuẩn code mhao)"""
-        quest_log("══════════════════════════════════════════════════", "info")
-        quest_log("🌸 KHỞI ĐỘNG CHẾ ĐỘ AUTO QUEST COMPLETER v3.0", "success")
-        quest_log("Tự động quét Discord, tự nhận và cày tất cả nhiệm vụ!", "info")
-        quest_log("══════════════════════════════════════════════════", "info")
-
-        completed_ids = set()
-        cycle = 0
-
-        while not self.stop_flag.is_set():
-            cycle += 1
-            quest_log(f"─── Quét nhiệm vụ lần #{cycle} ───", "info")
+            quest_log(f"─── Quét nhiệm vụ lần #{cycle} (Minh) ───", "info")
             raw_quests = self._fetch_quests(token)
             total = len(raw_quests)
 
@@ -1337,52 +1407,46 @@ class DiscordUserQuestRunner:
             else:
                 parsed_list = [parse_discord_quest_item(q) for q in raw_quests]
                 valid_quests = [q for q in parsed_list if q['completable']]
-                skipped_quests = [q for q in parsed_list if not q['completable']]
                 enrolled_count = sum(1 for q in valid_quests if q['enrolled'])
                 completed_count = sum(1 for q in valid_quests if q['completed'])
 
-                quest_log(f"Discord có: {total} quest ({len(valid_quests)} hỗ trợ cày) | Đã nhận: {enrolled_count} | Hoàn thành: {completed_count}", "info")
-                for sq in skipped_quests:
-                    quest_log(f"  ⚠️ Bỏ qua (nghi ngờ quest ảo/không hỗ trợ): {sq['title']} [id={sq['id']}]", "warning")
+                quest_log(f"Discord có: {total} quest ({len(valid_quests)} hỗ trợ) | Đã nhận: {enrolled_count} | Đã xong: {completed_count}", "info")
 
-                # Auto enroll unaccepted - CHỈ enroll các quest có completable == True
-                for q in raw_quests:
-                    if self.stop_flag.is_set():
-                        break
-                    p = parse_discord_quest_item(q)
-                    if not p['completable']:
-                        continue
-                    if not p['enrolled'] and not p['completed']:
-                        quest_log(f"Đang nhận quest: {p['title']}...", "info")
-                        if self.enroll(token, p['id']):
-                            quest_log(f"  -> Đã nhận thành công: {p['title']}", "success")
+                # BƯỚC 1: Cày dứt điểm các quest ĐÃ ĐƯỢC NHẬN mà CHƯA HOÀN THÀNH
+                actionable_enrolled = [
+                    (q, p) for q, p in zip(raw_quests, parsed_list)
+                    if p['completable'] and p['enrolled'] and not p['completed'] and p['id'] not in completed_ids
+                ]
+
+                # BƯỚC 2: Nếu không còn quest nào đã nhận cần cày -> nhận từng quest một có giãn cách
+                if not actionable_enrolled:
+                    unenrolled = [
+                        (q, p) for q, p in zip(raw_quests, parsed_list)
+                        if p['completable'] and not p['enrolled'] and not p['completed']
+                        and p['id'] not in completed_ids and p['id'] not in failed_enrollment_ids
+                    ]
+                    for q, p in unenrolled:
+                        if self.stop_flag.is_set():
+                            break
+                        qid = p['id']
+                        name = p['title']
+                        quest_log(f"Đang nhận quest: {name} [id={qid}]...", "info")
+                        success = self.enroll(token, qid)
+                        if success:
+                            quest_log(f"  -> Đã nhận thành công: {name}", "success")
+                            p['enrolled'] = True
+                            actionable_enrolled.append((q, p))
+                            time.sleep(3)
+                            break
                         else:
-                            quest_log(f"  -> Bỏ qua (không thể tự nhận): {p['title']}", "warning")
-                        time.sleep(2)
+                            failed_enrollment_ids.add(qid)
+                            quest_log(f"  -> Bỏ qua quest {name} (chống dính rate limit Discord)", "warning")
+                            time.sleep(2)
 
-                # Re-fetch after enrollment
-                raw_quests = self._fetch_quests(token)
-                completable_quests = []
-                for q in raw_quests:
-                    p = parse_discord_quest_item(q)
-                    qid = p['id']
-                    # CHỈ cày quest:
-                    # 1. Thuộc loại hỗ trợ tự động (completable)
-                    # 2. ĐÃ ĐƯỢC NHẬN THẬT (enrolled)
-                    # 3. CHƯA hoàn thành (not completed)
-                    # 4. Chưa hoàn thành trong phiên này
-                    if not p['completable']:
-                        continue
-                    if not p['enrolled']:
-                        continue
-                    if p['completed'] or qid in completed_ids:
-                        continue
-                    completable_quests.append((q, p))
-
-                if not completable_quests:
+                if not actionable_enrolled:
                     quest_log("Không có nhiệm vụ nào đủ điều kiện cần cày lúc này.", "info")
                 else:
-                    for q, p in completable_quests:
+                    for q, p in actionable_enrolled:
                         if self.stop_flag.is_set():
                             break
                         qid = p['id']
@@ -1403,13 +1467,12 @@ class DiscordUserQuestRunner:
 
                         us = _quest_get(q, "userStatus", "user_status") or {}
                         enrolled_at_str = _quest_get(us, "enrolledAt", "enrolled_at")
+                        enrolled_ts = time.time()
                         if enrolled_at_str:
                             try:
                                 enrolled_ts = datetime.fromisoformat(enrolled_at_str.replace("Z", "+00:00")).timestamp()
                             except Exception:
-                                enrolled_ts = time.time()
-                        else:
-                            enrolled_ts = time.time()
+                                pass
 
                         if task_type in ("WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE"):
                             self._complete_video(token, qid, name, seconds_needed, seconds_done, enrolled_ts)
@@ -1421,8 +1484,8 @@ class DiscordUserQuestRunner:
                         completed_ids.add(qid)
                         time.sleep(2)
 
-            quest_log("Chờ 60s để quét lại nhiệm vụ...", "info")
-            for _ in range(60):
+            quest_log("Chờ 45s để quét lại đợt nhiệm vụ tiếp theo...", "info")
+            for _ in range(45):
                 if self.stop_flag.is_set():
                     break
                 time.sleep(1)
@@ -1430,6 +1493,7 @@ class DiscordUserQuestRunner:
         with self.lock:
             self.status = 'stopped'
             quest_log("⛔ Đã dừng Auto Quest Completer.", "warning")
+
 
     def _run_quest_thread(self, token: str, quest_id: str, quest_name: str, task_type: str, target_seconds: int):
         quest_log(f'╔══ BẮT ĐẦU AUTO QUEST ══╗', 'info')
@@ -1619,42 +1683,38 @@ class DiscordLyricWorker:
             return False, str(e)
 
     def fetch_nct_lyrics(self, keyword: str) -> tuple[bool, str, list]:
+        """Lấy lời bài hát đồng bộ từ LRCLIB / NhacCuaTui cho bài hát bất kỳ"""
         try:
+            # 1. Tìm kiếm trên LRCLIB (hỗ trợ hàng triệu bài hát quốc tế & V-Pop có timestamp chuẩn)
+            url = f"https://lrclib.net/api/search?q={requests.utils.quote(keyword)}"
+            headers = {"User-Agent": "DIPRE-Discord/1.0"}
+            r = requests.get(url, headers=headers, timeout=6)
+            if r.status_code == 200:
+                tracks = r.json()
+                for track in tracks:
+                    synced = track.get("syncedLyrics")
+                    if synced:
+                        parsed = self.parse_lrc(synced)
+                        if parsed:
+                            name = f"{track.get('trackName', keyword)} - {track.get('artistName', '')}".strip(" -")
+                            return True, name, parsed
+
+            # 2. Fallback tìm kiếm NCT
             search_url = f"https://www.nhaccuatui.com/tim-kiem/bai-hat.html?q={requests.utils.quote(keyword)}"
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            r = requests.get(search_url, headers=headers, timeout=8)
-            if r.status_code != 200:
-                return False, 'Lỗi tìm kiếm trên NCT', []
+            r2 = requests.get(search_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+            if r2.status_code == 200:
+                m = re.search(r'href="(https://www\.nhaccuatui\.com/bai-hat/[^"]+\.html)" title="([^"]+)"', r2.text)
+                if m:
+                    song_title = m.group(2)
+                    r3 = requests.get(f"https://lrclib.net/api/search?q={requests.utils.quote(song_title)}", headers=headers, timeout=5)
+                    if r3.status_code == 200:
+                        for tr in r3.json():
+                            if tr.get("syncedLyrics"):
+                                return True, song_title, self.parse_lrc(tr["syncedLyrics"])
 
-            match_song = re.search(r'href="(https://www\.nhaccuatui\.com/bai-hat/[^"]+\.html)" title="([^"]+)"', r.text)
-            if not match_song:
-                return False, 'Không tìm thấy bài hát này trên NCT', []
-
-            song_url = match_song.group(1)
-            song_title = match_song.group(2)
-
-            song_res = requests.get(song_url, headers=headers, timeout=8)
-            match_xml = re.search(r'(https://www\.nhaccuatui\.com/flash/xml\?key=[a-zA-Z0-9]+)', song_res.text)
-            if not match_xml:
-                return False, 'Không lấy được cấu hình nhạc', []
-
-            xml_res = requests.get(match_xml.group(1), headers=headers, timeout=8)
-            root = ET.fromstring(xml_res.text)
-            lyric_url = root.findtext('.//lyric')
-
-            if not lyric_url or not lyric_url.startswith('http'):
-                return False, 'Bài hát này chưa có lời đồng bộ (.lrc)', []
-
-            lrc_res = requests.get(lyric_url, headers=headers, timeout=8)
-            lrc_res.encoding = 'utf-8'
-            parsed_lyrics = self.parse_lrc(lrc_res.text)
-
-            if not parsed_lyrics:
-                return False, 'Không phân tích được lời bài hát', []
-
-            return True, song_title, parsed_lyrics
+            return False, 'Không tìm thấy lời bài hát đồng bộ', []
         except Exception as e:
-            return False, f'Lỗi lấy lyric NCT: {e}', []
+            return False, f'Lỗi lấy lyric: {e}', []
 
     def parse_lrc(self, lrc_content: str) -> list:
         lines = []
@@ -1711,34 +1771,74 @@ lyric_worker = DiscordLyricWorker()
 
 @app.route('/api/captcha')
 def api_captcha():
-    captcha_data = generate_slide_captcha()
+    requested_level = request.args.get('level', type=int)
+    if not requested_level:
+        requested_level = session.get('captcha_level', 1)
+
+    if requested_level == 1:
+        data = generate_turnstile_captcha()
+    elif requested_level == 3:
+        data = generate_circle_rotation_captcha()
+    else:
+        data = generate_slide_captcha()
+
     return jsonify({
         'success': True,
-        'bg_image': captcha_data['bg_image'],
-        'piece_image': captcha_data['piece_image'],
-        'target_y': captcha_data['target_y'],
-        'piece_width': captcha_data['piece_width'],
-        'piece_height': captcha_data['piece_height'],
-        'bg_width': captcha_data['bg_width'],
-        'bg_height': captcha_data['bg_height']
+        'captcha': data
     })
 
 @app.route('/api/captcha/verify', methods=['POST'])
 def api_captcha_verify():
     data = request.get_json() or {}
-    slide_x = data.get('x')
-    target_x = session.get('slide_target_x')
-    if slide_x is None or target_x is None:
-        return jsonify({'success': False, 'message': 'Thiếu dữ liệu xác thực captcha'}), 400
+    level = data.get('level')
+    if not level:
+        level = session.get('captcha_level', 1)
+
     try:
-        slide_x = float(slide_x)
-        # Dung sai cho phép: +/- 7 pixel
-        if abs(slide_x - target_x) <= 7:
+        level = int(level)
+        if level == 1:
+            token = data.get('token')
+            expected = session.get('turnstile_token')
+            issued_at = session.get('turnstile_issued_at', 0)
+            # Chống bot click tức thì dưới 400ms
+            if not token or token != expected or (time.time() - issued_at) < 0.4:
+                session['captcha_verified'] = False
+                return jsonify({'success': False, 'message': 'Xác thực không hợp lệ hoặc thao tác quá nhanh, hãy thử lại'}), 400
+            session['captcha_verified'] = True
             session['slide_verified'] = True
-            return jsonify({'success': True, 'message': 'Xác thực thành công!'})
-        else:
-            session['slide_verified'] = False
-            return jsonify({'success': False, 'message': 'Khối ghép chưa đúng vị trí, hãy thử lại!'}), 400
+            return jsonify({'success': True, 'level': 1, 'message': 'Xác thực DIPRE Shield một chạm thành công!'})
+
+        elif level == 3:
+            user_angle = data.get('angle')
+            target_angle = session.get('rotate_target_angle')
+            if user_angle is None or target_angle is None:
+                return jsonify({'success': False, 'message': 'Thiếu góc xoay xác thực'}), 400
+            user_angle = float(user_angle)
+            target_angle = float(target_angle)
+            # Tính sai số góc xoay (chu kỳ 360 độ)
+            diff = abs((user_angle - target_angle + 180) % 360 - 180)
+            if diff <= 9.0:
+                session['captcha_verified'] = True
+                session['slide_verified'] = True
+                return jsonify({'success': True, 'level': 3, 'message': 'Hình ảnh đã khớp hoàn hảo! Xác thực thành công!'})
+            else:
+                session['captcha_verified'] = False
+                return jsonify({'success': False, 'diff': round(diff, 1), 'message': f'Hình ảnh chưa khớp (lệch ~{int(diff)}°), vui lòng xoay chuẩn hơn!'}), 400
+
+        else: # level 2: slide puzzle
+            slide_x = data.get('x')
+            target_x = session.get('slide_target_x')
+            if slide_x is None or target_x is None:
+                return jsonify({'success': False, 'message': 'Thiếu dữ liệu kéo trượt'}), 400
+            slide_x = float(slide_x)
+            if abs(slide_x - target_x) <= 8:
+                session['captcha_verified'] = True
+                session['slide_verified'] = True
+                return jsonify({'success': True, 'level': 2, 'message': 'Khối ghép chuẩn xác! Xác thực thành công!'})
+            else:
+                session['captcha_verified'] = False
+                return jsonify({'success': False, 'message': 'Khối ghép chưa đúng vị trí, hãy thử lại!'}), 400
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 400
 
@@ -1758,10 +1858,10 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if not session.get('slide_verified', False):
-            flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
+        if not session.get('captcha_verified', False) and not session.get('slide_verified', False):
+            flash('Vui lòng hoàn thành xác thực bảo mật trước khi đăng nhập.', 'error')
             return redirect(url_for('login'))
-        # Đã dùng xong captcha -> reset lại để bảo mật tuyệt đối
+        session['captcha_verified'] = False
         session['slide_verified'] = False
 
         username = request.form.get('username', '').strip()
@@ -1774,6 +1874,7 @@ def login():
             cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
             user = cursor.fetchone()
         if user and check_password_hash(user['password_hash'], password):
+            clear_failed_attempts(get_client_ip())
             session['user_id'] = user['id']
             session['username'] = user['username']
             if user['discord_token']:
@@ -1783,16 +1884,18 @@ def login():
             flash(f'Chào mừng trở lại, {username}!', 'success')
             return redirect(url_for('index'))
         else:
+            record_failed_attempt(get_client_ip())
             flash('Tên đăng nhập hoặc mật khẩu không chính xác.', 'error')
             return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/register', methods=['POST'])
 def register():
-    if not session.get('slide_verified', False):
-        flash('Vui lòng kéo thanh trượt ghép đúng hình ảnh để xác thực.', 'error')
+    if not session.get('slide_verified', False) and not session.get('captcha_verified', False):
+        flash('Vui lòng hoàn thành xác thực bảo mật trước khi đăng ký.', 'error')
         return redirect(url_for('login'))
     session['slide_verified'] = False
+    session['captcha_verified'] = False
 
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
@@ -1812,8 +1915,10 @@ def register():
             cursor = conn.cursor()
             cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash))
             conn.commit()
+            clear_failed_attempts(get_client_ip())
         flash('Tạo tài khoản thành công! Hãy đăng nhập ngay bây giờ.', 'success')
     except sqlite3.IntegrityError:
+        record_failed_attempt(get_client_ip())
         flash('Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác.', 'error')
     return redirect(url_for('login'))
 
@@ -1881,6 +1986,8 @@ def api_account_bind_token():
         return jsonify({
             'success': True,
             'message': f'Liên kết thành công với Discord: {d_username}!',
+            'username': d_username,
+            'avatar': d_avatar,
             'discord_id': d_id,
             'discord_username': d_username,
             'discord_avatar': d_avatar
@@ -2056,6 +2163,68 @@ def api_hypesquad_claim():
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi kết nối: {str(e)}'}), 500
 
+@app.route('/api/lyrics/search', methods=['GET'])
+@login_required
+def api_lyrics_search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'success': False, 'message': 'Vui lòng nhập tên bài hát'}), 400
+    try:
+        url = f"https://lrclib.net/api/search?q={requests.utils.quote(q)}"
+        r = requests.get(url, headers={"User-Agent": "DIPRE-Discord/1.0"}, timeout=6)
+        if r.status_code == 200:
+            tracks = r.json()
+            results = []
+            for t in tracks[:10]:
+                results.append({
+                    'id': t.get('id'),
+                    'name': t.get('trackName'),
+                    'artist': t.get('artistName'),
+                    'album': t.get('albumName'),
+                    'duration': t.get('duration'),
+                    'has_synced': bool(t.get('syncedLyrics'))
+                })
+            return jsonify({'success': True, 'tracks': results})
+        return jsonify({'success': True, 'tracks': []})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/lyrics/song', methods=['GET'])
+@login_required
+def api_lyrics_song():
+    q = request.args.get('q', '').strip()
+    song_id = request.args.get('id')
+    try:
+        if song_id:
+            url = f"https://lrclib.net/api/get/{song_id}"
+            r = requests.get(url, headers={"User-Agent": "DIPRE-Discord/1.0"}, timeout=6)
+            if r.status_code == 200:
+                t = r.json()
+                synced = t.get('syncedLyrics') or ''
+                parsed = lyric_worker.parse_lrc(synced)
+                return jsonify({
+                    'success': True,
+                    'track': {
+                        'name': t.get('trackName'),
+                        'artist': t.get('artistName'),
+                        'duration': t.get('duration'),
+                        'lyrics': [{'t': p[0], 'l': p[1]} for p in parsed]
+                    }
+                })
+        elif q:
+            ok, name, parsed = lyric_worker.fetch_nct_lyrics(q)
+            if ok:
+                return jsonify({
+                    'success': True,
+                    'track': {
+                        'name': name,
+                        'lyrics': [{'t': p[0], 'l': p[1]} for p in parsed]
+                    }
+                })
+        return jsonify({'success': False, 'message': 'Không tìm thấy bài hát hoặc lời bài hát'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/api/lyrics/sync', methods=['POST'])
 @login_required
 def api_lyrics_sync():
@@ -2080,10 +2249,12 @@ def api_lyrics_sync():
         lyric_worker.start_lyric_stream(user_id, token, lyrics, emoji=emoji)
         return jsonify({'success': True, 'message': f'Đang phát: {title} ({len(lyrics)} câu)'})
 
-    # Cập nhật một câu status tùy chỉnh thủ công
-    text = data.get('text', '').strip()
-    ok, msg = lyric_worker.update_lyric(token, text, emoji=emoji)
-    return jsonify({'success': ok, 'message': msg})
+    # Cập nhật một câu status tùy chỉnh (hỗ trợ cả 'status' và 'text')
+    text = (data.get('text') or data.get('status') or '').strip()
+    if text:
+        ok, msg = lyric_worker.update_lyric(token, text, emoji=emoji)
+        return jsonify({'success': ok, 'message': msg})
+    return jsonify({'success': False, 'message': 'Nội dung câu hát trống'}), 400
 
 @app.route('/api/lyrics/clear', methods=['POST'])
 @login_required

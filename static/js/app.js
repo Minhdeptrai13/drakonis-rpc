@@ -152,8 +152,11 @@ function copyTokenScript() {
 async function handleBindToken() {
   const tokenEl = document.getElementById('input-token');
   const appIdEl = document.getElementById('input-app-id');
-  if (!tokenEl?.value.trim()) { showToast('Vui long dan Discord Token vao o nhap', 'error'); return; }
-  showToast('Dang xac minh token...', 'info', 2000);
+  if (!tokenEl?.value.trim()) {
+    showToast('Vui lòng dán Discord Token vào ô nhập', 'error');
+    return;
+  }
+  showToast('Đang xác minh token...', 'info', 2000);
   try {
     const r = await fetch('/api/account/bind_token', {
       method: 'POST',
@@ -162,13 +165,17 @@ async function handleBindToken() {
     });
     const d = await r.json();
     if (d.success) {
-      showToast(`Da lien ket: ${d.username}!`, 'success');
+      showToast(`Đã liên kết thành công với: ${d.discord_username || d.username}!`, 'success');
       updateAccountUI(d);
+      updateLivePreview();
       toggleAccountModal(false);
-      document.getElementById('token-alert-bar')?.remove();
       loadAvailableQuests();
-    } else showToast(d.message || d.error || 'Token khong hop le', 'error');
-  } catch (e) { showToast('Loi ket noi may chu', 'error'); }
+    } else {
+      showToast(d.message || d.error || 'Token không hợp lệ', 'error');
+    }
+  } catch (e) {
+    showToast('Lỗi kết nối máy chủ', 'error');
+  }
 }
 
 async function handleSaveConfig() {
@@ -201,28 +208,70 @@ async function handleUnbindToken() {
 }
 
 function updateAccountUI(data) {
+  const username = data.discord_username || data.username || 'Minh';
+  const avatar = data.discord_avatar || data.avatar || '';
+
+  // 1. Sidebar Account Chip
   const sacName = document.getElementById('sac-name');
   const sacBadge = document.getElementById('sac-badge');
   const sacImg = document.getElementById('sac-avatar-img');
   const sacPh = document.getElementById('sac-avatar-placeholder');
+  if (sacName) sacName.textContent = username;
+  if (sacBadge) { sacBadge.textContent = 'Đã Liên Kết'; sacBadge.className = 'sac-badge linked'; }
+  if (avatar) {
+    if (sacImg) {
+      sacImg.src = avatar;
+      sacImg.style.display = 'block';
+    }
+    if (sacPh) sacPh.style.display = 'none';
+  }
+
+  // 2. 3D Floating Perspective Hero Cards (Facebook Style Realtime Sync)
+  const card1Av = document.getElementById('hero-card1-avatar');
+  const card1Name = document.getElementById('hero-card1-name');
+  const card1Handle = document.getElementById('hero-card1-handle');
+  if (card1Av && avatar) {
+    card1Av.style.opacity = '0';
+    setTimeout(() => {
+      card1Av.src = avatar;
+      card1Av.style.opacity = '1';
+    }, 150);
+  }
+  if (card1Name) card1Name.textContent = username;
+  if (card1Handle) card1Handle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
+
+  // 3. Modal Quản Lý Tài Khoản
   const accName = document.getElementById('account-view-name');
   const accStatus = document.getElementById('account-view-status');
+  const accAvatar = document.getElementById('account-view-avatar');
+  if (accName) accName.textContent = `${username} (Discord)`;
+  if (accStatus) accStatus.textContent = 'Token đã xác minh — Độc quyền cho Minh';
+  if (accAvatar && avatar) accAvatar.src = avatar;
+
+  // 4. Tab Lyric Sync
   const lscUser = document.getElementById('lsc-username');
   const lscAv = document.getElementById('lsc-avatar');
+  if (lscUser) lscUser.textContent = username;
+  if (lscAv && avatar) lscAv.src = avatar;
+
+  // 5. Tab RPC Live Preview Card
   const pvDisp = document.getElementById('pv-display-name');
   const pvAv = document.getElementById('pv-avatar');
-  if (sacName) sacName.textContent = data.username || 'Discord';
-  if (sacBadge) { sacBadge.textContent = 'Da Lien Ket'; sacBadge.className = 'sac-badge linked'; }
-  if (data.avatar) {
-    if (sacImg) { sacImg.src = data.avatar; sacImg.style.display = ''; }
-    if (sacPh) sacPh.style.display = 'none';
-    if (lscAv) lscAv.src = data.avatar;
-    if (pvAv) pvAv.src = data.avatar;
+  const pvUser = document.getElementById('pv-username');
+  if (pvDisp) pvDisp.textContent = username;
+  if (pvUser) pvUser.textContent = username.toLowerCase().replace(/\s+/g, '');
+  if (pvAv && avatar) pvAv.src = avatar;
+
+  // 6. Xóa thanh cảnh báo chưa liên kết token
+  const alertBar = document.getElementById('token-alert-bar');
+  if (alertBar) alertBar.remove();
+
+  // 7. Hiệu ứng Flash viền sáng báo hiệu đồng bộ thành công
+  const stage = document.getElementById('hero-cards-stage');
+  if (stage) {
+    stage.style.filter = 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.6))';
+    setTimeout(() => { stage.style.filter = ''; }, 1200);
   }
-  if (accName) accName.textContent = data.username || '';
-  if (accStatus) accStatus.textContent = 'Token da xac minh — dung chung ca 3 tinh nang';
-  if (lscUser) lscUser.textContent = data.username || '';
-  if (pvDisp) pvDisp.textContent = data.username || '';
 }
 
 // ============================================================
@@ -802,87 +851,178 @@ function toggleRotator() {
 // SOUNDCLOUD WIDGET
 // ============================================================
 
-function initSCWidget() {
-  const iframe = document.getElementById('sc-widget');
-  if (!iframe || typeof SC === 'undefined') { setTimeout(initSCWidget, 600); return; }
-  SCWidget = SC.Widget(iframe);
-  SCWidget.bind(SC.Widget.Events.READY, () => {
-    SCWidget.getDuration(d => { scDuration = d / 1000; });
+// ============================================================
+// DIPRE NCT & LRCLIB HTML5 AUDIO PLAYER
+// ============================================================
+
+let dipreAudio = new Audio();
+let lastSyncedLine = '';
+
+function initDipreAudioPlayer() {
+  dipreAudio.addEventListener('timeupdate', () => {
+    const cur = dipreAudio.currentTime;
+    const dur = dipreAudio.duration || 0;
+    updateLyricProgress(cur, dur);
+    syncLyric();
   });
-  SCWidget.bind(SC.Widget.Events.FINISH, () => {
+
+  dipreAudio.addEventListener('ended', () => {
     if (lyricSyncing) handleStopLyricAudio();
   });
+
+  dipreAudio.addEventListener('loadedmetadata', () => {
+    const dur = dipreAudio.duration || 0;
+    const tot = document.getElementById('audio-time-total');
+    if (tot) tot.textContent = formatTime(dur);
+  });
 }
 
-function loadCustomSoundCloudUrl() {
-  const url = document.getElementById('input-soundcloud-url')?.value.trim();
-  if (!url) { showToast('Vui long dan link SoundCloud', 'warning'); return; }
-  const encoded = encodeURIComponent(url);
-  const iframeUrl = `https://w.soundcloud.com/player/?url=${encoded}&color=%236366f1&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false`;
-  const iframe = document.getElementById('sc-widget');
-  if (iframe) {
-    iframe.src = iframeUrl;
-    setTimeout(initSCWidget, 1000);
+function handleAudioSeek(val) {
+  if (dipreAudio && dipreAudio.duration) {
+    const target = (val / 100) * dipreAudio.duration;
+    dipreAudio.currentTime = target;
   }
-  showToast('Dang nap bai hat...', 'info', 2000);
 }
 
-function handleSelectLyricTrack() {
-  const val = document.getElementById('select-lyric-track')?.value;
-  const customGroup = document.getElementById('custom-lrc-group');
-  if (val === 'custom') {
-    if (customGroup) customGroup.classList.remove('d-none');
+async function searchNctLyrics() {
+  const query = document.getElementById('input-nct-query')?.value.trim();
+  if (!query) {
+    showToast('Vui lòng nhập tên bài hát hoặc ca sĩ', 'warning');
     return;
   }
-  if (customGroup) customGroup.classList.add('d-none');
-  const track = LYRIC_TRACKS[val];
-  if (!track) return;
-  currentLyrics = track.lyrics;
-  const iframe = document.getElementById('sc-widget');
-  if (iframe) {
-    iframe.src = track.url;
-    setTimeout(initSCWidget, 1000);
+  const btn = document.getElementById('btn-search-nct');
+  if (btn) { btn.disabled = true; btn.textContent = 'Đang tìm...'; }
+
+  try {
+    const res = await fetch(`/api/lyrics/search?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (data.success && data.songs.length > 0) {
+      renderSongResults(data.songs);
+      showToast(`Tìm thấy ${data.songs.length} bài hát`, 'success');
+    } else {
+      showToast('Không tìm thấy bài hát có lời đồng bộ', 'warning');
+    }
+  } catch (err) {
+    showToast('Lỗi tìm kiếm: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Tìm Bài Hát'; }
   }
+}
+
+function renderSongResults(songs) {
+  const container = document.getElementById('nct-search-results');
+  if (!container) return;
+  container.innerHTML = '';
+  container.style.display = 'grid';
+
+  songs.forEach(song => {
+    const card = document.createElement('div');
+    card.className = 'song-result-item';
+    card.innerHTML = `
+      <div class="sri-info">
+        <div class="sri-title">${escapeHtml(song.title)}</div>
+        <div class="sri-artist">${escapeHtml(song.artist)} • ${song.duration ? formatTime(song.duration) : 'Synced'}</div>
+      </div>
+      <button class="btn btn-sm btn-primary sri-play-btn" onclick="selectSongForSync('${encodeURIComponent(JSON.stringify(song))}')">
+        Chọn
+      </button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function selectSongForSync(songJsonStr) {
+  try {
+    const song = JSON.parse(decodeURIComponent(songJsonStr));
+    const titleEl = document.getElementById('nct-cur-title');
+    const artistEl = document.getElementById('nct-cur-artist');
+    if (titleEl) titleEl.textContent = song.title;
+    if (artistEl) artistEl.textContent = song.artist;
+
+    // Set lyrics
+    if (song.lyrics) {
+      currentLyrics = parseLRC(song.lyrics);
+      renderKaraokeLyrics(currentLyrics);
+    }
+
+    // Set stream audio if available
+    if (song.audio_url) {
+      dipreAudio.src = song.audio_url;
+      dipreAudio.load();
+    }
+
+    showToast(`Đã chọn: ${song.title}`, 'info');
+  } catch (e) {
+    showToast('Lỗi nạp bài hát', 'error');
+  }
+}
+
+function renderKaraokeLyrics(lyrics) {
+  const stage = document.getElementById('dipre-karaoke-stage') || document.getElementById('lyric-lines-wrapper');
+  if (!stage) return;
+  stage.innerHTML = '';
+  lyrics.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'lyric-line-item';
+    div.id = `lyric-line-${idx}`;
+    div.textContent = item.l || '♪ ♫ ♪';
+    div.onclick = () => {
+      if (dipreAudio) dipreAudio.currentTime = item.t;
+    };
+    stage.appendChild(div);
+  });
 }
 
 function handleToggleLyricAudio() {
-  if (!SCWidget) { showToast('Widget chua san sang, doi mot chut', 'warning'); return; }
-  if (lyricSyncing) { handleStopLyricAudio(); return; }
-  const sel = document.getElementById('select-lyric-track')?.value;
-  if (sel === 'custom') {
-    const raw = document.getElementById('input-custom-lrc')?.value.trim();
-    currentLyrics = parseLRC(raw);
-  } else if (LYRIC_TRACKS[sel]) {
-    currentLyrics = LYRIC_TRACKS[sel].lyrics;
+  if (lyricSyncing) {
+    handleStopLyricAudio();
+    return;
   }
-  SCWidget.play();
+
+  const customLrc = document.getElementById('input-custom-lrc')?.value.trim();
+  if (customLrc && (!currentLyrics || !currentLyrics.length)) {
+    currentLyrics = parseLRC(customLrc);
+    renderKaraokeLyrics(currentLyrics);
+  }
+
+  if (!currentLyrics || !currentLyrics.length) {
+    showToast('Vui lòng chọn bài hát hoặc dán lời LRC trước', 'warning');
+    return;
+  }
+
+  if (dipreAudio.src) {
+    dipreAudio.play().catch(() => {});
+  }
+
   lyricSyncing = true;
   setLed('lyric');
   const playBtn = document.getElementById('btn-lyric-play');
   const stopBtn = document.getElementById('btn-lyric-stop');
-  if (playBtn) playBtn.textContent = 'Dung Dong Bo';
+  if (playBtn) playBtn.textContent = 'Dừng Đồng Bộ';
   if (stopBtn) stopBtn.disabled = false;
   const syncInd = document.getElementById('lyric-sync-indicator');
   if (syncInd) syncInd.style.display = '';
   const liveDot = document.getElementById('lyric-live-dot');
   if (liveDot) liveDot.style.display = '';
-  lyricInterval = setInterval(syncLyric, 500);
+
+  lyricInterval = setInterval(syncLyric, 400);
 }
 
 function handleStopLyricAudio() {
-  if (SCWidget) SCWidget.pause();
+  if (dipreAudio) dipreAudio.pause();
   lyricSyncing = false;
-  clearInterval(lyricInterval); lyricInterval = null;
+  clearInterval(lyricInterval);
+  lyricInterval = null;
   setLed('idle');
   const playBtn = document.getElementById('btn-lyric-play');
   const stopBtn = document.getElementById('btn-lyric-stop');
-  if (playBtn) playBtn.textContent = 'Bat Dau Dong Bo';
+  if (playBtn) playBtn.textContent = 'Bắt Đầu Đồng Bộ';
   if (stopBtn) stopBtn.disabled = true;
   const syncInd = document.getElementById('lyric-sync-indicator');
   if (syncInd) syncInd.style.display = 'none';
   const liveDot = document.getElementById('lyric-live-dot');
   if (liveDot) liveDot.style.display = 'none';
-  showToast('Da dung Lyric Sync', 'info');
+  showToast('Đã dừng Lyric Sync', 'info');
 }
 
 async function handleClearDiscordStatus() {
@@ -890,26 +1030,20 @@ async function handleClearDiscordStatus() {
     const r = await fetch('/api/lyrics/clear', { method: 'POST' });
     const d = await r.json();
     if (d.success) {
-      showToast('Da xoa Custom Status!', 'success');
+      showToast('Đã xóa Custom Status!', 'success');
       const lyr = document.getElementById('lsc-lyric-current');
-      if (lyr) lyr.textContent = 'Status da duoc xoa';
-    } else showToast(d.error || 'Loi xoa status', 'error');
-  } catch (e) { showToast('Loi ket noi', 'error'); }
+      if (lyr) lyr.textContent = 'Status đã được xóa';
+    } else showToast(d.error || 'Lỗi xóa status', 'error');
+  } catch (e) { showToast('Lỗi kết nối', 'error'); }
 }
 
 function syncLyric() {
-  if (!SCWidget || !lyricSyncing) return;
-  SCWidget.getPosition(pos => {
-    const sec = pos / 1000;
-    SCWidget.getDuration(dur => {
-      scDuration = dur / 1000;
-      updateLyricProgress(sec, scDuration);
-    });
-    const line = getCurrentLyric(sec);
-    if (line !== undefined) {
-      updateLyricDisplay(line, sec);
-    }
-  });
+  if (!lyricSyncing || !currentLyrics.length) return;
+  const sec = dipreAudio ? dipreAudio.currentTime : 0;
+  const line = getCurrentLyric(sec);
+  if (line !== undefined) {
+    updateLyricDisplay(line, sec);
+  }
 }
 
 function getCurrentLyric(sec) {
@@ -929,26 +1063,28 @@ function updateLyricDisplay(line, sec) {
   if (lscEl) lscEl.textContent = line || '♪ ♫ ♪';
   if (emojiEl) emojiEl.textContent = emoji;
 
-  const wrapper = document.getElementById('lyric-lines-wrapper');
-  if (wrapper) {
-    wrapper.innerHTML = '';
-    const nearLines = currentLyrics.filter(l => Math.abs(l.t - sec) < 20 && l.l);
-    if (!nearLines.length) {
-      const d = document.createElement('div');
-      d.className = 'lyric-line';
-      d.textContent = '♪ ♫ ♪';
-      wrapper.appendChild(d);
-      return;
-    }
-    nearLines.forEach(l => {
-      const d = document.createElement('div');
-      d.className = 'lyric-line' + (l.l === line ? ' active' : '');
-      d.textContent = l.l;
-      wrapper.appendChild(d);
+  // Active line highlight & auto-scroll
+  let activeIdx = -1;
+  for (let i = 0; i < currentLyrics.length; i++) {
+    if (sec >= currentLyrics[i].t) activeIdx = i;
+    else break;
+  }
+
+  if (activeIdx !== -1) {
+    document.querySelectorAll('.lyric-line-item').forEach((el, idx) => {
+      if (idx === activeIdx) {
+        if (!el.classList.contains('active')) {
+          el.classList.add('active');
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        el.classList.remove('active');
+      }
     });
   }
 
-  if (lyricSyncing && line) {
+  if (lyricSyncing && line && line !== lastSyncedLine) {
+    lastSyncedLine = line;
     fetch('/api/lyrics/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -956,6 +1092,7 @@ function updateLyricDisplay(line, sec) {
     }).catch(() => { });
   }
 }
+
 
 function updateLyricProgress(sec, total) {
   const fill = document.getElementById('lsc-progress-fill');
@@ -1371,16 +1508,45 @@ async function loadSavedConfig() {
   } catch (e) { }
 }
 
+function init3DCardTilt() {
+  const stage = document.getElementById('hero-cards-stage');
+  const card1 = document.getElementById('floating-card-1');
+  const card2 = document.getElementById('floating-card-2');
+  if (!stage || !card1) return;
+
+  stage.addEventListener('mousemove', (e) => {
+    const rect = stage.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+
+    const rotX1 = (-y / 20) + 8;
+    const rotY1 = (x / 20) - 12;
+    card1.style.transform = `rotateX(${rotX1}deg) rotateY(${rotY1}deg) rotateZ(-3deg) translateZ(30px)`;
+
+    if (card2) {
+      const rotX2 = (-y / 25) + 10;
+      const rotY2 = (x / 25) + 16;
+      card2.style.transform = `rotateX(${rotX2}deg) rotateY(${rotY2}deg) rotateZ(5deg) translateZ(-20px)`;
+    }
+  });
+
+  stage.addEventListener('mouseleave', () => {
+    card1.style.transform = '';
+    if (card2) card2.style.transform = '';
+  });
+}
+
 function init() {
   buildVisualGallery();
   loadPresets();
   onActivityTypeChange();
   updateLivePreview();
-  initSCWidget();
-  handleSelectLyricTrack();
+  initDipreAudioPlayer();
+  init3DCardTilt();
   loadAvailableQuests();
   startLogPolling();
   loadSavedConfig();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
