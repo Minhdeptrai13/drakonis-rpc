@@ -4,6 +4,12 @@ __pycache__/
 *.db
 *.sqlite3
 .env
+.env.*
+*.env
+!.env.example
+oauth_secrets.json
+client_secrets.json
+config.json
 venv/
 .venv/
 

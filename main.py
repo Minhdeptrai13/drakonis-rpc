@@ -38,6 +38,21 @@ def _safe_http_del(self):
     pass
 discord.http.HTTPClient.__del__ = _safe_http_del
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+# Tự động nạp cấu hình bí mật từ file .env (được bảo vệ bởi .gitignore, không bao giờ lộ lên Git)
+ENV_PATH = os.path.join(BASE_DIR, '.env')
+if os.path.exists(ENV_PATH):
+    try:
+        with open(ENV_PATH, 'r', encoding='utf-8') as ef:
+            for line in ef:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    k, v = k.strip(), v.strip().strip('"').strip("'")
+                    if k and v and k not in os.environ:
+                        os.environ[k] = v
+    except Exception:
+        pass
+
 DB_PATH = os.path.join(BASE_DIR, 'database.db')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -1965,9 +1980,10 @@ def logout():
 
 # ==============================================================================
 # OAUTH2 AUTHENTICATION (DISCORD & GOOGLE)
+# CÁC MÃ BÍ MẬT ĐƯỢC BẢO VỆ AN TOÀN TRONG TẬP TIN .env (KHÔNG BAO GIỜ PUSH LÊN GIT)
 # ==============================================================================
-DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1399979797303525396')
-DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', 'qKIR7IPtqGGNL2pq6HdM2U9ueM2ItEsJ')
+DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '')
+DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '')
 
 def get_discord_redirect_uri():
     """Tự động nhận diện URL callback theo host (localhost / 127.0.0.1 / domain thật)"""
@@ -1975,7 +1991,10 @@ def get_discord_redirect_uri():
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
-GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:5000/auth/google/callback')
+
+def get_google_redirect_uri():
+    """Tự động nhận diện URL callback Google theo host (localhost / 127.0.0.1 / domain thật)"""
+    return os.environ.get('GOOGLE_REDIRECT_URI') or url_for('auth_google_callback', _external=True)
 
 @app.route('/auth/discord')
 def auth_discord_redirect():
@@ -2048,15 +2067,65 @@ def auth_discord_callback():
 
 @app.route('/auth/google')
 def auth_google_redirect():
-    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Google Account"""
-    if GOOGLE_CLIENT_ID:
-        google_auth_url = (
-            f"https://accounts.google.com/o/oauth2/v2/auth?client_id={GOOGLE_CLIENT_ID}"
-            f"&redirect_uri={GOOGLE_REDIRECT_URI}&response_type=code&scope=openid%20profile%20email"
-        )
-        return redirect(google_auth_url)
-    else:
-        return redirect(url_for('auth_oauth2_mock', provider='google'))
+    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Google Account chính chủ"""
+    redirect_uri = get_google_redirect_uri()
+    google_auth_url = (
+        f"https://accounts.google.com/o/oauth2/v2/auth?client_id={GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={requests.utils.quote(redirect_uri)}&response_type=code&scope=openid%20profile%20email"
+        f"&prompt=select_account"
+    )
+    return redirect(google_auth_url)
+
+@app.route('/auth/google/callback')
+def auth_google_callback():
+    """Xử lý mã code trả về từ Google OAuth2"""
+    code = request.args.get('code')
+    if not code:
+        flash('Xác thực Google OAuth2 không thành công.', 'error')
+        return redirect(url_for('login'))
+    try:
+        redirect_uri = get_google_redirect_uri()
+        token_data = {
+            'code': code,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
+            'redirect_uri': redirect_uri,
+            'grant_type': 'authorization_code'
+        }
+        tr = requests.post('https://oauth2.googleapis.com/token', data=token_data, timeout=10)
+        tokens = tr.json()
+        access_token = tokens.get('access_token')
+        if not access_token:
+            flash('Không thể lấy Access Token từ Google.', 'error')
+            return redirect(url_for('login'))
+
+        # Lấy thông tin user Google từ userinfo endpoint
+        u_res = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', headers={'Authorization': f'Bearer {access_token}'}, timeout=8)
+        u_data = u_res.json()
+        email = u_data.get('email', '').strip()
+        name = u_data.get('name') or (email.split('@')[0] if email else 'GoogleUser')
+        picture = u_data.get('picture', '')
+
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE username = ?', (name,))
+            user = cursor.fetchone()
+            if not user:
+                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+                cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (name, pwd_dummy))
+                user_id = cursor.lastrowid
+            else:
+                user_id = user['id']
+            conn.commit()
+
+        session['user_id'] = user_id
+        session['username'] = name
+        clear_failed_attempts(get_client_ip())
+        flash(f'Đăng nhập Google thành công! Chào mừng {name}.', 'success')
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'Lỗi xử lý Google OAuth2: {str(e)}', 'error')
+        return redirect(url_for('login'))
 
 @app.route('/auth/mock/<provider>')
 def auth_oauth2_mock(provider):
