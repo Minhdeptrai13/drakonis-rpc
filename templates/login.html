@@ -630,49 +630,11 @@
       }
     }
 
-    async function handleSocialQuickLogin(provider) {
-      const providerName = provider === 'discord' ? 'Discord' : 'Google';
-      const promptText = provider === 'discord'
-        ? 'Dán mã Discord User Token của bạn để đăng nhập nhanh tức thì:'
-        : 'Nhập tên tài khoản Google của bạn (hoặc email) để xác thực nhanh:';
-      const val = prompt(promptText, provider === 'discord' ? '' : 'user@gmail.com');
-      if (!val) return;
-
+    function handleSocialQuickLogin(provider) {
       if (provider === 'discord') {
-        const username = prompt('Đặt tên tài khoản DIPRE Studio của bạn:', 'Minh');
-        if (!username) return;
-        try {
-          const res = await fetch('/api/account/quick_oauth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: 'discord', token: val.trim(), username: username.trim() })
-          });
-          const d = await res.json();
-          if (d.success) {
-            window.location.href = '/';
-          } else {
-            alert(d.message || 'Lỗi đăng nhập nhanh');
-          }
-        } catch(e) {
-          alert('Lỗi kết nối máy chủ');
-        }
+        window.location.href = '/auth/discord';
       } else {
-        const username = val.split('@')[0] || 'GoogleUser';
-        try {
-          const res = await fetch('/api/account/quick_oauth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ provider: 'google', email: val.trim(), username: username })
-          });
-          const d = await res.json();
-          if (d.success) {
-            window.location.href = '/';
-          } else {
-            alert(d.message || 'Lỗi đăng nhập nhanh');
-          }
-        } catch(e) {
-          alert('Lỗi kết nối máy chủ');
-        }
+        window.location.href = '/auth/google';
       }
     }
 

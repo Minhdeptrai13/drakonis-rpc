@@ -219,7 +219,7 @@ async function handleUnbindToken() {
 }
 
 function updateAccountUI(data) {
-  const isLinked = !!(data && (data.has_token || data.discord_token || data.discord_id || (data.discord_username && data.discord_username !== '????')));
+  const isLinked = !!(data && data.has_token === true);
   const username = isLinked ? (data.discord_username || data.username || 'Discord User') : '????';
   const avatar = isLinked ? (data.discord_avatar || data.avatar || '') : '';
 

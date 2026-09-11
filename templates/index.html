@@ -171,16 +171,11 @@
                   
                   <div class="lpp-avatar-row">
                     <div class="lpp-avatar-wrapper">
-                      {% if has_token and discord_avatar %}
-                      <img src="{{ discord_avatar }}" alt="Avatar" class="lpp-avatar-img" id="hero-avatar-img">
-                      <img src="{{ avatar_decoration or '' }}" alt="" class="lpp-avatar-decoration-img {% if not avatar_decoration %}d-none{% endif %}" id="hero-avatar-decoration" aria-hidden="true">
-                      {% else %}
-                      <div class="lpp-avatar-placeholder locked-avatar-block" id="hero-avatar-placeholder">
+                      <img src="{{ discord_avatar if (has_token and discord_avatar) else '' }}" alt="Avatar" class="lpp-avatar-img {% if not (has_token and discord_avatar) %}d-none{% endif %}" id="hero-avatar-img">
+                      <div class="lpp-avatar-placeholder locked-avatar-block {% if has_token and discord_avatar %}d-none{% endif %}" id="hero-avatar-placeholder">
                         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                       </div>
-                      <img src="" alt="" class="lpp-avatar-img d-none" id="hero-avatar-img">
-                      <img src="" alt="" class="lpp-avatar-decoration-img d-none" id="hero-avatar-decoration" aria-hidden="true">
-                      {% endif %}
+                      <img src="{{ avatar_decoration if (has_token and avatar_decoration) else '' }}" alt="" class="lpp-avatar-decoration-img {% if not (has_token and avatar_decoration) %}d-none{% endif %}" id="hero-avatar-decoration" aria-hidden="true">
                       <div class="lpp-status-dot {% if has_token %}online{% else %}offline{% endif %}" id="hero-status-dot"></div>
                     </div>
 
@@ -532,19 +527,11 @@
                 <div class="dpm-banner"></div>
                 <div class="dpm-avatar-row">
                   <div class="dpm-avatar-wrap">
-                    {% if has_token and discord_avatar %}
-                    <img src="{{ discord_avatar }}" alt="" class="dpm-avatar" id="pv-avatar">
-                    <img src="{{ avatar_decoration or '' }}" alt="" class="dpm-avatar-decoration-img {% if not avatar_decoration %}d-none{% endif %}" id="pv-avatar-decoration" aria-hidden="true">
-                    <div class="dpm-avatar locked-avatar-block d-none" id="pv-avatar-locked">
+                    <img src="{{ discord_avatar if (has_token and discord_avatar) else '' }}" alt="" class="dpm-avatar {% if not (has_token and discord_avatar) %}d-none{% endif %}" id="pv-avatar">
+                    <div class="dpm-avatar locked-avatar-block {% if has_token and discord_avatar %}d-none{% endif %}" id="pv-avatar-locked">
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
-                    {% else %}
-                    <div class="dpm-avatar locked-avatar-block" id="pv-avatar-locked">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                    </div>
-                    <img src="" alt="" class="dpm-avatar d-none" id="pv-avatar">
-                    <img src="" alt="" class="dpm-avatar-decoration-img d-none" id="pv-avatar-decoration" aria-hidden="true">
-                    {% endif %}
+                    <img src="{{ avatar_decoration if (has_token and avatar_decoration) else '' }}" alt="" class="dpm-avatar-decoration-img {% if not (has_token and avatar_decoration) %}d-none{% endif %}" id="pv-avatar-decoration" aria-hidden="true">
                     <div class="dpm-status-dot" id="pv-status-dot"></div>
                   </div>
                 </div>

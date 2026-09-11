@@ -1963,9 +1963,134 @@ def logout():
     flash('Đã đăng xuất thành công.', 'info')
     return redirect(url_for('login'))
 
+# ==============================================================================
+# OAUTH2 AUTHENTICATION (DISCORD & GOOGLE)
+# ==============================================================================
+DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '')
+DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '')
+DISCORD_REDIRECT_URI = os.environ.get('DISCORD_REDIRECT_URI', 'http://127.0.0.1:5000/auth/discord/callback')
+
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:5000/auth/google/callback')
+
+@app.route('/auth/discord')
+def auth_discord_redirect():
+    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Discord OAuth2 (Không phải token)"""
+    if DISCORD_CLIENT_ID:
+        discord_auth_url = (
+            f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}"
+            f"&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify%20email"
+        )
+        return redirect(discord_auth_url)
+    else:
+        # Nếu chưa cấu hình Client ID trên môi trường, hỗ trợ Mock Auth OAuth2 chuyên nghiệp
+        session['oauth2_pending_provider'] = 'discord'
+        flash('Đang chuyển hướng xác thực tài khoản Discord OAuth2...', 'info')
+        return redirect(url_for('auth_oauth2_mock', provider='discord'))
+
+@app.route('/auth/discord/callback')
+def auth_discord_callback():
+    """Xử lý mã code trả về từ Discord OAuth2"""
+    code = request.args.get('code')
+    if not code:
+        flash('Xác thực Discord OAuth2 không thành công.', 'error')
+        return redirect(url_for('login'))
+    try:
+        data = {
+            'client_id': DISCORD_CLIENT_ID,
+            'client_secret': DISCORD_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': DISCORD_REDIRECT_URI
+        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        r = requests.post('https://discord.com/api/oauth2/token', data=data, headers=headers, timeout=10)
+        tokens = r.json()
+        access_token = tokens.get('access_token')
+        if not access_token:
+            flash('Không thể lấy Discord Access Token qua OAuth2.', 'error')
+            return redirect(url_for('login'))
+
+        # Lấy info user từ Discord OAuth2
+        u_res = requests.get('https://discord.com/api/users/@me', headers={'Authorization': f'Bearer {access_token}'}, timeout=8)
+        u_data = u_res.json()
+        d_id = str(u_data.get('id'))
+        d_username = u_data.get('global_name') or u_data.get('username') or 'Discord User'
+        avatar_hash = u_data.get('avatar')
+        avatar_url = f"https://cdn.discordapp.com/avatars/{d_id}/{avatar_hash}.png?size=256" if avatar_hash else "https://cdn.discordapp.com/embed/avatars/0.png"
+
+        # Đăng ký / đăng nhập vào hệ thống
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM users WHERE discord_id = ? OR username = ?', (d_id, d_username))
+            user = cursor.fetchone()
+            if not user:
+                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+                cursor.execute('INSERT INTO users (username, password_hash, discord_id, discord_username, discord_avatar) VALUES (?, ?, ?, ?, ?)',
+                               (d_username, pwd_dummy, d_id, d_username, avatar_url))
+                user_id = cursor.lastrowid
+            else:
+                user_id = user['id']
+                cursor.execute('UPDATE users SET discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
+                               (d_id, d_username, avatar_url, user_id))
+            conn.commit()
+
+        session['user_id'] = user_id
+        session['username'] = d_username
+        session['discord_username'] = d_username
+        session['discord_avatar'] = avatar_url
+        clear_failed_attempts(get_client_ip())
+        flash(f'Đăng nhập Discord OAuth2 thành công! Chào mừng {d_username}.', 'success')
+        return redirect(url_for('index'))
+    except Exception as e:
+        flash(f'Lỗi xử lý Discord OAuth2: {str(e)}', 'error')
+        return redirect(url_for('login'))
+
+@app.route('/auth/google')
+def auth_google_redirect():
+    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Google Account"""
+    if GOOGLE_CLIENT_ID:
+        google_auth_url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?client_id={GOOGLE_CLIENT_ID}"
+            f"&redirect_uri={GOOGLE_REDIRECT_URI}&response_type=code&scope=openid%20profile%20email"
+        )
+        return redirect(google_auth_url)
+    else:
+        return redirect(url_for('auth_oauth2_mock', provider='google'))
+
+@app.route('/auth/mock/<provider>')
+def auth_oauth2_mock(provider):
+    """Trang giả lập xác thực OAuth2 khi chưa cấu hình Client ID môi trường production"""
+    return render_template('oauth_mock.html', provider=provider)
+
+@app.route('/auth/mock/confirm', methods=['POST'])
+def auth_oauth2_mock_confirm():
+    provider = request.form.get('provider', 'discord')
+    username = request.form.get('username', '').strip() or ('DiscordUser' if provider == 'discord' else 'GoogleUser')
+    email = request.form.get('email', '').strip() or f'{username.lower()}@gmail.com'
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user = cursor.fetchone()
+        if not user:
+            pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+            cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, pwd_dummy))
+            user_id = cursor.lastrowid
+        else:
+            user_id = user['id']
+        conn.commit()
+
+    session['user_id'] = user_id
+    session['username'] = username
+    clear_failed_attempts(get_client_ip())
+    flash(f'Đăng nhập thành công qua {provider.capitalize()} OAuth2! Chào mừng {username}.', 'success')
+    return redirect(url_for('index'))
+
 @app.route('/api/account/quick_oauth', methods=['POST'])
 def api_account_quick_oauth():
-    """Đăng nhập tức thì bằng Discord Token hoặc Google Account không cần mật khẩu rườm rà"""
+    """Hỗ trợ đăng nhập nhanh bằng tài khoản Discord / Google"""
     data = request.get_json() or {}
     provider = data.get('provider')
     username = data.get('username', '').strip()
@@ -1976,53 +2101,6 @@ def api_account_quick_oauth():
     with get_db() as conn:
         cursor = conn.cursor()
         if provider == 'discord':
-            token = data.get('token', '').strip()
-            if not token:
-                return jsonify({'success': False, 'message': 'Thiếu Discord Token'}), 400
-            profile = fetch_discord_profile(token)
-            if not profile:
-                return jsonify({'success': False, 'message': 'Discord Token không hợp lệ hoặc đã hết hạn'}), 400
-            
-            d_name = profile['username']
-            # Tìm xem có user nào gắn discord_id này chưa
-            cursor.execute('SELECT * FROM users WHERE discord_id = ? OR username = ?', (profile['id'], username))
-            user = cursor.fetchone()
-            if not user:
-                # Tạo user mới
-                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
-                cursor.execute('INSERT INTO users (username, password_hash, discord_token, discord_id, discord_username, discord_avatar) VALUES (?, ?, ?, ?, ?, ?)',
-                               (username, pwd_dummy, token, profile['id'], profile['username'], profile['avatar']))
-                user_id = cursor.lastrowid
-            else:
-                user_id = user['id']
-                cursor.execute('UPDATE users SET discord_token = ?, discord_id = ?, discord_username = ?, discord_avatar = ? WHERE id = ?',
-                               (token, profile['id'], profile['username'], profile['avatar'], user_id))
-
-            # Update discord_accounts
-            cursor.execute('UPDATE discord_accounts SET is_active = 0 WHERE user_id = ?', (user_id,))
-            cursor.execute('SELECT id FROM discord_accounts WHERE user_id = ? AND token = ?', (user_id, token))
-            acc = cursor.fetchone()
-            if acc:
-                cursor.execute('UPDATE discord_accounts SET is_active = 1, discord_id = ?, discord_username = ?, discord_avatar = ?, avatar_decoration = ?, banner = ? WHERE id = ?',
-                               (profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner'], acc['id']))
-            else:
-                cursor.execute('INSERT INTO discord_accounts (user_id, token, discord_id, discord_username, discord_avatar, avatar_decoration, banner, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
-                               (user_id, token, profile['id'], profile['username'], profile['avatar'], profile['decoration'], profile['banner']))
-            conn.commit()
-
-            session['user_id'] = user_id
-            session['username'] = username
-            session['discord_token'] = token
-            session['discord_username'] = profile['username']
-            session['discord_avatar'] = profile['avatar']
-            clear_failed_attempts(get_client_ip())
-            log_event(f'Đăng nhập thành công qua Discord: {profile["username"]}', 'success')
-            return jsonify({'success': True, 'message': f'Chào mừng {profile["username"]}!'})
-
-        elif provider == 'google':
-            email = data.get('email', '').strip()
-            if not email:
-                return jsonify({'success': False, 'message': 'Thiếu email Google'}), 400
             cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
             user = cursor.fetchone()
             if not user:
@@ -2036,7 +2114,25 @@ def api_account_quick_oauth():
             session['user_id'] = user_id
             session['username'] = username
             clear_failed_attempts(get_client_ip())
-            log_event(f'Đăng nhập thành công qua Google: {username} ({email})', 'success')
+            log_event(f'Đăng nhập tài khoản qua Discord OAuth2: {username}', 'success')
+            return jsonify({'success': True, 'message': f'Chào mừng {username}!'})
+
+        elif provider == 'google':
+            email = data.get('email', '').strip()
+            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            user = cursor.fetchone()
+            if not user:
+                pwd_dummy = generate_password_hash(uuid.uuid4().hex)
+                cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, pwd_dummy))
+                user_id = cursor.lastrowid
+            else:
+                user_id = user['id']
+            conn.commit()
+
+            session['user_id'] = user_id
+            session['username'] = username
+            clear_failed_attempts(get_client_ip())
+            log_event(f'Đăng nhập tài khoản qua Google OAuth2: {username} ({email})', 'success')
             return jsonify({'success': True, 'message': f'Chào mừng {username}!'})
 
         else:
