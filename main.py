@@ -2170,44 +2170,84 @@ def api_lyrics_search():
     if not q:
         return jsonify({'success': False, 'message': 'Vui lòng nhập tên bài hát'}), 400
     try:
+        results = []
+        nct_headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Referer': 'https://www.nhaccuatui.com/'
+        }
+
+        # 1. Trực tiếp lấy ảnh bìa từ NhacCuaTui CDN (image-cdn.nct.vn)
+        nct_cover_map = {}
+        try:
+            nct_url = f"https://www.nhaccuatui.com/ajax/search?q={requests.utils.quote(q)}"
+            nr = requests.get(nct_url, headers=nct_headers, timeout=4, verify=False)
+            if nr.status_code == 200:
+                ndata = nr.json().get('data', {})
+                # Quét ảnh bài hát & playlist từ NhacCuaTui
+                for p in ndata.get('playlist', []) + ndata.get('song', []) + ndata.get('video', []):
+                    img = p.get('img') or p.get('avatar') or p.get('thumb')
+                    name = p.get('name') or p.get('title')
+                    if img and name:
+                        nct_cover_map[name.lower().strip()] = img
+        except Exception:
+            pass
+
+        # 2. Bổ sung nguồn ảnh V-Pop nếu bài hát cần ảnh bìa ca khúc
+        zing_cover_map = {}
+        try:
+            zr = requests.get(f"https://ac.mp3.zing.vn/complete?type=song&num=10&query={requests.utils.quote(q)}", timeout=3, verify=False)
+            if zr.status_code == 200:
+                for grp in zr.json().get('data', []):
+                    for s in grp.get('song', []):
+                        sname = s.get('name', '').lower().strip()
+                        sthumb = s.get('thumb')
+                        if sthumb:
+                            zing_cover_map[sname] = f"https://photo-resize-zmp3.zmdcdn.me/w320_r1x1_jpeg/{sthumb}"
+        except Exception:
+            pass
+
+        # 3. Lấy danh sách 10 bài hát và lyric đồng bộ
         url = f"https://lrclib.net/api/search?q={requests.utils.quote(q)}"
         r = requests.get(url, headers={"User-Agent": "DIPRE-Discord/1.0"}, timeout=6)
-        results = []
         if r.status_code == 200:
             tracks = r.json()
-            # Giới hạn đúng 10 bài hát
             selected_tracks = tracks[:10]
-            
-            # Lấy cover art từ iTunes Search API cho nhanh và nét
+
             for t in selected_tracks:
                 track_name = t.get('trackName') or ''
                 artist_name = t.get('artistName') or ''
+                t_lower = track_name.lower().strip()
+
+                # Ghép ảnh từ NhacCuaTui hoặc V-Pop CDN
                 cover_url = ''
-                try:
-                    itunes_url = f"https://itunes.apple.com/search?term={requests.utils.quote(track_name + ' ' + artist_name)}&entity=song&limit=1"
-                    ir = requests.get(itunes_url, timeout=3)
-                    if ir.status_code == 200:
-                        ires = ir.json().get('results', [])
-                        if ires:
-                            # Lấy ảnh 300x300 hoặc 600x600 nét căng
-                            raw_art = ires[0].get('artworkUrl100', '')
-                            cover_url = raw_art.replace('100x100bb', '400x400bb')
-                except Exception:
-                    cover_url = ''
+                for k, img in nct_cover_map.items():
+                    if k in t_lower or t_lower in k:
+                        cover_url = img
+                        break
 
                 if not cover_url:
-                    # Fallback ảnh nhạc gradient xịn
-                    cover_url = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80'
+                    for k, img in zing_cover_map.items():
+                        if k in t_lower or t_lower in k:
+                            cover_url = img
+                            break
+
+                if not cover_url:
+                    # Lấy ảnh playlist NCT mặc định nếu có
+                    if nct_cover_map:
+                        cover_url = list(nct_cover_map.values())[0]
+                    else:
+                        cover_url = 'https://image-cdn.nct.vn/playlist/2023/01/03/6/2/1/4/1672730677680.jpg'
 
                 results.append({
                     'id': t.get('id'),
                     'name': track_name,
                     'artist': artist_name,
-                    'album': t.get('albumName') or '',
+                    'album': t.get('albumName') or 'NhacCuaTui Synced',
                     'duration': t.get('duration') or 0,
                     'cover': cover_url,
                     'has_synced': bool(t.get('syncedLyrics'))
                 })
+
             return jsonify({'success': True, 'tracks': results})
         return jsonify({'success': True, 'tracks': []})
     except Exception as e:
