@@ -14,6 +14,22 @@
 
 <body class="auth-page-body dipre-theme">
 
+  <!-- MÀN HÌNH KHỞI ĐỘNG HIỆU ỨNG VẢI LỤA DISCORD (SILK SPLASH SCREEN) -->
+  <div class="silk-splash-curtain" id="silk-splash-curtain">
+    <div class="silk-splash-content">
+      <div class="silk-logo-glow-wrap">
+        <div class="silk-wave-ring r1"></div>
+        <div class="silk-wave-ring r2"></div>
+        <img src="{{ url_for('static', filename='img/dipre_icon_clyde_silk.png') }}" alt="DIPRE Loading" class="silk-splash-logo-img">
+      </div>
+      <div class="silk-splash-title">DIPRE <span class="silk-hl">STUDIO</span></div>
+      <div class="silk-splash-loader-bar">
+        <div class="silk-splash-loader-progress"></div>
+      </div>
+      <div class="silk-splash-sub">Khởi tạo bảo mật &amp; không gian Discord...</div>
+    </div>
+  </div>
+
   <!-- TOP CORNER BRANDING (LOGO TÁCH NỀN TRONG SUỐT Ở GÓC) -->
   <header class="auth-top-navbar">
     <a href="/" class="auth-corner-logo">
@@ -299,11 +315,11 @@
           Tùy biến Rich Presence sống động, đồng bộ câu hát từng mili-giây từ NhacCuaTui và hoàn thành Auto Quest tự động mà không bao giờ lo bị Rate Limit.
         </p>
 
-        <!-- KHUNG SHOWCASE GIAO DIỆN BEYOND THE VEIL ĐẲNG CẤP (ẨN DANH HOÀN TOÀN) -->
+        <!-- KHUNG SHOWCASE CARD ẢNH HỒ SƠ ĐÃ ĐƯỢC CẮT BO TRÒN CHUẨN ĐẸP -->
         <div class="auth-profile-card-wrap">
           <div class="auth-profile-card-3d">
             <div class="apc-glow-back"></div>
-            <img src="{{ url_for('static', filename='img/discord_profile_showcase.png') }}" alt="Beyond The Veil Showcase" class="auth-profile-screenshot-img">
+            <img src="{{ url_for('static', filename='img/minh_discord_card_cropped.png') }}" alt="Discord Profile Card" class="auth-profile-screenshot-img">
             
             <div class="apc-floating-tag">
               <span class="tag-crown">👑</span>
@@ -684,6 +700,15 @@
       initInteractiveDrag('login');
       initInteractiveDrag('register');
       reloadCaptcha('login', 1);
+
+      // Hiệu ứng màn hình lụa Discord lướt mở trang
+      const curtain = document.getElementById('silk-splash-curtain');
+      if (curtain) {
+        setTimeout(() => {
+          curtain.classList.add('fade-out');
+          setTimeout(() => { curtain.style.display = 'none'; }, 600);
+        }, 1100);
+      }
     });
   </script>
 </body>
