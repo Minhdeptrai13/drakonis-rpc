@@ -8610,3 +8610,290 @@ transition: all var(--trans-fast);
   font-size: 0.72rem;
   color: #64748b;
 }
+
+/* ==========================================================================
+   SOLSTICE / DISCORD PROFILE POPOUT & AVATAR DECORATION APNG
+   ========================================================================== */
+.live-profile-popout {
+  background: #111214;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.live-profile-popout:hover {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(99, 102, 241, 0.3);
+}
+
+.lpp-banner {
+  height: 120px;
+  background: linear-gradient(135deg, #1e1b4b, #312e81, #4338ca);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.lpp-avatar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 1.25rem;
+  margin-top: -45px;
+  position: relative;
+  z-index: 10;
+}
+
+/* KHUNG AVATAR WRAPPER BỌC AVATAR VÀ DECORATION */
+.lpp-avatar-wrapper, .dpm-avatar-wrap {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+}
+
+.dpm-avatar-wrap {
+  width: 80px;
+  height: 80px;
+}
+
+.lpp-avatar-img, .dpm-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 5px solid #111214;
+  background: #1e1f22;
+  box-sizing: border-box;
+}
+
+.lpp-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #1e1f22;
+  border: 5px solid #111214;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: #64748b;
+}
+
+/* AVATAR DECORATION APNG CỦA DISCORD */
+.lpp-avatar-decoration-img, .dpm-avatar-decoration-img {
+  position: absolute;
+  top: -12%;
+  left: -12%;
+  width: 124%;
+  height: 124%;
+  pointer-events: none;
+  z-index: 3;
+  object-fit: contain;
+}
+
+/* CHẤM STATUS TRÒN DISCORD */
+.lpp-status-dot, .dpm-status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 4px solid #111214;
+  z-index: 4;
+}
+
+.lpp-status-dot.online, .dpm-status-dot.online { background: #23a55a; }
+.lpp-status-dot.idle, .dpm-status-dot.idle { background: #f0b232; }
+.lpp-status-dot.dnd, .dpm-status-dot.dnd { background: #f23f43; }
+.lpp-status-dot.offline, .dpm-status-dot.offline { background: #80848e; }
+
+/* BADGES ROW */
+.lpp-badges-badge-row {
+  background: #1e1f22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.d-badge-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.d-badge-icon:hover {
+  transform: scale(1.2);
+}
+
+.unlinked-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+}
+
+/* NỘI DUNG PROFILE */
+.lpp-content-box {
+  padding: 1rem 1.25rem 1.5rem;
+}
+
+.lpp-user-header {
+  margin-bottom: 0.75rem;
+}
+
+.lpp-global-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.lpp-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.lpp-username {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.lpp-pronouns {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #cbd5e1;
+}
+
+/* BONG BÓNG SUY NGHĨ / CUSTOM STATUS */
+.lpp-thought-bubble {
+  background: #2b2d31;
+  border-radius: 12px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  margin-bottom: 1rem;
+}
+
+.bubble-icon {
+  font-size: 1rem;
+}
+
+.bubble-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lpp-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 1rem;
+}
+
+/* RPC EMBED BOX TRONG PROFILE */
+.lpp-rpc-box {
+  background: #2b2d31;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 1rem;
+}
+
+.lpp-rpc-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #b5bac1;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.lpp-rpc-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lpp-rpc-icon-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.lpp-rpc-app-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.lpp-rpc-small-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background: #111214;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+}
+
+.lpp-rpc-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.lpp-rpc-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lpp-rpc-details, .lpp-rpc-state {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lpp-about-box {
+  background: #2b2d31;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.lpp-about-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #b5bac1;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.lpp-about-text {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}

@@ -219,8 +219,8 @@ async function handleUnbindToken() {
 }
 
 function updateAccountUI(data) {
-  const isLinked = !!(data && (data.discord_token || data.discord_username));
-  const username = isLinked ? (data.discord_username || data.username) : '????';
+  const isLinked = !!(data && (data.has_token || data.discord_token || data.discord_id || (data.discord_username && data.discord_username !== '????')));
+  const username = isLinked ? (data.discord_username || data.username || 'Discord User') : '????';
   const avatar = isLinked ? (data.discord_avatar || data.avatar || '') : '';
 
   // 1. Sidebar Account Chip
@@ -306,10 +306,51 @@ function updateAccountUI(data) {
   const heroName = document.getElementById('hero-profile-name');
   const heroTag = document.getElementById('hero-profile-tag');
   const heroAv = document.getElementById('hero-avatar-img');
+  const heroAvPh = document.getElementById('hero-avatar-placeholder');
+  const heroDecor = document.getElementById('hero-avatar-decoration');
   const heroBanner = document.getElementById('hero-profile-banner');
-  if (heroName) heroName.textContent = isLinked ? username : 'Minh';
-  if (heroTag) heroTag.textContent = isLinked ? `@${username.toLowerCase().replace(/\s+/g, '')}` : '@minh3003a';
-  if (heroAv && avatar) heroAv.src = avatar;
+  const heroBadges = document.getElementById('hero-badges-row');
+  const heroStatusDot = document.getElementById('hero-status-dot');
+
+  const decorUrl = isLinked ? (data.avatar_decoration || data.decoration || '') : '';
+
+  if (heroName) heroName.textContent = isLinked ? username : '????';
+  if (heroTag) heroTag.textContent = isLinked ? `@${username.toLowerCase().replace(/\s+/g, '')}` : '@????';
+  if (heroStatusDot) {
+    heroStatusDot.className = `lpp-status-dot ${isLinked ? 'online' : 'offline'}`;
+  }
+
+  if (isLinked && avatar) {
+    if (heroAv) { heroAv.src = avatar; heroAv.classList.remove('d-none'); }
+    if (heroAvPh) heroAvPh.classList.add('d-none');
+    if (heroDecor) {
+      if (decorUrl) {
+        heroDecor.src = decorUrl;
+        heroDecor.classList.remove('d-none');
+      } else {
+        heroDecor.classList.add('d-none');
+      }
+    }
+  } else {
+    if (heroAv) heroAv.classList.add('d-none');
+    if (heroAvPh) {
+      heroAvPh.classList.remove('d-none');
+      heroAvPh.innerHTML = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+    }
+    if (heroDecor) heroDecor.classList.add('d-none');
+  }
+
+  // Cập nhật Decoration trên tab preview RPC
+  const pvDecor = document.getElementById('pv-avatar-decoration');
+  if (pvDecor) {
+    if (isLinked && decorUrl) {
+      pvDecor.src = decorUrl;
+      pvDecor.classList.remove('d-none');
+    } else {
+      pvDecor.classList.add('d-none');
+    }
+  }
+
   if (heroBanner && data?.banner) heroBanner.style.backgroundImage = `url('${data.banner}')`;
 
   // 5. Toggle Locked Section Overlays (Form + Preview RPC & Lyric)
@@ -1921,6 +1962,16 @@ function init3DCardTilt() {
   });
 }
 
+async function fetchAccountInfo() {
+  try {
+    const res = await fetch('/api/account/info');
+    const data = await res.json();
+    if (data.success) {
+      updateAccountUI(data);
+    }
+  } catch (e) {}
+}
+
 function init() {
   buildVisualGallery();
   loadPresets();
@@ -1931,6 +1982,8 @@ function init() {
   loadAvailableQuests();
   startLogPolling();
   loadSavedConfig();
+  fetchAccountInfo();
+  loadMultiAccounts();
 }
 
 document.addEventListener('DOMContentLoaded', init);

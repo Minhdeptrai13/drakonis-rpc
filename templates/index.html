@@ -171,54 +171,37 @@
                   
                   <div class="lpp-avatar-row">
                     <div class="lpp-avatar-wrapper">
-                      <!-- Vòng hiệu ứng Avatar Decoration động (Cá heo/anime phát sáng xoay chuyển) -->
-                      <div class="lpp-avatar-decoration-ring" id="hero-avatar-decoration">
-                        <svg class="decor-svg-fx" viewBox="0 0 120 120">
-                          <circle class="decor-orbit-1" cx="60" cy="60" r="54" fill="none" stroke="url(#decorGradient)" stroke-width="3" stroke-dasharray="8 6" />
-                          <circle class="decor-orbit-2" cx="60" cy="60" r="50" fill="none" stroke="#38bdf8" stroke-width="1.8" opacity="0.8" />
-                          <defs>
-                            <linearGradient id="decorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stop-color="#818cf8" />
-                              <stop offset="50%" stop-color="#c084fc" />
-                              <stop offset="100%" stop-color="#38bdf8" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                        <span class="decor-sparkle-1">✨</span>
-                        <span class="decor-sparkle-2">🐬</span>
-                      </div>
-
                       {% if has_token and discord_avatar %}
                       <img src="{{ discord_avatar }}" alt="Avatar" class="lpp-avatar-img" id="hero-avatar-img">
+                      <img src="{{ avatar_decoration or '' }}" alt="" class="lpp-avatar-decoration-img {% if not avatar_decoration %}d-none{% endif %}" id="hero-avatar-decoration" aria-hidden="true">
                       {% else %}
-                      <div class="lpp-avatar-placeholder" id="hero-avatar-placeholder">
-                        <img src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Minh" class="lpp-avatar-img" id="hero-avatar-img">
+                      <div class="lpp-avatar-placeholder locked-avatar-block" id="hero-avatar-placeholder">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                       </div>
+                      <img src="" alt="" class="lpp-avatar-img d-none" id="hero-avatar-img">
+                      <img src="" alt="" class="lpp-avatar-decoration-img d-none" id="hero-avatar-decoration" aria-hidden="true">
                       {% endif %}
-                      <div class="lpp-status-dot online" id="hero-status-dot"></div>
+                      <div class="lpp-status-dot {% if has_token %}online{% else %}offline{% endif %}" id="hero-status-dot"></div>
                     </div>
 
                     <!-- Hàng Badges Discord -->
-                    <div class="lpp-badges-badge-row">
-                      <span class="d-badge hypesquad" title="HypeSquad Bravery">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#9b59b6"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5zm0 2.18l7 3.89v4.93c0 4.6-3.13 8.89-7 10-3.87-1.11-7-5.4-7-10V8.07l7-3.89z"/></svg>
-                      </span>
-                      <span class="d-badge activedev" title="Active Developer">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#23a55a"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-                      </span>
-                      <span class="d-badge nitro" title="Nitro Subscriber">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#f43f5e"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                      </span>
-                      <span class="d-badge founder" title="DIPRE Founder">⭐</span>
+                    <div class="lpp-badges-badge-row" id="hero-badges-row">
+                      {% if has_token %}
+                      <img src="https://cdn.discordapp.com/badge-icons/2895086c18d5531d499862e41d1155a6.png?size=64" alt="" title="Nitro" class="d-badge-icon">
+                      <img src="https://cdn.discordapp.com/badge-icons/51040c70d4f20a921ad6674ff86fc95c.png?size=64" alt="" title="Server Booster" class="d-badge-icon">
+                      <img src="https://cdn.discordapp.com/badge-icons/7d9ae358c8c5e118768335dbe68b4fb8.png?size=64" alt="" title="Completed a Quest" class="d-badge-icon">
+                      {% else %}
+                      <span class="d-badge unlinked-badge" title="Chưa liên kết tài khoản Discord">Chưa Liên Kết</span>
+                      {% endif %}
                     </div>
                   </div>
 
                   <div class="lpp-content-box">
                     <div class="lpp-user-header">
-                      <div class="lpp-global-name" id="hero-profile-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}Minh{% endif %}</div>
+                      <div class="lpp-global-name" id="hero-profile-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
                       <div class="lpp-sub-row">
-                        <span class="lpp-username" id="hero-profile-tag">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@minh3003a{% endif %}</span>
-                        <span class="lpp-pronouns">Workspace: DIPRE.io</span>
+                        <span class="lpp-username" id="hero-profile-tag">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@????{% endif %}</span>
+                        <span class="lpp-pronouns">{% if has_token %}Discord Verified{% else %}Chưa Liên Kết Token{% endif %}</span>
                       </div>
                     </div>
 
@@ -551,6 +534,7 @@
                   <div class="dpm-avatar-wrap">
                     {% if has_token and discord_avatar %}
                     <img src="{{ discord_avatar }}" alt="" class="dpm-avatar" id="pv-avatar">
+                    <img src="{{ avatar_decoration or '' }}" alt="" class="dpm-avatar-decoration-img {% if not avatar_decoration %}d-none{% endif %}" id="pv-avatar-decoration" aria-hidden="true">
                     <div class="dpm-avatar locked-avatar-block d-none" id="pv-avatar-locked">
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
@@ -559,6 +543,7 @@
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </div>
                     <img src="" alt="" class="dpm-avatar d-none" id="pv-avatar">
+                    <img src="" alt="" class="dpm-avatar-decoration-img d-none" id="pv-avatar-decoration" aria-hidden="true">
                     {% endif %}
                     <div class="dpm-status-dot" id="pv-status-dot"></div>
                   </div>
