@@ -35,16 +35,16 @@
 
       <nav class="sidebar-nav">
         <button type="button" class="sidebar-nav-item active" data-tab="tab-home" onclick="switchTab('tab-home')">
-          <span class="nav-icon">✨</span> Trang Chủ
+          Trang Chủ
         </button>
         <button type="button" class="sidebar-nav-item" data-tab="tab-rpc" onclick="switchTab('tab-rpc')">
-          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 127.14 96.36" fill="currentColor" style="vertical-align: middle;"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,45.91,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,45.91,96.12,53,91.08,65.69,84.69,65.69Z"/></svg></span> Discord RPC
+          Discord RPC
         </button>
         <button type="button" class="sidebar-nav-item" data-tab="tab-lyric" onclick="switchTab('tab-lyric')">
-          <span class="nav-icon">🎵</span> Lyric Sync (NCT)
+          Lyric Sync (NCT)
         </button>
         <button type="button" class="sidebar-nav-item" data-tab="tab-quest" onclick="switchTab('tab-quest')">
-          <span class="nav-icon">⚔️</span> Auto Quest
+          Auto Quest
         </button>
       </nav>
 
@@ -82,137 +82,48 @@
 
       <!-- TAB 1: HOME / BEYOND THE VEIL SHOWCASE -->
       <section class="tab-panel active" id="tab-home">
-        <div class="dipre-hero-wrapper">
-          <div class="dipre-ambient-glow glow-1"></div>
-          <div class="dipre-ambient-glow glow-2"></div>
-
-          <div class="dipre-hero-content">
-            <div class="dipre-hero-tag">
-              <span class="dht-dot"></span> DISCORD MEETS PREMIUM
-            </div>
-            <h1 class="dipre-hero-heading">
-              beyond the veil,<br>
-              <span class="dipre-gradient-text">control returns.</span>
-            </h1>
-            <p class="dipre-hero-description">
-              Nâng cấp trải nghiệm sử dụng Discord lên một tầm cao mới. Trình phát nhạc đồng bộ lyric NhacCuaTui mili-giây, Rich Presence realtime với đồ họa 3D đẳng cấp và hệ thống Auto Quest tự động.
-            </p>
-
-            <div class="dipre-hero-actions">
-              <button type="button" class="dipre-hero-btn primary" onclick="switchTab('tab-rpc')">Bắt đầu</button>
-              <button type="button" class="dipre-hero-btn secondary" onclick="switchTab('tab-lyric')">Demo tính năng</button>
-            </div>
-
-            <div class="dipre-stats-row">
-              <div class="dipre-stat-card">
-                <span class="dsc-num">0.1s</span>
-                <span class="dsc-lbl">Độ trễ Rich Presence</span>
-              </div>
-              <div class="dipre-stat-card">
-                <span class="dsc-num">100%</span>
-                <span class="dsc-lbl">NCT &amp; LRCLIB Synced</span>
-              </div>
-              <div class="dipre-stat-card">
-                <span class="dsc-num">Zero</span>
-                <span class="dsc-lbl">Rate Limit Auto Quest</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3D FLOATING PERSPECTIVE DISCORD PROFILE CARDS (FOR MINH) -->
-          <div class="dipre-hero-cards-stage" id="hero-cards-stage">
+        <div class="beyond-hero-wrapper" style="padding-top: 2rem;">
+          <div class="beyond-hero-container">
             
-            <!-- THẺ 1: POP-OUT CHI TIẾT CỦA MINH (KHUNG SÓNG NƯỚC, FOUNDER CROWN, MINH ĐÂYYYY) -->
-            <div class="dipre-floating-card card-primary" id="floating-card-1">
-              <div class="dfc-banner">
-                <div class="dfc-banner-overlay"></div>
-              </div>
+            <!-- CỘT CHỮ BÊN TRÁI -->
+            <div class="beyond-text-col">
+              <h1 class="beyond-main-title">
+                beyond the veil,<br>
+                control returns.
+              </h1>
+              <p class="beyond-sub-title">Nâng cấp trải nghiệm sử dụng Discord lên một tầm cao mới.</p>
               
-              <div class="dfc-avatar-row">
-                <div class="dfc-avatar-wrapper">
-                  <!-- Khung trang trí Avatar Decoration phát sáng -->
-                  <div class="avatar-decoration-ring"></div>
-                  <img id="hero-card1-avatar" src="{{ discord_avatar or 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80' }}" alt="Minh Avatar" class="dfc-avatar-img">
-                  <div class="dfc-status-dot online"></div>
-                </div>
-
-                <!-- Bong bóng suy nghĩ nổi -->
-                <div class="dfc-thought-bubble">
-                  <span class="dtb-plus">+</span>
-                  <span class="dtb-text">Shower thought?</span>
-                  <span class="dtb-emoji">💭</span>
-                </div>
-              </div>
-
-              <div class="dfc-info-body">
-                <div class="dfc-identity-row">
-                  <div class="dfc-name-col">
-                    <span class="dfc-display-name" id="hero-card1-name">{{ discord_username or 'Minh' }}</span>
-                    <span class="dfc-handle" id="hero-card1-handle">@{{ discord_username or 'minh3003a' }}</span>
-                  </div>
-                  <!-- Discord Badges -->
-                  <div class="dfc-badges-row">
-                    <span class="badge-icon-wrap" title="Active Developer">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#23a55a"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l-8-4v9l8 4 8-4v-9l-8 4z"/></svg>
-                    </span>
-                    <span class="badge-icon-wrap" title="Nitro Booster">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="#a855f7"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Rich Presence Playing Box -->
-                <div class="dfc-activity-box">
-                  <div class="dfc-activity-label">Playing</div>
-                  <div class="dfc-activity-content">
-                    <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?w=120&auto=format&fit=crop&q=80" alt="Game Art" class="dfc-act-avatar">
-                    <div class="dfc-act-text">
-                      <div class="dfc-act-title">Minh đâyyy</div>
-                      <div class="dfc-act-details">cgi má</div>
-                      <div class="dfc-act-state">dạ dạ</div>
-                      <div class="dfc-act-timer">🎮 21:27:16</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Role Badge Pill -->
-                <div class="dfc-role-pill">
-                  <span class="role-dot yellow"></span>
-                  <span class="role-title">Founder 👑</span>
-                  <span class="role-plus">+</span>
-                </div>
-
-                <!-- Button Edit Profile -->
-                <button type="button" class="dfc-action-btn" onclick="switchTab('tab-rpc')">
-                  ✏️ Edit Profile
-                </button>
+              <div class="beyond-cta-group">
+                <button type="button" class="beyond-btn-white" onclick="switchTab('tab-rpc')">Bắt đầu</button>
+                <button type="button" class="beyond-btn-glass" onclick="switchTab('tab-lyric')">Demo tính năng</button>
               </div>
             </div>
 
-            <!-- THẺ 2: THẺ 3D FLOATING PHỐI CẢNH PHÍA SAU (CODE BY MINH) -->
-            <div class="dipre-floating-card card-secondary" id="floating-card-2">
-              <div class="dfc-banner banner-dark"></div>
-              <div class="dfc-avatar-row">
-                <div class="dfc-avatar-wrapper small">
-                  <img src="{{ url_for('static', filename='img/dipre_logo.png') }}" alt="DIPRE Logo" class="dfc-avatar-img">
-                  <div class="dfc-status-dot dnd"></div>
+            <!-- CỘT 2 CHIẾC CARD DISCORD BÊN PHẢI (CHUẨN CHỈ AFTERLIFE, CẮT SẠCH VIỀN) -->
+            <div class="beyond-cards-col">
+              <div class="beyond-stage-3d">
+                
+                <!-- Thẻ dài phía sau -->
+                <div class="beyond-card-back">
+                  <div class="bcb-banner"></div>
+                  <div class="bcb-avatar-row">
+                    <div class="bcb-avatar"></div>
+                  </div>
+                  <div class="bcb-body">
+                    <div class="bcb-name-col">
+                      <div class="bcb-title-mock"></div>
+                      <div class="bcb-sub-mock"></div>
+                    </div>
+                    <div class="bcb-box-mock"></div>
+                    <div class="bcb-box-mock sm"></div>
+                  </div>
                 </div>
-              </div>
-              <div class="dfc-info-body">
-                <div class="dfc-name-col">
-                  <span class="dfc-display-name">Minh</span>
-                  <span class="dfc-handle">Workspace: DIPRE.io</span>
+
+                <!-- Thẻ Discord Popout phía trước của Minh -->
+                <div class="beyond-card-front">
+                  <img src="{{ url_for('static', filename='img/minh_discord_card_cropped.png') }}" alt="Discord Card" class="beyond-card-front-img">
                 </div>
-                <div class="dfc-activity-box mini">
-                  <div class="dfc-act-details text-cyan">Visual Studio Code</div>
-                  <div class="dfc-act-state">Developing DIPRE Studio RPC</div>
-                  <div class="dfc-act-timer">⏱️ 03:28:45 elapsed</div>
-                </div>
-                <div class="dfc-bio-text">
-                  https://discord.gg/dipre<br>
-                  Beyond the veil, control returns.
-                </div>
-                <div class="dfc-member-since">Member Since: Jan 1, 2020</div>
+
               </div>
             </div>
 

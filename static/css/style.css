@@ -6987,12 +6987,14 @@ transition: all var(--trans-fast);
 
 /* Beyond Hero Wrapper */
 .beyond-hero-wrapper {
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6rem 3.5rem 3rem;
+  padding: 2rem 2.5rem;
   position: relative;
+  box-sizing: border-box;
 }
 
 .beyond-hero-container {
