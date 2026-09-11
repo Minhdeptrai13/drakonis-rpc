@@ -54,7 +54,9 @@
           {% if has_token and discord_avatar %}
           <img src="{{ discord_avatar }}" class="sac-avatar" id="sac-avatar-img" alt="">
           {% else %}
-          <div class="sac-avatar-placeholder locked-sac-placeholder" id="sac-avatar-placeholder">🔒</div>
+          <div class="sac-avatar-placeholder locked-sac-placeholder" id="sac-avatar-placeholder">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
           {% endif %}
           <div class="sac-meta">
             <span class="sac-name" id="sac-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</span>
@@ -134,7 +136,22 @@
       <!-- TAB 2: DISCORD RPC STUDIO -->
       <section class="tab-panel" id="tab-rpc">
         <div class="panel-2col-layout">
-          <div class="panel-form-col">
+          <div class="panel-form-col panel-form-relative">
+
+            <!-- LỚP PHỦ KHÓA TOÀN MỤC KHI CHƯA LIÊN KẾT TOKEN -->
+            <div class="locked-section-overlay {% if has_token %}d-none{% endif %}" id="rpc-locked-overlay">
+              <div class="locked-overlay-content">
+                <div class="locked-icon-bubble">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div class="locked-overlay-title">Tính Năng Yêu Cầu Token</div>
+                <div class="locked-overlay-desc">Chưa phát hiện Discord Token hợp lệ. Vui lòng liên kết tài khoản để kích hoạt và chạy Rich Presence realtime.</div>
+                <button type="button" class="locked-overlay-btn" onclick="toggleAccountModal(true)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                  <span>Liên Kết Token Ngay</span>
+                </button>
+              </div>
+            </div>
 
             <!-- Presets Bar -->
             <div class="settings-section">
@@ -340,22 +357,22 @@
                 <span class="preview-live-badge">REALTIME</span>
               </div>
 
-              <div class="discord-profile-mock dipre-mock-card">
+              <div class="discord-profile-mock">
                 <div class="dpm-banner"></div>
                 <div class="dpm-avatar-row">
                   <div class="dpm-avatar-wrap">
-                    <div class="avatar-decoration-ring mini"></div>
                     {% if has_token and discord_avatar %}
                     <img src="{{ discord_avatar }}" alt="" class="dpm-avatar" id="pv-avatar">
+                    <div class="dpm-avatar locked-avatar-block d-none" id="pv-avatar-locked">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
                     {% else %}
-                    <div class="dpm-avatar locked-avatar-block" id="pv-avatar-locked">🔒</div>
+                    <div class="dpm-avatar locked-avatar-block" id="pv-avatar-locked">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
                     <img src="" alt="" class="dpm-avatar d-none" id="pv-avatar">
                     {% endif %}
                     <div class="dpm-status-dot" id="pv-status-dot"></div>
-                  </div>
-                  <div class="dfc-thought-bubble preview-bubble">
-                    <span class="dtb-plus">+</span>
-                    <span class="dtb-text">Shower thought?</span>
                   </div>
                 </div>
 
@@ -363,15 +380,6 @@
                   <div class="dpm-names">
                     <div class="dpm-display-name" id="pv-display-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
                     <div class="dpm-handle" id="pv-handle">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@????{% endif %}</div>
-                  </div>
-                  
-                  <div class="dfc-badges-row mb-2">
-                    <span class="badge-icon-wrap" title="Active Developer">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#23a55a"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l-8-4v9l8 4 8-4v-9l-8 4z"/></svg>
-                    </span>
-                    <span class="badge-icon-wrap" title="Nitro Booster">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#a855f7"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    </span>
                   </div>
 
                   <div class="dpm-sep"></div>
@@ -388,19 +396,13 @@
                         <div class="dpm-act-name" id="pv-activity-name">Minh đâyyy</div>
                         <div class="dpm-act-detail" id="pv-details">cgi má</div>
                         <div class="dpm-act-state" id="pv-state">dạ dạ</div>
-                        <div class="dpm-act-timer" id="pv-time"><span id="pv-timer-text">🎮 21:27:16 elapsed</span></div>
+                        <div class="dpm-act-timer" id="pv-time"><span id="pv-timer-text">21:27:16 elapsed</span></div>
                       </div>
                     </div>
                     <div class="dpm-act-buttons">
                       <a href="#" class="dpm-act-btn" id="pv-btn1">GitHub</a>
                       <a href="#" class="dpm-act-btn" id="pv-btn2">Discord Server</a>
                     </div>
-                  </div>
-
-                  <div class="dfc-role-pill mt-3">
-                    <span class="role-dot yellow"></span>
-                    <span class="role-title">Founder 👑</span>
-                    <span class="role-plus">+</span>
                   </div>
                 </div>
               </div>
@@ -424,18 +426,27 @@
       <!-- TAB 3: LYRIC SYNC (NHACCUATUI + LRCLIB MODERN AUDIO PLAYER) -->
       <section class="tab-panel" id="tab-lyric">
         <div class="panel-2col-layout">
-          <div class="panel-form-col">
-            {% if not has_token %}
-            <div class="locked-overlay-inline">
-              <div class="locked-inline-msg">Cần liên kết Discord Token để đồng bộ câu hát lên Custom Status.</div>
-              <button type="button" class="locked-cta" onclick="toggleAccountModal(true)">Mở Tài Khoản</button>
+          <div class="panel-form-col panel-form-relative">
+
+            <!-- LỚP PHỦ KHÓA TOÀN MỤC KHI CHƯA LIÊN KẾT TOKEN -->
+            <div class="locked-section-overlay {% if has_token %}d-none{% endif %}" id="lyric-locked-overlay">
+              <div class="locked-overlay-content">
+                <div class="locked-icon-bubble">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                <div class="locked-overlay-title">Tính Năng Yêu Cầu Token</div>
+                <div class="locked-overlay-desc">Chưa phát hiện Discord Token. Vui lòng liên kết tài khoản để đồng bộ câu hát realtime lên Custom Status.</div>
+                <button type="button" class="locked-overlay-btn" onclick="toggleAccountModal(true)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                  <span>Liên Kết Token Ngay</span>
+                </button>
+              </div>
             </div>
-            {% endif %}
 
             <!-- TÌM KIẾM NHẠC NCT / LRCLIB -->
             <div class="settings-section">
               <div class="settings-section-header">
-                <div class="ssh-title">🎵 Tìm Bài Hát Có Lời NhacCuaTui / LRCLIB</div>
+                <div class="ssh-title">Tìm Bài Hát Có Lời NhacCuaTui / LRCLIB</div>
                 <span class="ssh-badge">Đồng Bộ Có Lời 100%</span>
               </div>
               <div class="sf-row">
@@ -443,7 +454,7 @@
                 <div class="sf-input-with-btn">
                   <input type="text" id="input-nct-search" class="sf-input"
                     placeholder="Ví dụ: Lạc Trôi, Nàng Thơ, Bước Qua Nhau, Sơn Tùng..." onkeydown="if(event.key==='Enter') searchNctLyrics()">
-                  <button type="button" class="sf-addon-btn primary" onclick="searchNctLyrics()">Tìm Kiếm 🔍</button>
+                  <button type="button" class="sf-addon-btn primary" onclick="searchNctLyrics()">Tìm Kiếm</button>
                 </div>
                 <div id="nct-search-results" class="nct-search-dropdown d-none"></div>
               </div>
@@ -452,12 +463,12 @@
                 <label class="sf-label" for="select-lyric-track">Hoặc chọn bài mẫu tuyển chọn có sẵn</label>
                 <select id="select-lyric-track" class="sf-select" title="Chọn bài hát mẫu"
                   aria-label="Bài hát mẫu có sẵn" onchange="handleSelectLyricTrack()">
-                  <option value="lactroi">🌸 Lạc Trôi — Sơn Tùng M-TP (Full Synced Lyrics)</option>
-                  <option value="nangtho">🍂 Nàng Thơ — Hoàng Dũng (Full Synced Lyrics)</option>
-                  <option value="buocquanhau">🌧️ Bước Qua Nhau — Vũ (Full Synced Lyrics)</option>
-                  <option value="cyber">⚡ Neon Cyber — Synthwave (Full Synced Lyrics)</option>
-                  <option value="sunset">🌌 Sunset Lover — Lo-Fi Chill (Full Synced Lyrics)</option>
-                  <option value="custom">📝 Tự Dán Lời Bài Hát (Custom LRC / Text)</option>
+                  <option value="lactroi">Lạc Trôi — Sơn Tùng M-TP (Full Synced Lyrics)</option>
+                  <option value="nangtho">Nàng Thơ — Hoàng Dũng (Full Synced Lyrics)</option>
+                  <option value="buocquanhau">Bước Qua Nhau — Vũ (Full Synced Lyrics)</option>
+                  <option value="cyber">Neon Cyber — Synthwave (Full Synced Lyrics)</option>
+                  <option value="sunset">Sunset Lover — Lo-Fi Chill (Full Synced Lyrics)</option>
+                  <option value="custom">Tự Dán Lời Bài Hát (Custom LRC / Text)</option>
                 </select>
               </div>
             </div>
@@ -557,14 +568,18 @@
                 <span class="lyric-sync-ind lyric-indicator-hide" id="lyric-sync-indicator">ĐANG ĐỒNG BỘ</span>
               </div>
 
-              <!-- Thẻ trạng thái suy nghĩ Discord của Minh -->
+              <!-- Thẻ trạng thái suy nghĩ Discord -->
               <div class="lyric-status-card dipre-status-box">
                 <div class="lsc-user-row">
-                  <div class="avatar-decoration-ring mini"></div>
                   {% if has_token and discord_avatar %}
                   <img src="{{ discord_avatar }}" alt="" class="lsc-avatar" id="lsc-avatar">
+                  <div class="lsc-avatar locked-avatar-block d-none" id="lsc-avatar-locked">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
                   {% else %}
-                  <div class="lsc-avatar locked-avatar-block" id="lsc-avatar-locked">🔒</div>
+                  <div class="lsc-avatar locked-avatar-block" id="lsc-avatar-locked">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
                   <img src="" alt="" class="lsc-avatar d-none" id="lsc-avatar">
                   {% endif %}
                   <div class="lsc-user-meta">
@@ -603,7 +618,7 @@
         </div>
       </section>
 
-      <!-- TAB 4: AUTO QUEST (MINH EXCLUSIVE) -->
+      <!-- TAB 4: AUTO QUEST -->
       <section class="tab-panel" id="tab-quest">
         {% if not has_token %}
         <div class="locked-overlay-inline">
@@ -617,7 +632,7 @@
           <div class="settings-section-header flex-wrap gap-3">
             <div>
               <div class="ssh-title dipre-text-gradient" style="font-size: 1.25rem;">
-                🌸 DIPRE Auto Quest Completer — Minh (@minh3003a)
+                Discord Quest Auto-Completer
               </div>
               <div class="ssh-sub">
                 Tự động cày dứt điểm quest đã nhận &amp; nhận tuần tự an toàn, chống spam Rate Limit 429 Discord 100%.
@@ -625,9 +640,9 @@
             </div>
             <div class="ssh-action-group gap-2">
               <button type="button" class="rpc-btn rpc-btn-start dipre-btn-primary" id="btn-quest-auto-start"
-                onclick="handleStartAutoQuest()">▶ CHẠY AUTO QUEST (MINH)</button>
+                onclick="handleStartAutoQuest()">CHẠY AUTO QUEST</button>
               <button type="button" class="rpc-btn rpc-btn-stop" id="btn-quest-stop" onclick="handleStopQuest()"
-                disabled>⛔ Dừng Auto</button>
+                disabled>Dừng Auto</button>
               <button type="button" class="ssh-action" onclick="loadAvailableQuests()">Quét Lại Quest</button>
               <button type="button" class="ssh-action" onclick="clearQuestLog()">Xóa Log</button>
             </div>
@@ -719,23 +734,39 @@
           <div class="modal-title-text">Quản Lý Tài Khoản Discord</div>
           <div class="modal-subtitle-text">Discord Token dùng chung cho cả ba tính năng: RPC, Lyric và Auto Quest</div>
         </div>
-        <button type="button" class="modal-close-btn" onclick="toggleAccountModal(false)">✕ Đóng</button>
+        <button type="button" class="modal-close-btn" onclick="toggleAccountModal(false)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span>Đóng</span>
+        </button>
       </div>
       <div class="modal-body-scroll">
         <div class="acc-discord-card">
           {% if has_token and discord_avatar %}
           <img src="{{ discord_avatar }}" class="acc-discord-avatar" id="account-view-avatar" alt="">
+          <div class="acc-discord-avatar locked-avatar-block d-none" id="account-view-avatar-locked">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
           {% else %}
-          <div class="acc-discord-avatar locked-avatar-block" id="account-view-avatar-locked">🔒</div>
+          <div class="acc-discord-avatar locked-avatar-block" id="account-view-avatar-locked">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
           <img src="" class="acc-discord-avatar d-none" id="account-view-avatar" alt="">
           {% endif %}
           <div class="acc-discord-info">
             <div class="acc-discord-name" id="account-view-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
-            <div class="acc-discord-status" id="account-view-status">{% if has_token %}Token đã liên kết thành công{% else %}Chưa liên kết Discord Token (Khóa 🔒){% endif %}</div>
+            <div class="acc-discord-status-wrap">
+              <span class="acc-status-pill {% if has_token %}linked{% else %}unlinked{% endif %}" id="account-view-status">
+                {% if has_token %}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Đã liên kết Discord</span>
+                {% else %}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                <span>Chưa liên kết Discord Token</span>
+                {% endif %}
+              </span>
+            </div>
           </div>
-          {% if has_token %}
-          <button type="button" class="rpc-btn rpc-btn-stop btn-account-unbind-sm" onclick="handleUnbindToken()">Hủy Liên Kết</button>
-          {% endif %}
+          <button type="button" class="rpc-btn rpc-btn-stop btn-account-unbind-sm {% if not has_token %}d-none{% endif %}" id="btn-account-unbind" onclick="handleUnbindToken()">Hủy Liên Kết</button>
         </div>
 
         <div class="sf-row">

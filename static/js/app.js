@@ -232,7 +232,7 @@ function updateAccountUI(data) {
     if (sacImg) sacImg.style.display = 'none';
     if (sacPh) {
       sacPh.style.display = 'flex';
-      sacPh.textContent = '🔒';
+      sacPh.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
     }
   }
 
@@ -242,13 +242,21 @@ function updateAccountUI(data) {
   const accAvatar = document.getElementById('account-view-avatar');
   const accAvatarLocked = document.getElementById('account-view-avatar-locked');
   if (accName) accName.textContent = username;
-  if (accStatus) accStatus.textContent = isLinked ? 'Token đã liên kết thành công' : 'Chưa liên kết Discord Token (Khóa 🔒)';
+  if (accStatus) {
+    accStatus.className = `acc-status-pill ${isLinked ? 'linked' : 'unlinked'}`;
+    accStatus.innerHTML = isLinked 
+      ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Đã liên kết Discord</span>`
+      : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg><span>Chưa liên kết Discord Token</span>`;
+  }
   if (isLinked && avatar) {
     if (accAvatar) { accAvatar.src = avatar; accAvatar.classList.remove('d-none'); }
     if (accAvatarLocked) accAvatarLocked.classList.add('d-none');
   } else {
     if (accAvatar) accAvatar.classList.add('d-none');
-    if (accAvatarLocked) accAvatarLocked.classList.remove('d-none');
+    if (accAvatarLocked) {
+      accAvatarLocked.classList.remove('d-none');
+      accAvatarLocked.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+    }
   }
 
   // 3. Tab Lyric Sync
@@ -261,7 +269,10 @@ function updateAccountUI(data) {
     if (lscAvLocked) lscAvLocked.classList.add('d-none');
   } else {
     if (lscAv) lscAv.classList.add('d-none');
-    if (lscAvLocked) lscAvLocked.classList.remove('d-none');
+    if (lscAvLocked) {
+      lscAvLocked.classList.remove('d-none');
+      lscAvLocked.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+    }
   }
 
   // 4. Tab RPC Live Preview Card
@@ -276,13 +287,27 @@ function updateAccountUI(data) {
     if (pvAvLocked) pvAvLocked.classList.add('d-none');
   } else {
     if (pvAv) pvAv.classList.add('d-none');
-    if (pvAvLocked) pvAvLocked.classList.remove('d-none');
+    if (pvAvLocked) {
+      pvAvLocked.classList.remove('d-none');
+      pvAvLocked.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+    }
   }
 
-  // 5. Xóa thanh cảnh báo chưa liên kết token nếu đã liên kết
+  // 5. Toggle Locked Section Overlays (RPC & Lyric)
+  const rpcOverlay = document.getElementById('rpc-locked-overlay');
+  const lyricOverlay = document.getElementById('lyric-locked-overlay');
+  const unbindBtn = document.getElementById('btn-account-unbind');
+
   if (isLinked) {
+    if (rpcOverlay) rpcOverlay.classList.add('d-none');
+    if (lyricOverlay) lyricOverlay.classList.add('d-none');
+    if (unbindBtn) unbindBtn.classList.remove('d-none');
     const alertBar = document.getElementById('token-alert-bar');
     if (alertBar) alertBar.remove();
+  } else {
+    if (rpcOverlay) rpcOverlay.classList.remove('d-none');
+    if (lyricOverlay) lyricOverlay.classList.remove('d-none');
+    if (unbindBtn) unbindBtn.classList.add('d-none');
   }
 }
 
