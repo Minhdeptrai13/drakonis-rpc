@@ -6870,4 +6870,404 @@ transition: all var(--trans-fast);
   letter-spacing: 0.02em;
 }
 
+/* ==========================================================================
+   BEYOND LANDING PAGE (AFTERLIFE-INSPIRED AUTHENTIC MINIMALIST)
+   ========================================================================== */
+
+.beyond-landing-body {
+  background-color: #000000 !important;
+  color: #ffffff;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.beyond-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  padding: 0 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .beyond-header {
+    padding: 0 1.5rem;
+  }
+}
+
+.beyond-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.beyond-star-icon {
+  font-size: 1.3rem;
+  color: #ffffff;
+}
+
+.beyond-brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+}
+
+.beyond-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+}
+
+.beyond-lang-pill {
+  display: flex;
+  align-items: center;
+  background: #111214;
+  border-radius: 9999px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lang-opt {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  border-radius: 9999px;
+  cursor: pointer;
+}
+
+.lang-opt.active {
+  background: #ffffff;
+  color: #000000;
+}
+
+.beyond-nav-link {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.beyond-nav-link:hover {
+  color: #ffffff;
+}
+
+.beyond-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.beyond-login-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Beyond Hero Wrapper */
+.beyond-hero-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6rem 3.5rem 3rem;
+  position: relative;
+}
+
+.beyond-hero-container {
+  max-width: 1240px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+@media (max-width: 950px) {
+  .beyond-hero-container {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    text-align: center;
+  }
+  .beyond-text-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.beyond-main-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 3.6rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: #ffffff;
+  margin-bottom: 1.25rem;
+}
+
+.beyond-sub-title {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin-bottom: 2.25rem;
+  max-width: 460px;
+}
+
+.beyond-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.beyond-btn-white {
+  padding: 0.8rem 1.85rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #000000;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.beyond-btn-white:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.35);
+}
+
+.beyond-btn-glass {
+  padding: 0.8rem 1.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.beyond-btn-glass:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+/* 3D Cards Stage (Chuẩn ảnh mẫu) */
+.beyond-cards-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beyond-stage-3d {
+  position: relative;
+  width: 420px;
+  height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 500px) {
+  .beyond-stage-3d {
+    width: 320px;
+    height: 440px;
+  }
+}
+
+/* Card phía sau */
+.beyond-card-back {
+  position: absolute;
+  width: 250px;
+  height: 420px;
+  background: #111214;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  top: 20px;
+  left: 20px;
+  transform: rotate(-6deg);
+  opacity: 0.75;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bcb-banner {
+  height: 80px;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+
+.bcb-avatar-row {
+  padding: 0 14px;
+  margin-top: -30px;
+}
+
+.bcb-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #2b2d31;
+  border: 3px solid #111214;
+}
+
+.bcb-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bcb-title-mock {
+  width: 80px;
+  height: 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.bcb-sub-mock {
+  width: 50px;
+  height: 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+}
+
+.bcb-box-mock {
+  width: 100%;
+  height: 60px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bcb-box-mock.sm {
+  height: 45px;
+}
+
+/* Card phía trước (Của Minh đã cắt viền bo tròn sạch sẽ) */
+.beyond-card-front {
+  position: absolute;
+  width: 290px;
+  top: 55px;
+  right: 15px;
+  transform: rotate(5deg);
+  border-radius: 18px;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.95), 0 0 40px rgba(99, 102, 241, 0.2);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  z-index: 5;
+}
+
+.beyond-card-front:hover {
+  transform: rotate(0deg) scale(1.04);
+  box-shadow: 0 35px 80px -10px rgba(0, 0, 0, 0.98), 0 0 55px rgba(168, 85, 247, 0.4);
+}
+
+.beyond-card-front-img {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  display: block;
+}
+
+/* ==========================================================================
+   AUTH MODAL DIALOG (KHI BẤM BẮT ĐẦU HOẶC ĐĂNG NHẬP)
+   ========================================================================== */
+.auth-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.25s ease;
+}
+
+.auth-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #111214;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 2.25rem;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.9), 0 0 40px rgba(99, 102, 241, 0.15);
+  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleUp {
+  0% { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.auth-modal-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.auth-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.auth-modal-header {
+  margin-bottom: 1.25rem;
+}
+
+.auth-modal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.auth-modal-desc {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+
 
