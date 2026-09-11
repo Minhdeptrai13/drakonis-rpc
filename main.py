@@ -1966,9 +1966,12 @@ def logout():
 # ==============================================================================
 # OAUTH2 AUTHENTICATION (DISCORD & GOOGLE)
 # ==============================================================================
-DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '')
-DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '')
-DISCORD_REDIRECT_URI = os.environ.get('DISCORD_REDIRECT_URI', 'http://127.0.0.1:5000/auth/discord/callback')
+DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '1399979797303525396')
+DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', 'qKIR7IPtqGGNL2pq6HdM2U9ueM2ItEsJ')
+
+def get_discord_redirect_uri():
+    """Tự động nhận diện URL callback theo host (localhost / 127.0.0.1 / domain thật)"""
+    return os.environ.get('DISCORD_REDIRECT_URI') or url_for('auth_discord_callback', _external=True)
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
@@ -1976,18 +1979,13 @@ GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:50
 
 @app.route('/auth/discord')
 def auth_discord_redirect():
-    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Discord OAuth2 (Không phải token)"""
-    if DISCORD_CLIENT_ID:
-        discord_auth_url = (
-            f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}"
-            f"&redirect_uri={DISCORD_REDIRECT_URI}&response_type=code&scope=identify%20email"
-        )
-        return redirect(discord_auth_url)
-    else:
-        # Nếu chưa cấu hình Client ID trên môi trường, hỗ trợ Mock Auth OAuth2 chuyên nghiệp
-        session['oauth2_pending_provider'] = 'discord'
-        flash('Đang chuyển hướng xác thực tài khoản Discord OAuth2...', 'info')
-        return redirect(url_for('auth_oauth2_mock', provider='discord'))
+    """Khởi tạo luồng OAuth2 đăng nhập tài khoản bằng Discord OAuth2 chính chủ (Không phải token)"""
+    redirect_uri = get_discord_redirect_uri()
+    discord_auth_url = (
+        f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}"
+        f"&redirect_uri={requests.utils.quote(redirect_uri)}&response_type=code&scope=identify%20email"
+    )
+    return redirect(discord_auth_url)
 
 @app.route('/auth/discord/callback')
 def auth_discord_callback():
@@ -1997,12 +1995,13 @@ def auth_discord_callback():
         flash('Xác thực Discord OAuth2 không thành công.', 'error')
         return redirect(url_for('login'))
     try:
+        redirect_uri = get_discord_redirect_uri()
         data = {
             'client_id': DISCORD_CLIENT_ID,
             'client_secret': DISCORD_CLIENT_SECRET,
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': DISCORD_REDIRECT_URI
+            'redirect_uri': redirect_uri
         }
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
         r = requests.post('https://discord.com/api/oauth2/token', data=data, headers=headers, timeout=10)
