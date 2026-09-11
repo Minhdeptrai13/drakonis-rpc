@@ -2172,16 +2172,40 @@ def api_lyrics_search():
     try:
         url = f"https://lrclib.net/api/search?q={requests.utils.quote(q)}"
         r = requests.get(url, headers={"User-Agent": "DIPRE-Discord/1.0"}, timeout=6)
+        results = []
         if r.status_code == 200:
             tracks = r.json()
-            results = []
-            for t in tracks[:10]:
+            # Giới hạn đúng 10 bài hát
+            selected_tracks = tracks[:10]
+            
+            # Lấy cover art từ iTunes Search API cho nhanh và nét
+            for t in selected_tracks:
+                track_name = t.get('trackName') or ''
+                artist_name = t.get('artistName') or ''
+                cover_url = ''
+                try:
+                    itunes_url = f"https://itunes.apple.com/search?term={requests.utils.quote(track_name + ' ' + artist_name)}&entity=song&limit=1"
+                    ir = requests.get(itunes_url, timeout=3)
+                    if ir.status_code == 200:
+                        ires = ir.json().get('results', [])
+                        if ires:
+                            # Lấy ảnh 300x300 hoặc 600x600 nét căng
+                            raw_art = ires[0].get('artworkUrl100', '')
+                            cover_url = raw_art.replace('100x100bb', '400x400bb')
+                except Exception:
+                    cover_url = ''
+
+                if not cover_url:
+                    # Fallback ảnh nhạc gradient xịn
+                    cover_url = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80'
+
                 results.append({
                     'id': t.get('id'),
-                    'name': t.get('trackName'),
-                    'artist': t.get('artistName'),
-                    'album': t.get('albumName'),
-                    'duration': t.get('duration'),
+                    'name': track_name,
+                    'artist': artist_name,
+                    'album': t.get('albumName') or '',
+                    'duration': t.get('duration') or 0,
+                    'cover': cover_url,
                     'has_synced': bool(t.get('syncedLyrics'))
                 })
             return jsonify({'success': True, 'tracks': results})

@@ -54,10 +54,10 @@
           {% if has_token and discord_avatar %}
           <img src="{{ discord_avatar }}" class="sac-avatar" id="sac-avatar-img" alt="">
           {% else %}
-          <div class="sac-avatar-placeholder" id="sac-avatar-placeholder">{{ (username[0]|upper) if username else 'M' }}</div>
+          <div class="sac-avatar-placeholder locked-sac-placeholder" id="sac-avatar-placeholder">🔒</div>
           {% endif %}
           <div class="sac-meta">
-            <span class="sac-name" id="sac-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}{{ username or 'Minh' }}{% endif %}</span>
+            <span class="sac-name" id="sac-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</span>
             <span class="sac-badge {% if has_token %}linked{% else %}unlinked{% endif %}" id="sac-badge">
               {% if has_token %}Đã Liên Kết{% else %}Chưa Liên Kết{% endif %}
             </span>
@@ -345,7 +345,12 @@
                 <div class="dpm-avatar-row">
                   <div class="dpm-avatar-wrap">
                     <div class="avatar-decoration-ring mini"></div>
-                    <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" alt="" class="dpm-avatar" id="pv-avatar">
+                    {% if has_token and discord_avatar %}
+                    <img src="{{ discord_avatar }}" alt="" class="dpm-avatar" id="pv-avatar">
+                    {% else %}
+                    <div class="dpm-avatar locked-avatar-block" id="pv-avatar-locked">🔒</div>
+                    <img src="" alt="" class="dpm-avatar d-none" id="pv-avatar">
+                    {% endif %}
                     <div class="dpm-status-dot" id="pv-status-dot"></div>
                   </div>
                   <div class="dfc-thought-bubble preview-bubble">
@@ -356,8 +361,8 @@
 
                 <div class="dpm-body">
                   <div class="dpm-names">
-                    <div class="dpm-display-name" id="pv-display-name">Minh</div>
-                    <div class="dpm-handle">@minh3003a</div>
+                    <div class="dpm-display-name" id="pv-display-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
+                    <div class="dpm-handle" id="pv-handle">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@????{% endif %}</div>
                   </div>
                   
                   <div class="dfc-badges-row mb-2">
@@ -407,7 +412,7 @@
                   <button type="button" class="pt-clear" onclick="clearLogs()">Xóa</button>
                 </div>
                 <div class="pt-screen" id="log-screen">
-                  <div class="log-line info"><span class="log-time">[HỆ THỐNG]</span> <span class="log-msg">DIPRE Studio v4.5 sẵn sàng phục vụ Minh!</span></div>
+                  <div class="log-line info"><span class="log-time">[HỆ THỐNG]</span> <span class="log-msg">DIPRE Studio v4.5 sẵn sàng hoạt động.</span></div>
                 </div>
               </div>
 
@@ -556,10 +561,14 @@
               <div class="lyric-status-card dipre-status-box">
                 <div class="lsc-user-row">
                   <div class="avatar-decoration-ring mini"></div>
-                  <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80" alt=""
-                    class="lsc-avatar" id="lsc-avatar">
+                  {% if has_token and discord_avatar %}
+                  <img src="{{ discord_avatar }}" alt="" class="lsc-avatar" id="lsc-avatar">
+                  {% else %}
+                  <div class="lsc-avatar locked-avatar-block" id="lsc-avatar-locked">🔒</div>
+                  <img src="" alt="" class="lsc-avatar d-none" id="lsc-avatar">
+                  {% endif %}
                   <div class="lsc-user-meta">
-                    <div class="lsc-user-name" id="lsc-username">Minh (@minh3003a)</div>
+                    <div class="lsc-user-name" id="lsc-username">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
                     <div class="lsc-user-tag">Custom Status • Realtime</div>
                   </div>
                 </div>
@@ -714,11 +723,15 @@
       </div>
       <div class="modal-body-scroll">
         <div class="acc-discord-card">
-          <img src="{{ discord_avatar or 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=150&auto=format&fit=crop&q=80' }}" class="acc-discord-avatar"
-            id="account-view-avatar" alt="">
+          {% if has_token and discord_avatar %}
+          <img src="{{ discord_avatar }}" class="acc-discord-avatar" id="account-view-avatar" alt="">
+          {% else %}
+          <div class="acc-discord-avatar locked-avatar-block" id="account-view-avatar-locked">🔒</div>
+          <img src="" class="acc-discord-avatar d-none" id="account-view-avatar" alt="">
+          {% endif %}
           <div class="acc-discord-info">
-            <div class="acc-discord-name" id="account-view-name">{{ discord_username or 'Minh (@minh3003a)' }}</div>
-            <div class="acc-discord-status" id="account-view-status">{% if has_token %}Token đã xác minh — Độc quyền cho Minh{% else %}Chưa liên kết Discord Token{% endif %}</div>
+            <div class="acc-discord-name" id="account-view-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
+            <div class="acc-discord-status" id="account-view-status">{% if has_token %}Token đã liên kết thành công{% else %}Chưa liên kết Discord Token (Khóa 🔒){% endif %}</div>
           </div>
           {% if has_token %}
           <button type="button" class="rpc-btn rpc-btn-stop btn-account-unbind-sm" onclick="handleUnbindToken()">Hủy Liên Kết</button>

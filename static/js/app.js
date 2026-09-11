@@ -208,8 +208,9 @@ async function handleUnbindToken() {
 }
 
 function updateAccountUI(data) {
-  const username = data.discord_username || data.username || 'Minh';
-  const avatar = data.discord_avatar || data.avatar || '';
+  const isLinked = !!(data && (data.discord_token || data.discord_username));
+  const username = isLinked ? (data.discord_username || data.username) : '????';
+  const avatar = isLinked ? (data.discord_avatar || data.avatar || '') : '';
 
   // 1. Sidebar Account Chip
   const sacName = document.getElementById('sac-name');
@@ -217,60 +218,71 @@ function updateAccountUI(data) {
   const sacImg = document.getElementById('sac-avatar-img');
   const sacPh = document.getElementById('sac-avatar-placeholder');
   if (sacName) sacName.textContent = username;
-  if (sacBadge) { sacBadge.textContent = 'Đã Liên Kết'; sacBadge.className = 'sac-badge linked'; }
-  if (avatar) {
+  if (sacBadge) {
+    sacBadge.textContent = isLinked ? 'Đã Liên Kết' : 'Chưa Liên Kết';
+    sacBadge.className = `sac-badge ${isLinked ? 'linked' : 'unlinked'}`;
+  }
+  if (isLinked && avatar) {
     if (sacImg) {
       sacImg.src = avatar;
       sacImg.style.display = 'block';
     }
     if (sacPh) sacPh.style.display = 'none';
+  } else {
+    if (sacImg) sacImg.style.display = 'none';
+    if (sacPh) {
+      sacPh.style.display = 'flex';
+      sacPh.textContent = '🔒';
+    }
   }
 
-  // 2. 3D Floating Perspective Hero Cards (Facebook Style Realtime Sync)
-  const card1Av = document.getElementById('hero-card1-avatar');
-  const card1Name = document.getElementById('hero-card1-name');
-  const card1Handle = document.getElementById('hero-card1-handle');
-  if (card1Av && avatar) {
-    card1Av.style.opacity = '0';
-    setTimeout(() => {
-      card1Av.src = avatar;
-      card1Av.style.opacity = '1';
-    }, 150);
-  }
-  if (card1Name) card1Name.textContent = username;
-  if (card1Handle) card1Handle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
-
-  // 3. Modal Quản Lý Tài Khoản
+  // 2. Modal Quản Lý Tài Khoản
   const accName = document.getElementById('account-view-name');
   const accStatus = document.getElementById('account-view-status');
   const accAvatar = document.getElementById('account-view-avatar');
-  if (accName) accName.textContent = `${username} (Discord)`;
-  if (accStatus) accStatus.textContent = 'Token đã xác minh — Độc quyền cho Minh';
-  if (accAvatar && avatar) accAvatar.src = avatar;
+  const accAvatarLocked = document.getElementById('account-view-avatar-locked');
+  if (accName) accName.textContent = username;
+  if (accStatus) accStatus.textContent = isLinked ? 'Token đã liên kết thành công' : 'Chưa liên kết Discord Token (Khóa 🔒)';
+  if (isLinked && avatar) {
+    if (accAvatar) { accAvatar.src = avatar; accAvatar.classList.remove('d-none'); }
+    if (accAvatarLocked) accAvatarLocked.classList.add('d-none');
+  } else {
+    if (accAvatar) accAvatar.classList.add('d-none');
+    if (accAvatarLocked) accAvatarLocked.classList.remove('d-none');
+  }
 
-  // 4. Tab Lyric Sync
+  // 3. Tab Lyric Sync
   const lscUser = document.getElementById('lsc-username');
   const lscAv = document.getElementById('lsc-avatar');
+  const lscAvLocked = document.getElementById('lsc-avatar-locked');
   if (lscUser) lscUser.textContent = username;
-  if (lscAv && avatar) lscAv.src = avatar;
+  if (isLinked && avatar) {
+    if (lscAv) { lscAv.src = avatar; lscAv.classList.remove('d-none'); }
+    if (lscAvLocked) lscAvLocked.classList.add('d-none');
+  } else {
+    if (lscAv) lscAv.classList.add('d-none');
+    if (lscAvLocked) lscAvLocked.classList.remove('d-none');
+  }
 
-  // 5. Tab RPC Live Preview Card
+  // 4. Tab RPC Live Preview Card
   const pvDisp = document.getElementById('pv-display-name');
+  const pvHandle = document.getElementById('pv-handle');
   const pvAv = document.getElementById('pv-avatar');
-  const pvUser = document.getElementById('pv-username');
+  const pvAvLocked = document.getElementById('pv-avatar-locked');
   if (pvDisp) pvDisp.textContent = username;
-  if (pvUser) pvUser.textContent = username.toLowerCase().replace(/\s+/g, '');
-  if (pvAv && avatar) pvAv.src = avatar;
+  if (pvHandle) pvHandle.textContent = isLinked ? `@${username.toLowerCase().replace(/\s+/g, '')}` : '@????';
+  if (isLinked && avatar) {
+    if (pvAv) { pvAv.src = avatar; pvAv.classList.remove('d-none'); }
+    if (pvAvLocked) pvAvLocked.classList.add('d-none');
+  } else {
+    if (pvAv) pvAv.classList.add('d-none');
+    if (pvAvLocked) pvAvLocked.classList.remove('d-none');
+  }
 
-  // 6. Xóa thanh cảnh báo chưa liên kết token
-  const alertBar = document.getElementById('token-alert-bar');
-  if (alertBar) alertBar.remove();
-
-  // 7. Hiệu ứng Flash viền sáng báo hiệu đồng bộ thành công
-  const stage = document.getElementById('hero-cards-stage');
-  if (stage) {
-    stage.style.filter = 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.6))';
-    setTimeout(() => { stage.style.filter = ''; }, 1200);
+  // 5. Xóa thanh cảnh báo chưa liên kết token nếu đã liên kết
+  if (isLinked) {
+    const alertBar = document.getElementById('token-alert-bar');
+    if (alertBar) alertBar.remove();
   }
 }
 
@@ -885,75 +897,122 @@ function handleAudioSeek(val) {
 }
 
 async function searchNctLyrics() {
-  const query = document.getElementById('input-nct-query')?.value.trim();
+  const query = (document.getElementById('input-nct-search')?.value || document.getElementById('input-nct-query')?.value || '').trim();
   if (!query) {
     showToast('Vui lòng nhập tên bài hát hoặc ca sĩ', 'warning');
     return;
   }
-  const btn = document.getElementById('btn-search-nct');
-  if (btn) { btn.disabled = true; btn.textContent = 'Đang tìm...'; }
+  const btn = document.querySelector('.sf-addon-btn.primary') || document.getElementById('btn-search-nct');
+  const originalText = btn ? btn.innerHTML : 'Tìm Kiếm 🔍';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span>Đang tìm...</span>'; }
+
+  const container = document.getElementById('nct-search-results');
+  if (container) {
+    container.classList.remove('d-none');
+    container.innerHTML = '<div class="nct-search-loading">Đang tìm 10 bản thu có lời đồng bộ & bìa album...</div>';
+  }
 
   try {
     const res = await fetch(`/api/lyrics/search?q=${encodeURIComponent(query)}`);
     const data = await res.json();
-    if (data.success && data.songs.length > 0) {
-      renderSongResults(data.songs);
-      showToast(`Tìm thấy ${data.songs.length} bài hát`, 'success');
+    const tracks = data.tracks || data.songs || [];
+    if (data.success && tracks.length > 0) {
+      renderSongResults(tracks);
+      showToast(`Đã tìm thấy ${tracks.length} bài hát có sẵn bìa & lyric!`, 'success');
     } else {
-      showToast('Không tìm thấy bài hát có lời đồng bộ', 'warning');
+      if (container) container.innerHTML = '<div class="nct-search-empty">Không tìm thấy bài hát nào có lời đồng bộ. Thử từ khóa khác nhé!</div>';
+      showToast('Không tìm thấy bài hát phù hợp', 'warning');
     }
   } catch (err) {
+    if (container) container.innerHTML = '<div class="nct-search-error">Lỗi khi tìm kiếm bài hát.</div>';
     showToast('Lỗi tìm kiếm: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Tìm Bài Hát'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
   }
 }
 
 function renderSongResults(songs) {
   const container = document.getElementById('nct-search-results');
   if (!container) return;
+  container.classList.remove('d-none');
   container.innerHTML = '';
-  container.style.display = 'grid';
+  container.className = 'nct-search-grid-10';
 
-  songs.forEach(song => {
+  songs.forEach((song, idx) => {
     const card = document.createElement('div');
-    card.className = 'song-result-item';
+    card.className = 'nct-song-card-item';
+    const coverUrl = song.cover || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80';
+    const durationText = song.duration ? formatTime(song.duration) : 'Full Synced';
+
     card.innerHTML = `
-      <div class="sri-info">
-        <div class="sri-title">${escapeHtml(song.title)}</div>
-        <div class="sri-artist">${escapeHtml(song.artist)} • ${song.duration ? formatTime(song.duration) : 'Synced'}</div>
+      <div class="nsci-cover-wrap">
+        <img src="${coverUrl}" alt="${escapeHtml(song.name || song.title)}" class="nsci-cover-img" loading="lazy">
+        <div class="nsci-overlay">
+          <button type="button" class="nsci-play-btn" title="Chọn bài hát này">▶</button>
+        </div>
+        ${song.has_synced ? '<span class="nsci-badge-sync">SYNCED</span>' : ''}
       </div>
-      <button class="btn btn-sm btn-primary sri-play-btn" onclick="selectSongForSync('${encodeURIComponent(JSON.stringify(song))}')">
-        Chọn
-      </button>
+      <div class="nsci-info">
+        <div class="nsci-title" title="${escapeHtml(song.name || song.title)}">${escapeHtml(song.name || song.title)}</div>
+        <div class="nsci-artist" title="${escapeHtml(song.artist || '')}">${escapeHtml(song.artist || 'Nghệ sĩ')}</div>
+        <div class="nsci-time">${durationText}</div>
+      </div>
     `;
+
+    card.onclick = () => selectSongForSync(song);
     container.appendChild(card);
   });
 }
 
-function selectSongForSync(songJsonStr) {
+async function selectSongForSync(song) {
   try {
-    const song = JSON.parse(decodeURIComponent(songJsonStr));
-    const titleEl = document.getElementById('nct-cur-title');
-    const artistEl = document.getElementById('nct-cur-artist');
-    if (titleEl) titleEl.textContent = song.title;
-    if (artistEl) artistEl.textContent = song.artist;
+    const title = song.name || song.title;
+    const artist = song.artist || 'Nghệ sĩ';
+    const cover = song.cover || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80';
 
-    // Set lyrics
-    if (song.lyrics) {
-      currentLyrics = parseLRC(song.lyrics);
-      renderKaraokeLyrics(currentLyrics);
+    // 1. Cập nhật thẻ trình phát HTML5
+    const dapTitle = document.getElementById('dap-title');
+    const dapArtist = document.getElementById('dap-artist');
+    const dapArt = document.getElementById('dap-art');
+    if (dapTitle) dapTitle.textContent = title;
+    if (dapArtist) dapArtist.textContent = `${artist} • NhacCuaTui Synced`;
+    if (dapArt) dapArt.src = cover;
+
+    // 2. Tải lời bài hát đồng bộ từ API
+    showToast(`Đang nạp lời bài hát: ${title}...`, 'info');
+    let lyricsLoaded = false;
+
+    if (song.id) {
+      const res = await fetch(`/api/lyrics/song?id=${encodeURIComponent(song.id)}`);
+      const data = await res.json();
+      if (data.success && data.track && data.track.lyrics && data.track.lyrics.length > 0) {
+        currentLyrics = data.track.lyrics;
+        renderKaraokeLyrics(currentLyrics);
+        lyricsLoaded = true;
+      }
     }
 
-    // Set stream audio if available
-    if (song.audio_url) {
-      dipreAudio.src = song.audio_url;
-      dipreAudio.load();
+    if (!lyricsLoaded) {
+      // Fallback tìm kiếm qua NCT service
+      const res = await fetch(`/api/lyrics/song?q=${encodeURIComponent(title)}`);
+      const data = await res.json();
+      if (data.success && data.track && data.track.lyrics) {
+        currentLyrics = data.track.lyrics;
+        renderKaraokeLyrics(currentLyrics);
+        lyricsLoaded = true;
+      }
     }
 
-    showToast(`Đã chọn: ${song.title}`, 'info');
+    // Đổi hiển thị sang đã chọn thành công
+    document.querySelectorAll('.nct-song-card-item').forEach(el => el.classList.remove('active'));
+    showToast(`Đã chọn: ${title}! Sẵn sàng đồng bộ Status.`, 'success');
+
+    // Tự động cuộn xuống trình phát nhạc
+    const playerSec = document.querySelector('.dipre-player-section');
+    if (playerSec) playerSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
   } catch (e) {
-    showToast('Lỗi nạp bài hát', 'error');
+    showToast('Lỗi khi nạp lời bài hát: ' + e.message, 'error');
   }
 }
 

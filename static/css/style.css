@@ -7271,5 +7271,218 @@ transition: all var(--trans-fast);
   color: #94a3b8;
 }
 
+/* ==========================================================================
+   LOCKED AVATAR & TOKEN SECURITY STATE (KHI CHƯA LIÊN KẾT TOKEN)
+   ========================================================================== */
+.locked-avatar-block,
+.locked-sac-placeholder {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.25) !important;
+  color: #f59e0b !important;
+  font-size: 1.25rem !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.15) !important;
+  user-select: none;
+}
+
+.sac-avatar-placeholder.locked-sac-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1rem !important;
+}
+
+.dpm-avatar.locked-avatar-block {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 4px solid #111214 !important;
+  font-size: 1.6rem !important;
+}
+
+.lsc-avatar.locked-avatar-block {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 1.15rem !important;
+}
+
+.acc-discord-avatar.locked-avatar-block {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  font-size: 1.4rem !important;
+}
+
+/* ==========================================================================
+   NCT / LRCLIB 10 ALBUM COVER GRID SELECTOR (GUI BO GÓC SIÊU ĐẸP)
+   ========================================================================== */
+.nct-search-grid-10 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-top: 1.25rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .nct-search-grid-10 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .nct-search-grid-10 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.nct-song-card-item {
+  position: relative;
+  background: #111318;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.nct-song-card-item:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.8), 0 0 25px rgba(99, 102, 241, 0.25);
+  background: #161822;
+}
+
+.nct-song-card-item.active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+}
+
+.nsci-cover-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #090a0f;
+  margin-bottom: 0.65rem;
+}
+
+.nsci-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.nct-song-card-item:hover .nsci-cover-img {
+  transform: scale(1.08);
+}
+
+.nsci-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nct-song-card-item:hover .nsci-overlay {
+  opacity: 1;
+}
+
+.nsci-play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.nsci-play-btn:hover {
+  transform: scale(1.1);
+}
+
+.nsci-badge-sync {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(16, 185, 129, 0.9);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.nsci-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nsci-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nsci-artist {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nsci-time {
+  font-size: 0.68rem;
+  color: #38bdf8;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 0.2rem;
+}
+
+.nct-search-loading,
+.nct-search-empty,
+.nct-search-error {
+  grid-column: 1 / -1;
+  padding: 2.5rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+
 
 
