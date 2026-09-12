@@ -165,61 +165,74 @@
                   </div>
                 </div>
 
-                <!-- Thẻ Discord Popout phía trước: RENDER ĐỘNG với Hiệu Ứng Avatar Decoration & Badges -->
+                <!-- Thẻ Discord Popout phía trước: RENDER ĐỘNG với Avatar Decoration APNG & Badges -->
                 <div class="beyond-card-front live-profile-popout">
-                  <div class="lpp-banner" id="hero-profile-banner"></div>
+                  <!-- Lớp Hiệu Ứng Hồ Sơ Discord (Profile Effect Layer: Hoa anh đào & Tinh vân quang phổ) -->
+                  <div class="discord-profile-effect-layer">
+                    <div class="pfx-particle p1"></div>
+                    <div class="pfx-particle p2"></div>
+                    <div class="pfx-particle p3"></div>
+                    <div class="pfx-particle p4"></div>
+                    <div class="pfx-sparkle-petal" style="top:8%; left:12%;">🌸</div>
+                    <div class="pfx-sparkle-petal" style="top:32%; right:14%; animation-delay: 2.2s;">✨</div>
+                    <div class="pfx-sparkle-petal" style="bottom:18%; left:18%; animation-delay: 4.5s;">🌸</div>
+                  </div>
+
+                  <!-- Banner gradient demo khi chưa link, hoặc banner thật khi đã link -->
+                  <div class="lpp-banner nitro-animated-banner" id="hero-profile-banner" {% if not (has_token and discord_avatar) %}style="background: linear-gradient(135deg, #5865f2 0%, #7c3aed 50%, #a855f7 100%);"{% endif %}></div>
                   
                   <div class="lpp-avatar-row">
                     <div class="lpp-avatar-wrapper">
-                      <img src="{{ discord_avatar if (has_token and discord_avatar) else '' }}" alt="Avatar" class="lpp-avatar-img {% if not (has_token and discord_avatar) %}d-none{% endif %}" id="hero-avatar-img">
-                      <div class="lpp-avatar-placeholder locked-avatar-block {% if has_token and discord_avatar %}d-none{% endif %}" id="hero-avatar-placeholder">
-                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                      </div>
-                      <img src="{{ avatar_decoration if (has_token and avatar_decoration) else '' }}" alt="" class="lpp-avatar-decoration-img {% if not (has_token and avatar_decoration) %}d-none{% endif %}" id="hero-avatar-decoration" aria-hidden="true">
-                      <div class="lpp-status-dot {% if has_token %}online{% else %}offline{% endif %}" id="hero-status-dot"></div>
+                      <!-- Avatar: show real acc demo (Minh) hoặc avatar đã link -->
+                      <img src="{% if has_token and discord_avatar %}{{ discord_avatar }}{% else %}https://cdn.discordapp.com/avatars/1412818296033775707/ce5e554896f5457554e0a49cbcf11d2f.png?size=256{% endif %}" 
+                           alt="Avatar" class="lpp-avatar-img" id="hero-avatar-img">
+                      <!-- Avatar Decoration APNG: luôn show nếu có -->
+                      <img src="{% if has_token and avatar_decoration %}{{ avatar_decoration }}{% else %}https://cdn.discordapp.com/avatar-decoration-presets/a_fb1fab5c0a30f0a89a7cd5fad873c6f0.png?size=256&passthrough=true{% endif %}" 
+                           alt="" class="lpp-avatar-decoration-img" id="hero-avatar-decoration" aria-hidden="true">
+                      <div class="lpp-status-dot online" id="hero-status-dot"></div>
                     </div>
 
                     <!-- Hàng Badges Discord -->
                     <div class="lpp-badges-badge-row" id="hero-badges-row">
                       {% if has_token %}
-                      <img src="https://cdn.discordapp.com/badge-icons/2895086c18d5531d499862e41d1155a6.png?size=64" alt="" title="Nitro" class="d-badge-icon">
-                      <img src="https://cdn.discordapp.com/badge-icons/51040c70d4f20a921ad6674ff86fc95c.png?size=64" alt="" title="Server Booster" class="d-badge-icon">
-                      <img src="https://cdn.discordapp.com/badge-icons/7d9ae358c8c5e118768335dbe68b4fb8.png?size=64" alt="" title="Completed a Quest" class="d-badge-icon">
+                      <!-- Badges thật được cập nhật bởi JS fetchAccountInfo() -->
+                      <span class="d-badge-loading" title="Đang tải badges...">...</span>
                       {% else %}
-                      <span class="d-badge unlinked-badge" title="Chưa liên kết tài khoản Discord">Chưa Liên Kết</span>
+                      <!-- Demo badges: HypeSquad Balance của acc Minh -->
+                      <img src="https://cdn.discordapp.com/badge-icons/8ef6f594b94c2c1e76b5b52c32b49b0c.png?size=64" alt="HypeSquad Balance" title="HypeSquad Balance" class="d-badge-icon">
                       {% endif %}
                     </div>
                   </div>
 
                   <div class="lpp-content-box">
                     <div class="lpp-user-header">
-                      <div class="lpp-global-name" id="hero-profile-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}????{% endif %}</div>
+                      <div class="lpp-global-name" id="hero-profile-name">{% if has_token and discord_username %}{{ discord_username }}{% else %}Minh{% endif %}</div>
                       <div class="lpp-sub-row">
-                        <span class="lpp-username" id="hero-profile-tag">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@????{% endif %}</span>
-                        <span class="lpp-pronouns">{% if has_token %}Discord Verified{% else %}Chưa Liên Kết Token{% endif %}</span>
+                        <span class="lpp-username" id="hero-profile-tag">{% if has_token and discord_username %}@{{ discord_username.lower().replace(' ', '') }}{% else %}@minh3003a{% endif %}</span>
+                        <span class="lpp-pronouns">{% if has_token %}Discord Verified ✓{% else %}Preview Demo 🎯{% endif %}</span>
                       </div>
                     </div>
 
-                    <!-- Custom Status Bong Bóng Suy Nghĩ -->
+                    <!-- Custom Status -->
                     <div class="lpp-thought-bubble">
                       <span class="bubble-icon">🎵</span>
-                      <span class="bubble-text" id="hero-custom-status-text">Sơn Tùng M-TP • Lạc Trôi (Synced)</span>
+                      <span class="bubble-text" id="hero-custom-status-text">{% if has_token %}Đang chạy DIPRE Studio{% else %}minh3003a • HypeSquad Balance{% endif %}</span>
                     </div>
 
                     <div class="lpp-divider"></div>
 
                     <!-- Rich Presence Embed Box -->
-                    <div class="lpp-rpc-box">
-                      <div class="lpp-rpc-label">PLAYING A GAME</div>
+                    <div class="lpp-rpc-box" id="hero-rpc-box">
+                      <div class="lpp-rpc-label" id="hero-rpc-label">PLAYING A GAME</div>
                       <div class="lpp-rpc-inner">
                         <div class="lpp-rpc-icon-wrap">
                           <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vscode/vscode-original.svg" alt="App Icon" class="lpp-rpc-app-icon" id="hero-rpc-large-img">
-                          <span class="lpp-rpc-small-badge">⚡</span>
+                          <span class="lpp-rpc-small-badge" id="hero-rpc-small-badge">⚡</span>
                         </div>
                         <div class="lpp-rpc-meta">
-                          <div class="lpp-rpc-title" id="hero-rpc-title">Visual Studio Code</div>
-                          <div class="lpp-rpc-details" id="hero-rpc-details">Developing DIPRE Studio MAC</div>
-                          <div class="lpp-rpc-state" id="hero-rpc-state">01:28:46 elapsed</div>
+                          <div class="lpp-rpc-title" id="hero-rpc-title">{% if has_token %}DIPRE Studio Active{% else %}Visual Studio Code{% endif %}</div>
+                          <div class="lpp-rpc-details" id="hero-rpc-details">{% if has_token %}Rich Presence is running{% else %}Developing DIPRE Studio{% endif %}</div>
+                          <div class="lpp-rpc-state" id="hero-rpc-state" data-start="{{ now_ts if now_ts else 0 }}">🕐 00:00:00 elapsed</div>
                         </div>
                       </div>
                     </div>
@@ -227,13 +240,13 @@
                     <!-- About Me & Footer -->
                     <div class="lpp-about-box">
                       <div class="lpp-about-text">
-                        <b>https://discord.gg/dipre</b><br>
-                        Beyond the veil, control returns.<br>
-                        <span class="lpp-member-since">Member Since: Jan 1, 2020</span>
+                        <b>DIPRE Studio — Discord Premium</b><br>
+                        Tùy chỉnh RPC, Lyric Sync & Auto Quest.<br>
+                        <span class="lpp-member-since" id="hero-member-since">Member Since: {% if has_token %}{% else %}Sep 3, 2025{% endif %}</span>
                       </div>
                       <div class="lpp-founder-pill">
-                        <span>Founder</span>
-                        <span class="fp-dot">👑</span>
+                        <span>{% if has_token %}Token Active{% else %}Demo Mode{% endif %}</span>
+                        <span class="fp-dot">{% if has_token %}✅{% else %}🎯{% endif %}</span>
                       </div>
                     </div>
 

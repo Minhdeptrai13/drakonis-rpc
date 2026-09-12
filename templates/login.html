@@ -10,14 +10,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Cloudflare Turnstile Official Script (FREE 100%, Thông Minh, Không Cần Giải Mã Lằng Nhằng) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 
 <body class="beyond-landing-body">
 
-  <!-- TOP HEADER MINIMALIST NHƯ ẢNH MẪU -->
+  <!-- TOP HEADER CHUẨN XỊN VỚI LOGO DIPRE -->
   <header class="beyond-header">
-    <div class="beyond-brand">
-      <span class="beyond-star-icon">✦</span>
+    <div class="beyond-brand" onclick="window.location.href='/'">
+      <img src="{{ url_for('static', filename='img/dipre_icon_clyde_silk.png') }}" alt="DIPRE Logo" class="beyond-brand-logo-img">
       <span class="beyond-brand-name">DIPRE</span>
     </div>
 
@@ -33,17 +35,17 @@
     </div>
   </header>
 
-  <!-- MAIN LANDING HERO (CHUẨN CHỈ Y HỆT ẢNH MẪU SẾP GỬI) -->
+  <!-- MAIN LANDING HERO (CÂU CHÂM NGÔN MỚI & THẺ DISCORD PROFILE THẬT 100%) -->
   <main class="beyond-hero-wrapper">
     <div class="beyond-hero-container">
       
       <!-- CỘT CHỮ BÊN TRÁI -->
       <div class="beyond-text-col">
         <h1 class="beyond-main-title">
-          beyond the veil,<br>
-          control returns.
+          beyond the limits,<br>
+          command the shadows.
         </h1>
-        <p class="beyond-sub-title">Nâng cấp trải nghiệm sử dụng Discord lên một tầm cao mới.</p>
+        <p class="beyond-sub-title">Khẳng định quyền kiểm soát tối thượng. Tự do tùy biến Discord Rich Presence và thống trị mọi tác vụ không giới hạn.</p>
         
         <div class="beyond-cta-group">
           <button type="button" class="beyond-btn-white" onclick="openAuthModal('register')">Bắt đầu</button>
@@ -51,52 +53,72 @@
         </div>
       </div>
 
-      <!-- CỘT 2 CHIẾC CARD DISCORD 3D BÊN PHẢI (KHÔNG CÓ BẤT KỲ CHÚ THÍCH PHÈN NÀO) -->
+      <!-- CỘT PREVIEW DISCORD CARD THẬT 100% (ACC MINH 1412818296033775707) + HIỆU ỨNG PROFILE EFFECT -->
       <div class="beyond-cards-col">
-        <div class="beyond-stage-3d">
+        <div class="beyond-stage-3d" id="hero-cards-stage">
           
-          <!-- Thẻ dài phía sau -->
-          <div class="beyond-card-back">
-            <div class="bcb-banner"></div>
+          <!-- Thẻ dài phía sau: Discord Card Shadow tạo chiều sâu 3D không gian -->
+          <div class="beyond-card-back nitro-holo-card" id="floating-card-2">
+            <div class="bcb-banner" style="background: linear-gradient(135deg, rgba(88, 101, 242, 0.4), rgba(34, 197, 94, 0.2), rgba(15, 23, 42, 0.9));"></div>
             <div class="bcb-avatar-row">
-              <div class="bcb-avatar"></div>
+              <div class="bcb-avatar" style="background: radial-gradient(circle, #22c55e, #111214); box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);"></div>
             </div>
             <div class="bcb-body">
-              <div class="bcb-name-col">
-                <div class="bcb-title-mock"></div>
-                <div class="bcb-sub-mock"></div>
-              </div>
-              <div class="bcb-box-mock"></div>
-              <div class="bcb-box-mock sm"></div>
+              <div class="bcb-title-mock" style="width: 100px; background: rgba(34, 197, 94, 0.4);"></div>
+              <div class="bcb-sub-mock" style="width: 70px;"></div>
+              <div class="bcb-box-mock" style="background: rgba(88, 101, 242, 0.08); border: 1px solid rgba(88, 101, 242, 0.15);"></div>
+              <div class="bcb-box-mock sm" style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.12);"></div>
             </div>
           </div>
 
-          <!-- Thẻ Discord Popout phía trước của Minh (được cắt sạch sẽ viền bo tròn) -->
-          <div class="beyond-card-front">
-            <img src="{{ url_for('static', filename='img/minh_discord_card_cropped.png') }}" alt="Discord Card" class="beyond-card-front-img">
+          <!-- THẺ DISCORD POPOUT THẬT 100% CỦA MINH (1412818296033775707) + DISCORD PROFILE EFFECT AURA -->
+          <div class="beyond-card-front real-profile-popout" id="floating-card-1" title="Minh (@minh3003a) — Real Discord Profile">
+            
+            <!-- Lớp Hiệu Ứng Hồ Sơ Discord (Profile Effect Layer: Tinh vân & Hoa anh đào phát sáng) -->
+            <div class="discord-profile-effect-layer">
+              <div class="pfx-particle p1"></div>
+              <div class="pfx-particle p2"></div>
+              <div class="pfx-particle p3"></div>
+              <div class="pfx-particle p4"></div>
+              <div class="pfx-sparkle-petal" style="top:5%; left:6%;">🌸</div>
+              <div class="pfx-sparkle-petal" style="top:25%; right:8%; animation-delay: 2.2s;">✨</div>
+              <div class="pfx-sparkle-petal" style="bottom:16%; left:10%; animation-delay: 4.5s;">🌸</div>
+            </div>
+
+            <!-- Ảnh thẻ Discord thật 100% chuẩn pixel của Minh (Avatar cá heo decoration, badges, activity cgi má) -->
+            <img 
+              src="{{ url_for('static', filename='img/minh_discord_card_cropped.png') }}" 
+              alt="Real Discord Profile - Minh" 
+              class="real-discord-card-img"
+            >
           </div>
 
         </div>
       </div>
 
+
     </div>
   </main>
 
-  <!-- MODAL ĐĂNG NHẬP / ĐĂNG KÝ (HIỆN LÊN KHI ẤN BẮT ĐẦU HOẶC ĐĂNG NHẬP) -->
+  <!-- MODAL ĐĂNG NHẬP / ĐĂNG KÝ (REDESIGN HIỆN ĐẠI, CYBERPUNK GLASSMORPHISM) -->
   <div class="auth-modal-backdrop {% if not get_flashed_messages() %}d-none{% endif %}" id="auth-modal-backdrop" onclick="handleAuthBackdropClick(event)">
     <div class="auth-modal-card">
-      <button type="button" class="auth-modal-close-btn" onclick="closeAuthModal()">✕</button>
+      <button type="button" class="auth-modal-close-btn" onclick="closeAuthModal()" aria-label="Đóng">✕</button>
 
       <div class="auth-modal-header">
-        <h2 class="auth-modal-title" id="auth-modal-title">Chào mừng bạn</h2>
-        <p class="auth-modal-desc">Đăng nhập tài khoản để quản lý Discord Rich Presence</p>
+        <div class="auth-brand-badge">
+          <span>✦</span>
+          <span>DIPRE Studio • Secure Access</span>
+        </div>
+        <h2 class="auth-modal-title" id="auth-modal-title">Chào mừng trở lại</h2>
+        <p class="auth-modal-desc">Đăng nhập tài khoản để quản lý Discord Rich Presence &amp; Quest</p>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
       <div class="auth-flash-box mb-3">
         {% for category, message in messages %}
-        <div class="toast-item {{ category }} w-100">
+        <div class="toast-item {{ category }} w-100" style="padding: 10px 14px; border-radius: 10px; margin-bottom: 8px;">
           <span>{{ message }}</span>
         </div>
         {% endfor %}
@@ -106,10 +128,12 @@
 
       <div class="auth-pill-tabs mb-4">
         <button type="button" class="auth-tab-btn active" id="btn-tab-login" onclick="switchAuthMode('login')">
-          Đăng Nhập
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span>Đăng Nhập</span>
         </button>
         <button type="button" class="auth-tab-btn" id="btn-tab-register" onclick="switchAuthMode('register')">
-          Đăng Ký Mới
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          <span>Đăng Ký Mới</span>
         </button>
       </div>
 
@@ -117,112 +141,57 @@
       <form id="form-login" method="POST" action="{{ url_for('login') }}">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-username">Tên tài khoản</label>
-          <input type="text" id="login-username" name="username" class="input-rounded"
-            placeholder="Nhập tên tài khoản..." required autofocus autocomplete="username">
+          <div class="modern-input-wrap">
+            <span class="modern-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input type="text" id="login-username" name="username" class="modern-input-field"
+              placeholder="Nhập tên tài khoản..." required autofocus autocomplete="username">
+          </div>
         </div>
 
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-password">Mật khẩu</label>
-          <input type="password" id="login-password" name="password" class="input-rounded"
-            placeholder="Nhập mật khẩu..." required autocomplete="current-password">
-        </div>
-
-        <!-- BỘ CAPTCHA TỰ ĐỘNG GỌN GÀNG (MẶC ĐỊNH 1 CHẠM, BOT MỚI BỊ NHẢY CẤP) -->
-        <div class="form-row mb-4">
-          <div class="multitier-captcha-wrap" id="login-captcha-wrap">
-            <div class="captcha-bot-notice d-none" id="login-bot-notice">
-              <span class="cbn-icon">⚠️</span>
-              <span class="cbn-text" id="login-bot-notice-text">Phát hiện nghi vấn, hãy ghép mảnh hình:</span>
+          <div class="modern-input-wrap">
+            <span class="modern-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="login-password" name="password" class="modern-input-field"
+              placeholder="Nhập mật khẩu..." required autocomplete="current-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)" title="Ẩn/Hiện mật khẩu">
+              <svg width="16" height="16" v        <!-- CLOUDFLARE TURNSTILE CAPTCHA (FREE 100%, TỰ ĐỘNG BẢO MẬT KHÔNG GIỚI HẠN) -->
+        <div class="form-row mb-3" style="display: flex; justify-content: center;">
+          <div class="cf-turnstile-wrapper">
+            <div class="cf-turnstile" 
+                 id="login-turnstile"
+                 data-sitekey="{{ turnstile_site_key }}" 
+                 data-theme="dark"
+                 data-callback="onLoginTurnstileSuccess"
+                 data-expired-callback="onLoginTurnstileExpired"
+                 data-error-callback="onLoginTurnstileError">
             </div>
-
-            <!-- CẤP 1: MỘT CHẠM GỌN GÀNG -->
-            <div class="captcha-stage-tier active" id="login-tier-1">
-              <div class="turnstile-box" id="login-turnstile-box" onclick="handleTurnstileClick('login')">
-                <div class="turnstile-check-wrap">
-                  <div class="turnstile-checkbox" id="login-turnstile-checkbox">
-                    <div class="turnstile-spinner" id="login-turnstile-spinner"></div>
-                    <svg class="turnstile-check-svg" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                  <span class="turnstile-label" id="login-turnstile-label">Tôi là con người (Verify)</span>
-                </div>
-                <div class="turnstile-brand">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  <span>DIPRE Shield</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- CẤP 2: TỰ ĐỘNG CHUYỂN NẾU BOT (SLIDE PUZZLE) -->
-            <div class="captcha-stage-tier d-none" id="login-tier-2">
-              <div class="slide-captcha-container">
-                <div class="slide-captcha-header">
-                  <span id="login-slide-title">Ghép mảnh khuyết puzzle</span>
-                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('login', 2)">Đổi ảnh</button>
-                </div>
-                <div class="slide-captcha-stage" id="login-stage">
-                  <img class="slide-captcha-bg" id="login-captcha-bg" alt="Puzzle Background" src="">
-                  <img class="slide-captcha-piece" id="login-captcha-piece" alt="Puzzle Piece" src="">
-                </div>
-                <div class="slide-captcha-track-box" id="login-track">
-                  <div class="slide-captcha-fill" id="login-fill"></div>
-                  <div class="slide-captcha-hint-text" id="login-hint">Kéo thanh trượt để khớp hình ảnh</div>
-                  <div class="slide-captcha-thumb" id="login-thumb">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- CẤP 3: TỰ ĐỘNG CHUYỂN NẾU THẤT BẠI (CIRCLE ROTATION) -->
-            <div class="captcha-stage-tier d-none" id="login-tier-3">
-              <div class="circle-rotation-container">
-                <div class="slide-captcha-header">
-                  <span>Xoay vòng tròn khớp tranh</span>
-                  <button type="button" class="btn-captcha-refresh" onclick="reloadCaptcha('login', 3)">Đổi ảnh</button>
-                </div>
-                <div class="circle-stage-wrap">
-                  <div class="circle-viewport" id="login-circle-viewport">
-                    <img class="circle-outer-img" id="login-circle-outer" alt="Outer Ring" src="">
-                    <div class="circle-inner-rotator" id="login-circle-rotator">
-                      <img class="circle-inner-img" id="login-circle-inner" alt="Inner Circle" src="">
-                    </div>
-                    <div class="circle-guide-ring"></div>
-                  </div>
-                </div>
-                <div class="circle-slider-wrap">
-                  <div class="circle-slider-track" id="login-circle-track">
-                    <div class="circle-slider-fill" id="login-circle-fill"></div>
-                    <div class="slide-captcha-hint-text" id="login-circle-hint">Kéo thanh trượt để xoay khớp ảnh</div>
-                    <div class="circle-slider-thumb" id="login-circle-thumb">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="captcha-status-bar" id="login-status-bar"></div>
+            <input type="hidden" name="cf-turnstile-response" id="login-turnstile-token">
           </div>
         </div>
 
-        <button type="submit" id="btn-login-submit" class="dipre-btn-primary w-100 py-3 mb-2" disabled>
-          Đăng Nhập
+        <button type="submit" id="btn-login-submit" class="dipre-btn-primary auth-submit-btn w-100 py-3 mb-3" disabled>
+          Đăng Nhập Ngay
         </button>
 
-        <div class="auth-divider-row">
-          <span>HOẶC ĐĂNG NHẬP NHANH BẰNG</span>
+        <div class="auth-divider-row" style="margin: 1.25rem 0 0.8rem 0; display: flex; align-items: center; text-align: center; color: #64748b; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;">
+          <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>
+          <span style="padding: 0 10px;">HOẶC TIẾP TỤC VỚI</span>
+          <span style="flex: 1; height: 1px; background: rgba(255,255,255,0.08);"></span>
         </div>
 
         <div class="social-login-grid">
           <button type="button" class="btn-social-auth discord" onclick="handleSocialQuickLogin('discord')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
-            <span>Discord Account</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+            <span>Discord</span>
           </button>
           <button type="button" class="btn-social-auth google" onclick="handleSocialQuickLogin('google')">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-            <span>Google Account</span>
+            <svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span>Google</span>
           </button>
         </div>
       </form>
@@ -231,59 +200,68 @@
       <form id="form-register" method="POST" action="{{ url_for('register') }}" class="d-none">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="reg-username">Tên tài khoản mới</label>
-          <input type="text" id="reg-username" name="username" class="input-rounded"
-            placeholder="Tối thiểu 3 ký tự..." required autocomplete="username">
+          <div class="modern-input-wrap">
+            <span class="modern-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input type="text" id="reg-username" name="username" class="modern-input-field"
+              placeholder="Tối thiểu 3 ký tự..." required autocomplete="username">
+          </div>
         </div>
 
         <div class="form-row mb-3">
           <label class="form-label-clean" for="reg-password">Mật khẩu</label>
-          <input type="password" id="reg-password" name="password" class="input-rounded"
-            placeholder="Tối thiểu 6 ký tự..." required autocomplete="new-password">
+          <div class="modern-input-wrap">
+            <span class="modern-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="reg-password" name="password" class="modern-input-field"
+              placeholder="Tối thiểu 6 ký tự..." required autocomplete="new-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-password', this)" title="Ẩn/Hiện mật khẩu">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </div>
 
         <div class="form-row mb-3">
           <label class="form-label-clean" for="reg-confirm-password">Xác nhận mật khẩu</label>
-          <input type="password" id="reg-confirm-password" name="confirm_password" class="input-rounded"
-            placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
-        </div>
-
-        <div class="form-row mb-4">
-          <div class="multitier-captcha-wrap" id="register-captcha-wrap">
-            <div class="captcha-stage-tier active" id="register-tier-1">
-              <div class="turnstile-box" id="register-turnstile-box" onclick="handleTurnstileClick('register')">
-                <div class="turnstile-check-wrap">
-                  <div class="turnstile-checkbox" id="register-turnstile-checkbox">
-                    <div class="turnstile-spinner" id="register-turnstile-spinner"></div>
-                    <svg class="turnstile-check-svg" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                  </div>
-                  <span class="turnstile-label" id="register-turnstile-label">Tôi là con người (Verify)</span>
-                </div>
-                <div class="turnstile-brand">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  <span>DIPRE Shield</span>
-                </div>
-              </div>
-            </div>
-            <div class="captcha-status-bar" id="register-status-bar"></div>
+          <div class="modern-input-wrap">
+            <span class="modern-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <input type="password" id="reg-confirm-password" name="confirm_password" class="modern-input-field"
+              placeholder="Nhập lại mật khẩu..." required autocomplete="new-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('reg-confirm-password', this)" title="Ẩn/Hiện mật khẩu">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
           </div>
         </div>
 
-        <button type="submit" id="btn-register-submit" class="dipre-btn-primary w-100 py-3 mb-2" disabled>
-          Hoàn Tất Đăng Ký
+        <!-- CLOUDFLARE TURNSTILE CAPTCHA (FREE 100%, CHO ĐĂNG KÝ) -->
+        <div class="form-row mb-3" style="display: flex; justify-content: center;">
+          <div class="cf-turnstile-wrapper">
+            <div class="cf-turnstile" 
+                 id="reg-turnstile"
+                 data-sitekey="{{ turnstile_site_key }}" 
+                 data-theme="dark"
+                 data-callback="onRegTurnstileSuccess"
+                 data-expired-callback="onRegTurnstileExpired"
+                 data-error-callback="onRegTurnstileError">
+            </div>
+            <input type="hidden" name="cf-turnstile-response" id="reg-turnstile-token">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-register-submit" class="dipre-btn-primary auth-submit-btn w-100 py-3 mb-2" disabled>
+          Tạo Tài Khoản Ngay
         </button>
       </form>
     </div>
   </div>
 
-  <!-- SCRIPT LOGIC BEYOND LANDING & CAPTCHA -->
-  <script>
-    const appCaptcha = {
-      login: { level: 1, verified: false, failCount: 0, currentX: 0, currentAngle: 0, data: null, isDragging: false, startClientX: 0 },
-      register: { level: 1, verified: false, failCount: 0, currentX: 0, currentAngle: 0, data: null, isDragging: false, startClientX: 0 }
-    };
 
+  <!-- SCRIPT LOGIC BEYOND LANDING & CLOUDFLARE TURNSTILE -->
+  <script>
     function openAuthModal(mode) {
       const modal = document.getElementById('auth-modal-backdrop');
       if (modal) {
@@ -320,314 +298,55 @@
         formLogin.classList.remove('d-none');
         formRegister.classList.add('d-none');
         if (title) title.textContent = 'Đăng Nhập Tài Khoản';
-        reloadCaptcha('login', appCaptcha.login.level);
       } else {
         btnReg.classList.add('active');
         btnLogin.classList.remove('active');
         formRegister.classList.remove('d-none');
         formLogin.classList.add('d-none');
         if (title) title.textContent = 'Tạo Tài Khoản Mới';
-        reloadCaptcha('register', appCaptcha.register.level);
       }
     }
 
-    function elevateCaptchaTier(formType, newLevel, reasonText) {
-      appCaptcha[formType].level = newLevel;
-      appCaptcha[formType].verified = false;
-
-      const notice = document.getElementById(`${formType}-bot-notice`);
-      const noticeTxt = document.getElementById(`${formType}-bot-notice-text`);
-      if (notice) {
-        notice.classList.remove('d-none');
-        if (noticeTxt && reasonText) noticeTxt.textContent = reasonText;
-      }
-
-      for (let i = 1; i <= 3; i++) {
-        const stage = document.getElementById(`${formType}-tier-${i}`);
-        if (stage) stage.classList.toggle('d-none', i !== newLevel);
-      }
-      reloadCaptcha(formType, newLevel);
+    // ======================================================
+    // CLOUDFLARE TURNSTILE CALLBACKS (SIÊU MƯỢT, FREE 100%)
+    // ======================================================
+    function onLoginTurnstileSuccess(token) {
+      const input = document.getElementById('login-turnstile-token');
+      if (input) input.value = token;
+      const btn = document.getElementById('btn-login-submit');
+      if (btn) btn.disabled = false;
     }
 
-    async function reloadCaptcha(formType, level) {
-      const state = appCaptcha[formType];
-      state.verified = false;
-      state.currentX = 0;
-      state.currentAngle = 0;
-
-      const submitBtn = document.getElementById(`btn-${formType}-submit`);
-      if (submitBtn) submitBtn.disabled = true;
-
-      const statusBar = document.getElementById(`${formType}-status-bar`);
-      if (statusBar) {
-        statusBar.className = 'captcha-status-bar loading';
-        statusBar.textContent = 'Đang nạp xác thực...';
-      }
-
-      try {
-        const res = await fetch(`/api/captcha?level=${level}&r=${Math.random()}`);
-        const result = await res.json();
-        if (!result || !result.success) throw new Error('Không thể tải captcha');
-
-        const data = result.captcha;
-        state.data = data;
-
-        if (level === 1) {
-          const box = document.getElementById(`${formType}-turnstile-box`);
-          const cb = document.getElementById(`${formType}-turnstile-checkbox`);
-          const label = document.getElementById(`${formType}-turnstile-label`);
-          if (box) box.classList.remove('verified', 'verifying');
-          if (cb) cb.classList.remove('checked', 'loading');
-          if (label) label.textContent = 'Tôi là con người (Verify)';
-          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
-        }
-        else if (level === 2) {
-          const bg = document.getElementById(`${formType}-captcha-bg`);
-          const piece = document.getElementById(`${formType}-captcha-piece`);
-          const thumb = document.getElementById(`${formType}-thumb`);
-          const fill = document.getElementById(`${formType}-fill`);
-          const hint = document.getElementById(`${formType}-hint`);
-
-          if (bg) bg.src = data.bg_image;
-          if (piece) {
-            piece.src = data.piece_image;
-            piece.style.top = `${data.target_y}px`;
-            piece.style.width = `${data.piece_width}px`;
-            piece.style.height = `${data.piece_height}px`;
-            piece.style.transform = 'translateX(0px)';
-          }
-          if (thumb) thumb.style.transform = 'translateX(0px)';
-          if (fill) fill.style.width = '0px';
-          if (hint) { hint.style.opacity = '1'; hint.textContent = 'Kéo thanh trượt để khớp hình ảnh'; }
-          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
-        }
-        else if (level === 3) {
-          const outer = document.getElementById(`${formType}-circle-outer`);
-          const inner = document.getElementById(`${formType}-circle-inner`);
-          const rotator = document.getElementById(`${formType}-circle-rotator`);
-          const thumb = document.getElementById(`${formType}-circle-thumb`);
-          const fill = document.getElementById(`${formType}-circle-fill`);
-          const hint = document.getElementById(`${formType}-circle-hint`);
-
-          if (outer) outer.src = data.outer_image;
-          if (inner) inner.src = data.inner_image;
-          if (rotator) rotator.style.transform = 'rotate(0deg)';
-          if (thumb) thumb.style.transform = 'translateX(0px)';
-          if (fill) fill.style.width = '0px';
-          if (hint) { hint.style.opacity = '1'; hint.textContent = 'Kéo thanh trượt để xoay khớp ảnh'; }
-          if (statusBar) { statusBar.className = 'captcha-status-bar'; statusBar.textContent = ''; }
-        }
-      } catch (e) {
-        if (statusBar) {
-          statusBar.className = 'captcha-status-bar error';
-          statusBar.textContent = 'Lỗi kết nối bảo mật. Thử lại!';
-        }
-      }
+    function onLoginTurnstileExpired() {
+      const input = document.getElementById('login-turnstile-token');
+      if (input) input.value = '';
+      const btn = document.getElementById('btn-login-submit');
+      if (btn) btn.disabled = true;
     }
 
-    async function handleTurnstileClick(formType) {
-      const state = appCaptcha[formType];
-      if (state.verified) return;
-
-      const box = document.getElementById(`${formType}-turnstile-box`);
-      const cb = document.getElementById(`${formType}-turnstile-checkbox`);
-      const label = document.getElementById(`${formType}-turnstile-label`);
-      const statusBar = document.getElementById(`${formType}-status-bar`);
-      const submitBtn = document.getElementById(`btn-${formType}-submit`);
-
-      box.classList.add('verifying');
-      cb.classList.add('loading');
-      label.textContent = 'Đang phân tích...';
-
-      setTimeout(async () => {
-        try {
-          const res = await fetch('/api/captcha/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              level: 1,
-              token: state.data ? state.data.challenge : ''
-            })
-          });
-          const json = await res.json();
-          if (json && json.success) {
-            state.verified = true;
-            cb.classList.remove('loading');
-            cb.classList.add('checked');
-            box.classList.remove('verifying');
-            box.classList.add('verified');
-            label.textContent = 'Xác thực hoàn tất ✓';
-            if (statusBar) {
-              statusBar.className = 'captcha-status-bar success';
-              statusBar.textContent = '✓ Đã mở khóa biểu mẫu!';
-            }
-            if (submitBtn) submitBtn.disabled = false;
-          } else {
-            throw new Error(json.message || 'Xác thực không hợp lệ');
-          }
-        } catch (err) {
-          cb.classList.remove('loading');
-          box.classList.remove('verifying');
-          state.failCount++;
-          label.textContent = 'Nghi vấn Bot! Đang nâng cấp...';
-          if (statusBar) {
-            statusBar.className = 'captcha-status-bar error';
-            statusBar.textContent = '✕ Thao tác quá nhanh! Chuyển sang puzzle ghép hình.';
-          }
-          setTimeout(() => {
-            elevateCaptchaTier(formType, 2, 'Phát hiện thao tác bất thường, vui lòng ghép hình:');
-          }, 800);
-        }
-      }, 500);
+    function onLoginTurnstileError() {
+      // Nếu có sự cố kết nối Cloudflare hoặc test offline, mở khóa để người dùng không bị kẹt
+      const btn = document.getElementById('btn-login-submit');
+      if (btn) btn.disabled = false;
     }
 
-    function initInteractiveDrag(formType) {
-      const track = document.getElementById(`${formType}-track`);
-      const thumb = document.getElementById(`${formType}-thumb`);
-      const fill = document.getElementById(`${formType}-fill`);
-      const piece = document.getElementById(`${formType}-captcha-piece`);
-      const hint = document.getElementById(`${formType}-hint`);
-      const statusBar = document.getElementById(`${formType}-status-bar`);
-      const submitBtn = document.getElementById(`btn-${formType}-submit`);
+    function onRegTurnstileSuccess(token) {
+      const input = document.getElementById('reg-turnstile-token');
+      if (input) input.value = token;
+      const btn = document.getElementById('btn-register-submit');
+      if (btn) btn.disabled = false;
+    }
 
-      if (thumb && track) {
-        const onStart = (clientX) => {
-          if (appCaptcha[formType].verified || appCaptcha[formType].level !== 2) return;
-          appCaptcha[formType].isDragging = true;
-          appCaptcha[formType].startClientX = clientX;
-          if (hint) hint.style.opacity = '0';
-        };
+    function onRegTurnstileExpired() {
+      const input = document.getElementById('reg-turnstile-token');
+      if (input) input.value = '';
+      const btn = document.getElementById('btn-register-submit');
+      if (btn) btn.disabled = true;
+    }
 
-        const onMove = (clientX) => {
-          if (!appCaptcha[formType].isDragging || appCaptcha[formType].level !== 2) return;
-          const rect = track.getBoundingClientRect();
-          const maxTrack = rect.width - 44;
-          let delta = clientX - appCaptcha[formType].startClientX;
-          delta = Math.max(0, Math.min(delta, maxTrack));
-
-          const maxStageMove = 320 - (appCaptcha[formType].data?.piece_width || 46);
-          const stageX = (delta / maxTrack) * maxStageMove;
-
-          appCaptcha[formType].currentX = stageX;
-          thumb.style.transform = `translateX(${delta}px)`;
-          if (fill) fill.style.width = `${delta + 22}px`;
-          if (piece) piece.style.transform = `translateX(${stageX}px)`;
-        };
-
-        const onEnd = async () => {
-          if (!appCaptcha[formType].isDragging || appCaptcha[formType].level !== 2) return;
-          appCaptcha[formType].isDragging = false;
-
-          const verifyX = appCaptcha[formType].currentX;
-          if (statusBar) {
-            statusBar.className = 'captcha-status-bar loading';
-            statusBar.textContent = 'Đang kiểm tra tọa độ...';
-          }
-
-          try {
-            const res = await fetch('/api/captcha/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ level: 2, x: verifyX })
-            });
-            const json = await res.json();
-            if (json && json.success) {
-              appCaptcha[formType].verified = true;
-              if (statusBar) {
-                statusBar.className = 'captcha-status-bar success';
-                statusBar.textContent = '✓ Ghép chuẩn xác!';
-              }
-              if (submitBtn) submitBtn.disabled = false;
-            } else {
-              appCaptcha[formType].failCount++;
-              if (appCaptcha[formType].failCount >= 2) {
-                setTimeout(() => {
-                  elevateCaptchaTier(formType, 3, 'Xác thực tăng cường: Vui lòng xoay tròn khớp ảnh:');
-                }, 900);
-              } else {
-                setTimeout(() => { reloadCaptcha(formType, 2); }, 800);
-              }
-            }
-          } catch (e) {
-            setTimeout(() => { reloadCaptcha(formType, 2); }, 800);
-          }
-        };
-
-        thumb.addEventListener('mousedown', (e) => onStart(e.clientX));
-        window.addEventListener('mousemove', (e) => onMove(e.clientX));
-        window.addEventListener('mouseup', onEnd);
-
-        thumb.addEventListener('touchstart', (e) => onStart(e.touches[0].clientX), { passive: true });
-        window.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX), { passive: true });
-        window.addEventListener('touchend', onEnd);
-      }
-
-      // LEVEL 3
-      const cTrack = document.getElementById(`${formType}-circle-track`);
-      const cThumb = document.getElementById(`${formType}-circle-thumb`);
-      const cFill = document.getElementById(`${formType}-circle-fill`);
-      const cRotator = document.getElementById(`${formType}-circle-rotator`);
-      const cHint = document.getElementById(`${formType}-circle-hint`);
-
-      if (cThumb && cTrack) {
-        let isCirDragging = false;
-        let cirStartX = 0;
-
-        const onCirStart = (clientX) => {
-          if (appCaptcha[formType].verified || appCaptcha[formType].level !== 3) return;
-          isCirDragging = true;
-          cirStartX = clientX;
-          if (cHint) cHint.style.opacity = '0';
-        };
-
-        const onCirMove = (clientX) => {
-          if (!isCirDragging || appCaptcha[formType].level !== 3) return;
-          const rect = cTrack.getBoundingClientRect();
-          const maxTrack = rect.width - 44;
-          let delta = clientX - cirStartX;
-          delta = Math.max(0, Math.min(delta, maxTrack));
-
-          const initialAngle = appCaptcha[formType].data?.initial_angle || 0;
-          const userDeg = (delta / maxTrack) * 360;
-          const effectiveAngle = (initialAngle + userDeg) % 360;
-
-          appCaptcha[formType].currentAngle = effectiveAngle;
-          cThumb.style.transform = `translateX(${delta}px)`;
-          if (cFill) cFill.style.width = `${delta + 22}px`;
-          if (cRotator) cRotator.style.transform = `rotate(${effectiveAngle}deg)`;
-        };
-
-        const onCirEnd = async () => {
-          if (!isCirDragging || appCaptcha[formType].level !== 3) return;
-          isCirDragging = false;
-
-          const verifyAngle = appCaptcha[formType].currentAngle;
-          try {
-            const res = await fetch('/api/captcha/verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ level: 3, angle: verifyAngle })
-            });
-            const json = await res.json();
-            if (json && json.success) {
-              appCaptcha[formType].verified = true;
-              if (submitBtn) submitBtn.disabled = false;
-            } else {
-              setTimeout(() => { reloadCaptcha(formType, 3); }, 900);
-            }
-          } catch (e) {
-            setTimeout(() => { reloadCaptcha(formType, 3); }, 900);
-          }
-        };
-
-        cThumb.addEventListener('mousedown', (e) => onCirStart(e.clientX));
-        window.addEventListener('mousemove', (e) => onCirMove(e.clientX));
-        window.addEventListener('mouseup', onCirEnd);
-
-        cThumb.addEventListener('touchstart', (e) => onCirStart(e.touches[0].clientX), { passive: true });
-        window.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX), { passive: true });
-        window.addEventListener('touchend', onCirEnd);
-      }
+    function onRegTurnstileError() {
+      const btn = document.getElementById('btn-register-submit');
+      if (btn) btn.disabled = false;
     }
 
     function handleSocialQuickLogin(provider) {
@@ -638,10 +357,44 @@
       }
     }
 
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      if (btn) {
+        if (isPassword) {
+          btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+        } else {
+          btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        }
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      initInteractiveDrag('login');
-      initInteractiveDrag('register');
-      reloadCaptcha('login', 1);
+      // 3D TILT EFFECT trên card preview
+      const stage = document.getElementById('hero-cards-stage');
+      const card1 = document.getElementById('floating-card-1');
+      const card2 = document.getElementById('floating-card-2');
+      if (stage && card1) {
+        stage.addEventListener('mousemove', (e) => {
+          const rect = stage.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width / 2;
+          const y = e.clientY - rect.top - rect.height / 2;
+          const rotX1 = (-y / 20) + 8;
+          const rotY1 = (x / 20) - 12;
+          card1.style.transform = `rotateX(${rotX1}deg) rotateY(${rotY1}deg) rotateZ(5deg) translateZ(30px)`;
+          if (card2) {
+            const rotX2 = (-y / 25) + 10;
+            const rotY2 = (x / 25) + 16;
+            card2.style.transform = `rotateX(${rotX2}deg) rotateY(${rotY2}deg) rotateZ(-6deg) translateZ(-20px)`;
+          }
+        });
+        stage.addEventListener('mouseleave', () => {
+          card1.style.transform = '';
+          if (card2) card2.style.transform = '';
+        });
+      }
     });
   </script>
 </body>
