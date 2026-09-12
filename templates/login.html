@@ -138,7 +138,7 @@
       </div>
 
       <!-- FORM ĐĂNG NHẬP -->
-      <form id="form-login" method="POST" action="{{ url_for('login') }}">
+      <form id="form-login" method="POST" action="{{ url_for('login') }}" style="display: block;">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="login-username">Tên tài khoản</label>
           <div class="modern-input-wrap">
@@ -159,7 +159,12 @@
             <input type="password" id="login-password" name="password" class="modern-input-field"
               placeholder="Nhập mật khẩu..." required autocomplete="current-password">
             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)" title="Ẩn/Hiện mật khẩu">
-              <svg width="16" height="16" v        <!-- CLOUDFLARE TURNSTILE CAPTCHA (FREE 100%, TỰ ĐỘNG BẢO MẬT KHÔNG GIỚI HẠN) -->
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- CLOUDFLARE TURNSTILE CAPTCHA (FREE 100%, TỰ ĐỘNG BẢO MẬT KHÔNG GIỚI HẠN) -->
         <div class="form-row mb-3" style="display: flex; justify-content: center;">
           <div class="cf-turnstile-wrapper">
             <div class="cf-turnstile" 
@@ -197,7 +202,7 @@
       </form>
 
       <!-- FORM ĐĂNG KÝ MỚI -->
-      <form id="form-register" method="POST" action="{{ url_for('register') }}" class="d-none">
+      <form id="form-register" method="POST" action="{{ url_for('register') }}" style="display: none;">
         <div class="form-row mb-3">
           <label class="form-label-clean" for="reg-username">Tên tài khoản mới</label>
           <div class="modern-input-wrap">
@@ -295,14 +300,14 @@
       if (mode === 'login') {
         btnLogin.classList.add('active');
         btnReg.classList.remove('active');
-        formLogin.classList.remove('d-none');
-        formRegister.classList.add('d-none');
+        if (formLogin) formLogin.style.display = 'block';
+        if (formRegister) formRegister.style.display = 'none';
         if (title) title.textContent = 'Đăng Nhập Tài Khoản';
       } else {
         btnReg.classList.add('active');
         btnLogin.classList.remove('active');
-        formRegister.classList.remove('d-none');
-        formLogin.classList.add('d-none');
+        if (formRegister) formRegister.style.display = 'block';
+        if (formLogin) formLogin.style.display = 'none';
         if (title) title.textContent = 'Tạo Tài Khoản Mới';
       }
     }
