@@ -18,13 +18,19 @@ DISCORD_CLIENT_ID = os.environ.get('DISCORD_CLIENT_ID', '')
 DISCORD_CLIENT_SECRET = os.environ.get('DISCORD_CLIENT_SECRET', '')
 
 def get_discord_redirect_uri():
-    return os.environ.get('DISCORD_REDIRECT_URI') or url_for('auth_discord_callback', _external=True)
+    uri = os.environ.get('DISCORD_REDIRECT_URI') or url_for('auth_discord_callback', _external=True)
+    if uri.startswith('http://') and ('onrender.com' in uri or request.headers.get('X-Forwarded-Proto') == 'https'):
+        uri = 'https://' + uri[7:]
+    return uri
 
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 
 def get_google_redirect_uri():
-    return os.environ.get('GOOGLE_REDIRECT_URI') or url_for('auth_google_callback', _external=True)
+    uri = os.environ.get('GOOGLE_REDIRECT_URI') or url_for('auth_google_callback', _external=True)
+    if uri.startswith('http://') and ('onrender.com' in uri or request.headers.get('X-Forwarded-Proto') == 'https'):
+        uri = 'https://' + uri[7:]
+    return uri
 
 @auth_bp.route('/')
 @login_required

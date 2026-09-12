@@ -36,6 +36,13 @@ def create_app() -> Flask:
     # Nạp toàn bộ các Blueprint và route từ Core Registry
     registry.bind_to_app(app)
 
+    # Hỗ trợ Reverse Proxy (Render, Cloudflare, Nginx) để nhận diện đúng HTTPS
+    try:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    except Exception:
+        pass
+
     log_event('Hệ thống Discord RPC Master (Modular Architecture) đã sẵn sàng hoạt động.', 'info')
     return app
 
