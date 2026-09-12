@@ -83,16 +83,44 @@ let questLogLastCount = 0;
 let currentQuestId = null;
 
 // ============================================================
-// TAB NAVIGATION
+// TAB NAVIGATION (SPA ZERO-LAG)
 // ============================================================
 
+const TAB_TITLES = {
+  'tab-home': 'DASHBOARD',
+  'tab-rpc-soundcloud': 'SOUNDCLOUD RPC',
+  'tab-rpc-youtube': 'YOUTUBE RPC',
+  'tab-rpc-spotify': 'SPOTIFY RPC',
+  'tab-rpc': 'CUSTOM RPC',
+  'tab-quest': 'AUTO QUEST',
+  'tab-lyric': 'LYRIC SYNC (NCT)',
+  'tab-inbox': 'INBOX DISCORD',
+  'tab-accounts': 'QUẢN LÝ ĐA TOKEN'
+};
+
 function switchTab(tabId) {
+  if (!tabId) tabId = 'tab-home';
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sidebar-nav-item').forEach(b => b.classList.remove('active'));
+  
   const panel = document.getElementById(tabId);
   if (panel) panel.classList.add('active');
+  
   const btn = document.querySelector(`[data-tab="${tabId}"]`);
   if (btn) btn.classList.add('active');
+
+  // Cập nhật Breadcrumb trên Topbar
+  const topTitle = document.getElementById('topbar-tab-title');
+  if (topTitle && TAB_TITLES[tabId]) {
+    topTitle.textContent = TAB_TITLES[tabId];
+  }
+
+  // Lưu hash URL để khi F5 không bị mất tab
+  if (window.location.hash !== `#${tabId}`) {
+    history.replaceState(null, null, `#${tabId}`);
+  }
+
+  // Khởi động các module tương ứng
   if (tabId === 'tab-rpc') startLogPolling();
   else if (tabId === 'tab-quest') { loadAvailableQuests(); startLogPolling('quest'); }
   else if (tabId === 'tab-inbox') { loadDiscordInbox(); }
@@ -163,7 +191,7 @@ function copyTokenScript() {
 async function handleBindToken() {
   const tokenEl = document.getElementById('input-token');
   const appIdEl = document.getElementById('input-app-id');
-  if (!tokenEl?.value.trim()) {
+  if (!tokenEl || !tokenEl.value.trim()) {
     showToast('Vui lòng dán Discord Token vào ô nhập', 'error');
     return;
   }
@@ -172,7 +200,7 @@ async function handleBindToken() {
     const r = await fetch('/api/account/bind_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: tokenEl.value.trim(), app_id: appIdEl?.value.trim() || '' })
+      body: JSON.stringify({ token: tokenEl.value.trim(), app_id: (appIdEl && appIdEl.value) ? appIdEl.value.trim() : '' })
     });
     const d = await r.json();
     if (d.success) {
@@ -1972,7 +2000,211 @@ async function fetchAccountInfo() {
   } catch (e) {}
 }
 
+// ============================================================
+// THEME SWITCHER (GUI SÁNG & GUI TỐI)
+// ============================================================
+
+function initTheme() {
+  const savedTheme = localStorage.getItem('dipre_theme') || 'dark';
+  const icon = document.getElementById('theme-icon');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    if (icon) icon.textContent = '☀️';
+  } else {
+    document.body.classList.remove('light-theme');
+    if (icon) icon.textContent = '🌙';
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-theme');
+  const icon = document.getElementById('theme-icon');
+  if (isLight) {
+    localStorage.setItem('dipre_theme', 'light');
+    if (icon) icon.textContent = '☀️';
+    showToast('Đã chuyển sang giao diện Sáng (Frost Elegance)', 'info', 2000);
+  } else {
+    localStorage.setItem('dipre_theme', 'dark');
+    if (icon) icon.textContent = '🌙';
+    showToast('Đã chuyển sang giao diện Tối (Cyber Luxury)', 'info', 2000);
+  }
+}
+
+// ============================================================
+// LIVE SYSTEM CLOCK
+// ============================================================
+
+function initSystemClock() {
+  const clockEl = document.getElementById('system-clock');
+  if (!clockEl) return;
+  const updateClock = () => {
+    const now = new Date();
+    const hrs = String(now.getHours()).padStart(2, '0');
+    const mins = String(now.getMinutes()).padStart(2, '0');
+    const secs = String(now.getSeconds()).padStart(2, '0');
+    clockEl.textContent = `${hrs}:${mins}:${secs}`;
+  };
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
+// ============================================================
+// ANTI-DEVTOOLS & CHỐNG INSPECT ELEMENT
+// ============================================================
+
+function showAntiDevToolsShield() {
+  const overlay = document.getElementById('anti-devtools-overlay');
+  if (overlay) {
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function initAntiInspect() {
+  // 1. Chặn phím tắt kỹ thuật: F12, Ctrl+Shift+I, J, C, Ctrl+U, Ctrl+S
+  window.addEventListener('keydown', (e) => {
+    const isF12 = e.keyCode === 123;
+    const isCtrlShiftI = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i');
+    const isCtrlShiftJ = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j');
+    const isCtrlShiftC = (e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c');
+    const isCtrlU = (e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U');
+    const isCtrlS = (e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S');
+
+    if (isF12 || isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlU || isCtrlS) {
+      e.preventDefault();
+      e.stopPropagation();
+      showToast('⚠️ Thao tác phím tắt này bị vô hiệu hóa vì lý do bảo mật.', 'error', 2500);
+      showAntiDevToolsShield();
+      return false;
+    }
+  }, true);
+
+  // 2. Chặn chuột phải mặc định & mở Custom Context Menu
+  const customMenu = document.getElementById('dipre-custom-menu');
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (!customMenu) return;
+    
+    let x = e.clientX;
+    let y = e.clientY;
+    const menuWidth = 220;
+    const menuHeight = 220;
+
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+
+    customMenu.style.left = `${x}px`;
+    customMenu.style.top = `${y}px`;
+    customMenu.style.display = 'block';
+  });
+
+  window.addEventListener('click', () => {
+    if (customMenu) customMenu.style.display = 'none';
+  });
+
+  // 3. Cơ chế phát hiện DevTools bằng chênh lệch kích thước cửa sổ
+  setInterval(() => {
+    const threshold = 160;
+    const widthDiff = window.outerWidth - window.innerWidth > threshold;
+    const heightDiff = window.outerHeight - window.innerHeight > threshold;
+    if (widthDiff || heightDiff) {
+      showAntiDevToolsShield();
+    }
+  }, 1200);
+}
+
+// ============================================================
+// REALTIME STATUS ENGINE (ZERO-LAG SYNC)
+// ============================================================
+
+async function syncAllStatusNow() {
+  try {
+    const pingStatus = document.getElementById('ping-status');
+    const startTime = performance.now();
+
+    const res = await fetch('/api/live/status');
+    const data = await res.json();
+    
+    const latency = Math.round(performance.now() - startTime);
+    if (pingStatus) pingStatus.textContent = `${latency}ms`;
+
+    if (data && data.status === 'ok') {
+      const u = data.user;
+      
+      // Cập nhật thẻ User System trên sidebar
+      const sysName = document.getElementById('user-sys-name');
+      if (sysName && u.username) sysName.textContent = u.username;
+
+      // Cập nhật avatar nếu là ảnh hoặc initials
+      const avatarImg = document.getElementById('user-sys-avatar-img');
+      const avatarInitials = document.getElementById('user-sys-avatar-initials');
+      if (u.avatar) {
+        if (u.avatar.type === 'image' && u.avatar.url) {
+          if (avatarImg) {
+            avatarImg.src = u.avatar.url;
+            avatarImg.style.display = 'block';
+          }
+          if (avatarInitials) avatarInitials.style.display = 'none';
+        } else if (u.avatar.type === 'initials') {
+          if (avatarImg) avatarImg.style.display = 'none';
+          if (avatarInitials) {
+            avatarInitials.textContent = u.avatar.initials;
+            if (u.avatar.gradient) avatarInitials.style.background = u.avatar.gradient;
+            avatarInitials.style.display = 'flex';
+          }
+        }
+      }
+
+      // Cập nhật trạng thái Discord active pill
+      const sadName = document.getElementById('sad-name');
+      const sadTag = document.getElementById('sad-tag');
+      const sadAvatar = document.getElementById('sad-avatar-img');
+      const sadLocked = document.getElementById('sad-avatar-locked');
+
+      if (u.has_token && u.discord_username) {
+        if (sadName) sadName.textContent = u.discord_username;
+        if (sadTag) {
+          sadTag.textContent = 'Active';
+          sadTag.className = 'sad-tag linked';
+        }
+        if (sadAvatar && u.discord_avatar) {
+          sadAvatar.src = u.discord_avatar;
+          sadAvatar.style.display = 'block';
+        }
+        if (sadLocked) sadLocked.style.display = 'none';
+      } else {
+        if (sadName) sadName.textContent = 'Chưa nạp Token';
+        if (sadTag) {
+          sadTag.textContent = 'Trống';
+          sadTag.className = 'sad-tag unlinked';
+        }
+        if (sadAvatar) sadAvatar.style.display = 'none';
+        if (sadLocked) sadLocked.style.display = 'flex';
+      }
+    }
+  } catch (e) {
+    const pingStatus = document.getElementById('ping-status');
+    if (pingStatus) pingStatus.textContent = 'Offline';
+  }
+}
+
 function init() {
+  initTheme();
+  initSystemClock();
+  initAntiInspect();
+
+  // Khôi phục tab từ URL hash nếu có (ví dụ: #tab-spotify)
+  if (window.location.hash) {
+    const hashTab = window.location.hash.replace('#', '');
+    if (TAB_TITLES[hashTab]) {
+      switchTab(hashTab);
+    } else {
+      switchTab('tab-home');
+    }
+  } else {
+    switchTab('tab-home');
+  }
+
   buildVisualGallery();
   loadPresets();
   onActivityTypeChange();
@@ -1984,6 +2216,9 @@ function init() {
   loadSavedConfig();
   fetchAccountInfo();
   loadMultiAccounts();
+
+  // Chạy background polling định kỳ 3.5s
+  setInterval(syncAllStatusNow, 3500);
 }
 
 document.addEventListener('DOMContentLoaded', init);
